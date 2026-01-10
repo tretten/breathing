@@ -1,0 +1,117 @@
+/* src/styles/breathing-circle.css */
+
+.breathing-container {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.breathing-circle {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Default: dimmed static appearance (waiting state) */
+  opacity: 0.4;
+  box-shadow: 0 0 15px var(--accent-glow);
+  filter: saturate(0.5) brightness(0.6);
+  transition: opacity 0.5s ease, filter 0.5s ease, box-shadow 0.5s ease;
+}
+
+/* Active state without audio level - fallback animation */
+.breathing-circle.active {
+  opacity: 1;
+  filter: none;
+  animation: breathe-active 4s ease-in-out infinite;
+}
+
+@keyframes breathe-active {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 60px var(--accent-glow);
+  }
+  50% {
+    transform: scale(1.2);
+    box-shadow: 0 0 100px var(--accent-glow);
+  }
+}
+
+/* Reactive state - controlled by JS, smooth transitions */
+.breathing-circle.reactive {
+  opacity: 1;
+  filter: none;
+  animation: none;
+  transition: transform 0.05s ease-out, box-shadow 0.1s ease-out;
+}
+
+.breathing-inner {
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+  background: rgba(10, 10, 15, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.breathing-core {
+  width: 60%;
+  height: 60%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  opacity: 0.8;
+}
+
+.breathing-rings {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--accent-primary);
+  opacity: 0;
+}
+
+/* Active rings - expanding animation */
+.ring.active {
+  animation: ring-active 3s ease-out infinite;
+}
+
+.ring-1.active { animation-delay: 0s; }
+.ring-2.active { animation-delay: 1s; }
+.ring-3.active { animation-delay: 2s; }
+
+@keyframes ring-active {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* Smaller version for mobile */
+@media (max-width: 640px) {
+  .breathing-container {
+    width: 220px;
+    height: 220px;
+  }
+
+  .breathing-circle {
+    width: 120px;
+    height: 120px;
+  }
+}

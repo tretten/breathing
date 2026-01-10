@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "rooms": {
+      "with_friends": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "presence": {
+      ".read": true,
+      ".write": true
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}
