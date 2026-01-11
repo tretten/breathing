@@ -209,13 +209,18 @@ export function WithFriendsRoomPage() {
     setIsReady(prev => !prev);
   }, [roomStatus, isReady, unlockAudio]);
 
-  const handleExit = useCallback(() => {
-    // Only stop audio locally - don't reset room for others
+  const handleExit = useCallback(async () => {
     exitedManuallyRef.current = true;
     stopPlayback();
     setIsReady(false);
+
+    // If this is the last user, reset the room for everyone
+    if (onlineCount <= 1) {
+      await resetCustomRoom();
+    }
+
     navigate('/');
-  }, [stopPlayback, navigate]);
+  }, [stopPlayback, navigate, onlineCount]);
 
   // Check if this is a late join (session already started)
   const isLateJoin = roomStatus === 'countdown' &&
