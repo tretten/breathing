@@ -1,6 +1,7 @@
 /* src/styles/global.css */
+/* Waking Up inspired design */
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 * {
   margin: 0;
@@ -9,33 +10,36 @@
 }
 
 :root {
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-card: #1a1a24;
-  --text-primary: #f0f0f5;
-  --text-secondary: #8888aa;
-  --accent-primary: #4ecdc4;
-  --accent-secondary: #45b7aa;
-  --accent-glow: rgba(78, 205, 196, 0.3);
+  /* Waking Up color palette */
+  --bg-primary: #0e1529;
+  --bg-secondary: #162038;
+  --bg-card: rgba(255, 255, 255, 0.06);
+  --text-primary: #f4f4f4;
+  --text-secondary: rgba(244, 244, 244, 0.6);
+  --accent-primary: #ffb300;
+  --accent-secondary: #ffc107;
+  --accent-glow: rgba(255, 179, 0, 0.25);
+  --accent-blue: #2565f5;
   --accent-warm: #ff6b6b;
   --success: #4ecdc4;
   --warning: #ffe66d;
 }
 
 body {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
-  line-height: 1.5;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
 }
 
 .app {
   min-height: 100vh;
-  background: 
-    radial-gradient(ellipse at 20% 0%, rgba(78, 205, 196, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 100%, rgba(78, 205, 196, 0.05) 0%, transparent 50%),
-    var(--bg-primary);
+  background:
+    radial-gradient(ellipse at 30% 0%, rgba(37, 101, 245, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 100%, rgba(37, 101, 245, 0.08) 0%, transparent 50%),
+    linear-gradient(180deg, #0e1529 0%, #162038 100%);
 }
 
 /* Room List Page */
@@ -48,24 +52,21 @@ body {
 
 .page-header {
   text-align: center;
-  padding: 3rem 0;
+  padding: 4rem 0 3rem;
 }
 
 .page-header h1 {
-  font-size: 3rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  background: linear-gradient(135deg, var(--text-primary), var(--accent-primary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 0.5rem;
+  font-size: 2.5rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
 }
 
 .subtitle {
   color: var(--text-secondary);
   font-size: 1.1rem;
-  font-weight: 300;
+  font-weight: 400;
 }
 
 .rooms-grid {
@@ -76,44 +77,30 @@ body {
 }
 
 .room-card {
-  background: var(--bg-card);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 16px;
-  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 2rem;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
 }
 
-.room-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
 .room-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(78, 205, 196, 0.3);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
-.room-card:hover::before {
-  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 179, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
 }
 
 .room-card.custom {
-  border-color: rgba(255, 107, 107, 0.2);
+  border-color: rgba(37, 101, 245, 0.3);
 }
 
-.room-card.custom::before {
-  background: linear-gradient(90deg, var(--accent-warm), #ff8e8e);
+.room-card.custom:hover {
+  border-color: rgba(37, 101, 245, 0.5);
 }
 
 .room-card-header {
@@ -191,7 +178,7 @@ body {
 
 .lang-btn.active {
   background: var(--accent-primary);
-  color: var(--bg-primary);
+  color: #0e1529;
 }
 
 .page-header-row {
@@ -235,25 +222,27 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 1.5rem 2rem;
-  background: var(--bg-secondary);
+  background: rgba(22, 32, 56, 0.8);
+  backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .back-button {
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: var(--accent-blue);
   font-size: 1rem;
   cursor: pointer;
   padding: 0.5rem 1rem;
   border-radius: 8px;
   transition: all 0.2s ease;
   font-family: inherit;
+  font-weight: 500;
 }
 
 .back-button:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
+  background: rgba(37, 101, 245, 0.1);
+  color: var(--accent-blue);
 }
 
 .room-header h2 {
@@ -333,10 +322,10 @@ body {
 }
 
 .countdown-time {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 3rem;
-  font-weight: 500;
-  letter-spacing: 0.05em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 
@@ -359,10 +348,10 @@ body {
 }
 
 .preset-option {
-  background: var(--bg-card);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
-  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.85rem;
   color: var(--text-secondary);
   font-size: 0.85rem;
   cursor: pointer;
@@ -371,12 +360,13 @@ body {
 }
 
 .preset-option:hover:not(:disabled) {
-  border-color: rgba(78, 205, 196, 0.3);
+  border-color: rgba(255, 179, 0, 0.3);
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .preset-option.selected {
-  background: rgba(78, 205, 196, 0.15);
+  background: rgba(255, 179, 0, 0.15);
   border-color: var(--accent-primary);
   color: var(--accent-primary);
 }
@@ -397,15 +387,15 @@ body {
 
 .ready-bar {
   width: 100%;
-  height: 8px;
-  background: var(--bg-card);
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 100px;
   overflow: hidden;
 }
 
 .ready-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  background: var(--accent-primary);
   border-radius: 100px;
   transition: width 0.3s ease;
 }
@@ -426,19 +416,19 @@ body {
 
 /* Ready Button */
 .ready-button {
-  background: var(--bg-card);
-  border: 2px solid var(--accent-primary);
+  background: transparent;
+  border: 1px solid var(--accent-primary);
   color: var(--accent-primary);
 }
 
 .ready-button:hover:not(:disabled) {
-  background: rgba(78, 205, 196, 0.1);
+  background: rgba(255, 179, 0, 0.1);
   transform: translateY(-2px);
 }
 
 .ready-button.ready {
   background: var(--accent-primary);
-  color: var(--bg-primary);
+  color: #0e1529;
 }
 
 .ready-button:disabled {
@@ -462,7 +452,8 @@ body {
 .countdown-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 10, 15, 0.95);
+  background: rgba(14, 21, 41, 0.95);
+  backdrop-filter: blur(20px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -560,7 +551,7 @@ body {
 
 .language-option.selected {
   border-color: var(--accent-primary);
-  background: rgba(78, 205, 196, 0.1);
+  background: rgba(255, 179, 0, 0.1);
 }
 
 .lang-flag {
@@ -574,12 +565,12 @@ body {
 }
 
 .welcome-continue-button {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: var(--accent-primary);
   border: none;
-  border-radius: 14px;
-  padding: 1.25rem 2.5rem;
-  color: var(--bg-primary);
-  font-size: 1.15rem;
+  border-radius: 50px;
+  padding: 1.25rem 3rem;
+  color: #0e1529;
+  font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -590,7 +581,8 @@ body {
 
 .welcome-continue-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px var(--accent-glow);
+  background: var(--accent-secondary);
+  box-shadow: 0 12px 40px var(--accent-glow);
 }
 
 .welcome-continue-button:disabled {
@@ -658,78 +650,68 @@ body {
   box-shadow: 0 10px 30px var(--accent-glow);
 }
 
-/* Start Now Button */
-/* Action Buttons - consistent sizing */
+/* Action Buttons - Waking Up style */
 .start-now-button,
 .stop-button,
 .exit-button,
 .join-button,
 .ready-button {
   min-width: 180px;
-  padding: 1rem 2rem;
-  border-radius: 12px;
+  padding: 1rem 2.5rem;
+  border-radius: 50px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   font-family: inherit;
+  letter-spacing: -0.01em;
 }
 
-.start-now-button {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+/* Primary golden button */
+.start-now-button,
+.join-button {
+  background: var(--accent-primary);
   border: none;
-  color: var(--bg-primary);
+  color: #0e1529;
 }
 
-.start-now-button:hover:not(:disabled) {
+.start-now-button:hover:not(:disabled),
+.join-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px var(--accent-glow);
+  background: var(--accent-secondary);
+  box-shadow: 0 12px 40px var(--accent-glow);
 }
 
-.start-now-button:disabled {
+.start-now-button:disabled,
+.join-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Stop Button */
+/* Stop Button - subtle red */
 .stop-button {
-  background: linear-gradient(135deg, var(--accent-warm), #ff8a80);
-  border: none;
-  color: var(--bg-primary);
+  background: rgba(255, 107, 107, 0.15);
+  border: 1px solid rgba(255, 107, 107, 0.4);
+  color: #ff8a80;
 }
 
 .stop-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+  background: rgba(255, 107, 107, 0.25);
+  box-shadow: 0 10px 30px rgba(255, 107, 107, 0.2);
 }
 
-/* Exit Button - more neutral color */
+/* Exit Button - ghost style */
 .exit-button {
-  background: var(--bg-card);
-  border: 2px solid var(--text-secondary);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: var(--text-primary);
 }
 
 .exit-button:hover {
   transform: translateY(-2px);
   background: rgba(255, 255, 255, 0.1);
-}
-
-/* Join Button - positive action for late joiners */
-.join-button {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  border: none;
-  color: var(--bg-primary);
-}
-
-.join-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 30px var(--accent-glow);
-}
-
-.join-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 /* Late Join Message */
@@ -853,25 +835,28 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 1.25rem 2rem;
-  background: var(--bg-card);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1.5rem 2rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   width: 100%;
-  min-height: 120px;
+  min-height: 110px;
 }
 
 .timer-label {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .timer-value {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 2rem;
-  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  font-size: 2.25rem;
+  font-weight: 600;
   color: var(--text-primary);
-  letter-spacing: 0.05em;
+  letter-spacing: -0.02em;
 }
 
 /* Or Divider */
