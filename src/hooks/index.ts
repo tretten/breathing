@@ -210,7 +210,7 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
   const playbackStartTimeRef = useRef<number>(0);
   const pausedAtPositionRef = useRef<number>(0);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   const isStoppingIntentionallyRef = useRef<boolean>(false);
 
   // Initialize AudioContext and AnalyserNode
