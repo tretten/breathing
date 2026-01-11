@@ -222,11 +222,31 @@ export function WithFriendsRoomPage() {
     navigate('/');
   }, [stopPlayback, navigate, onlineCount]);
 
-  // Check if this is a late join (session already started)
+  // Calculate elapsed time since session started
+  const getElapsedSeconds = useCallback(() => {
+    if (!startTimestamp) return 0;
+    return (getServerTime() - startTimestamp) / 1000;
+  }, [startTimestamp, getServerTime]);
+
+  // Check if session has expired (audio already finished)
+  const isSessionExpired = roomStatus === 'countdown' &&
+    startTimestamp !== null &&
+    duration > 0 &&
+    getElapsedSeconds() > duration;
+
+  // Check if this is a late join (session in progress, not expired)
   const isLateJoin = roomStatus === 'countdown' &&
     startTimestamp !== null &&
     getServerTime() > startTimestamp &&
-    !isPlaying;
+    !isPlaying &&
+    !isSessionExpired;
+
+  // Auto-reset expired sessions
+  useEffect(() => {
+    if (isSessionExpired) {
+      resetCustomRoom();
+    }
+  }, [isSessionExpired]);
 
   // Update late join remaining time
   useEffect(() => {
@@ -235,7 +255,7 @@ export function WithFriendsRoomPage() {
     }
 
     const updateRemaining = () => {
-      const elapsed = (getServerTime() - startTimestamp) / 1000;
+      const elapsed = getElapsedSeconds();
       const remaining = Math.max(0, duration - elapsed);
       setLateJoinRemaining(remaining);
     };
@@ -244,7 +264,7 @@ export function WithFriendsRoomPage() {
     const interval = setInterval(updateRemaining, 1000);
 
     return () => clearInterval(interval);
-  }, [isLateJoin, startTimestamp, duration, getServerTime]);
+  }, [isLateJoin, startTimestamp, duration, getElapsedSeconds]);
 
   // Handle joining an active session (late join)
   const handleJoinSession = useCallback(async () => {
