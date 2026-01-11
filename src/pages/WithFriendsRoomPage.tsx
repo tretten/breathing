@@ -84,6 +84,9 @@ export function WithFriendsRoomPage() {
   // Show "session ended" message state
   const [showSessionEnded, setShowSessionEnded] = useState(false);
 
+  // Late join remaining time (updates every second)
+  const [lateJoinRemaining, setLateJoinRemaining] = useState(0);
+
   useEffect(() => {
     if (roomStatus !== 'countdown' || !startTimestamp) {
       setCountdownSeconds(0);
@@ -220,6 +223,24 @@ export function WithFriendsRoomPage() {
     getServerTime() > startTimestamp &&
     !isPlaying;
 
+  // Update late join remaining time
+  useEffect(() => {
+    if (!isLateJoin || !startTimestamp || !duration) {
+      return;
+    }
+
+    const updateRemaining = () => {
+      const elapsed = (getServerTime() - startTimestamp) / 1000;
+      const remaining = Math.max(0, duration - elapsed);
+      setLateJoinRemaining(remaining);
+    };
+
+    updateRemaining();
+    const interval = setInterval(updateRemaining, 1000);
+
+    return () => clearInterval(interval);
+  }, [isLateJoin, startTimestamp, duration, getServerTime]);
+
   // Handle joining an active session (late join)
   const handleJoinSession = useCallback(async () => {
     if (!startTimestamp || !isLoaded || !duration) return;
@@ -340,6 +361,14 @@ export function WithFriendsRoomPage() {
           {isLateJoin && (
             <div className="late-join-message">
               <p className="session-status">{texts.sessionInProgress}</p>
+              {lateJoinRemaining > 0 && (
+                <div className="session-timer">
+                  <span className="timer-label">{texts.sessionEnd}</span>
+                  <span className="timer-value">
+                    {formatRemainingTime(lateJoinRemaining)}
+                  </span>
+                </div>
+              )}
               <button
                 className="join-button"
                 onClick={handleJoinSession}
