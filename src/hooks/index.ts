@@ -282,15 +282,28 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
   }, [isPlaying, duration]);
 
   // Unlock audio (must be called from user gesture)
+  // iOS Safari requires special handling
   const unlockAudio = useCallback(async (): Promise<boolean> => {
     if (!audioContextRef.current) {
       return false;
     }
 
     try {
+      // Resume AudioContext if suspended
       if (audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
       }
+
+      // iOS Safari fix: play a silent buffer to fully unlock audio
+      const silentBuffer = audioContextRef.current.createBuffer(1, 1, 22050);
+      const silentSource = audioContextRef.current.createBufferSource();
+      silentSource.buffer = silentBuffer;
+      silentSource.connect(audioContextRef.current.destination);
+      silentSource.start(0);
+
+      // Wait a bit for iOS to process
+      await new Promise(resolve => setTimeout(resolve, 50));
+
       setIsUnlocked(true);
       return true;
     } catch (error) {
@@ -481,6 +494,13 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       if (audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
       }
+
+      // iOS Safari: ensure context is running
+      if (audioContextRef.current.state !== 'running') {
+        console.warn('AudioContext not running, state:', audioContextRef.current.state);
+        await audioContextRef.current.resume();
+      }
+
       setIsUnlocked(true);
 
       // Cancel any existing playback
