@@ -212,30 +212,40 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   const isStoppingIntentionallyRef = useRef<boolean>(false);
+  const audioDataRef = useRef<ArrayBuffer | null>(null);
 
-  // Initialize AudioContext and AnalyserNode
+  // Helper: ensure AudioContext exists (create lazily for iOS)
+  const ensureAudioContext = useCallback((): AudioContext => {
+    if (!audioContextRef.current) {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      audioContextRef.current = new AudioContextClass();
+
+      // Create analyser for audio visualization
+      const analyser = audioContextRef.current.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+      analyserRef.current = analyser;
+      dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
+    }
+    return audioContextRef.current;
+  }, []);
+
+  // Cleanup on unmount
   useEffect(() => {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    audioContextRef.current = new AudioContextClass();
-
-    // Create analyser for audio visualization
-    const analyser = audioContextRef.current.createAnalyser();
-    analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.8;
-    analyserRef.current = analyser;
-    dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
-
     return () => {
       if (audioContextRef.current) {
         audioContextRef.current.close();
+        audioContextRef.current = null;
       }
     };
   }, []);
 
-  // Load and decode audio
+  // Load audio data (just fetch, don't decode yet - for iOS compatibility)
   useEffect(() => {
-    if (!audioUrl || !audioContextRef.current) {
+    if (!audioUrl) {
       setIsLoaded(false);
+      audioDataRef.current = null;
+      audioBufferRef.current = null;
       return;
     }
 
@@ -243,17 +253,27 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       try {
         setIsLoaded(false);
         const response = await fetch(audioUrl);
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const arrayBuffer = await response.arrayBuffer();
-        const buffer = await audioContextRef.current!.decodeAudioData(arrayBuffer);
-        
-        audioBufferRef.current = buffer;
-        setDuration(buffer.duration);
-        setRemainingTime(buffer.duration);
+        audioDataRef.current = arrayBuffer;
+
+        // Try to decode if AudioContext already exists
+        if (audioContextRef.current) {
+          try {
+            const buffer = await audioContextRef.current.decodeAudioData(arrayBuffer.slice(0));
+            audioBufferRef.current = buffer;
+            setDuration(buffer.duration);
+            setRemainingTime(buffer.duration);
+          } catch (e) {
+            // Will decode later when AudioContext is ready
+            console.log('Will decode audio later');
+          }
+        }
+
         setIsLoaded(true);
       } catch (error) {
         console.error('Failed to load audio:', error);
@@ -282,27 +302,38 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
   }, [isPlaying, duration]);
 
   // Unlock audio (must be called from user gesture)
-  // iOS Safari requires special handling
+  // iOS Safari requires AudioContext to be created during user gesture
   const unlockAudio = useCallback(async (): Promise<boolean> => {
-    if (!audioContextRef.current) {
-      return false;
-    }
-
     try {
+      // Create AudioContext during user gesture (critical for iOS)
+      const ctx = ensureAudioContext();
+
       // Resume AudioContext if suspended
-      if (audioContextRef.current.state === 'suspended') {
-        await audioContextRef.current.resume();
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
       }
 
       // iOS Safari fix: play a silent buffer to fully unlock audio
-      const silentBuffer = audioContextRef.current.createBuffer(1, 1, 22050);
-      const silentSource = audioContextRef.current.createBufferSource();
+      const silentBuffer = ctx.createBuffer(1, 1, 22050);
+      const silentSource = ctx.createBufferSource();
       silentSource.buffer = silentBuffer;
-      silentSource.connect(audioContextRef.current.destination);
+      silentSource.connect(ctx.destination);
       silentSource.start(0);
 
+      // Decode audio if not yet decoded
+      if (!audioBufferRef.current && audioDataRef.current) {
+        try {
+          const buffer = await ctx.decodeAudioData(audioDataRef.current.slice(0));
+          audioBufferRef.current = buffer;
+          setDuration(buffer.duration);
+          setRemainingTime(buffer.duration);
+        } catch (e) {
+          console.error('Failed to decode audio:', e);
+        }
+      }
+
       // Wait a bit for iOS to process
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       setIsUnlocked(true);
       return true;
@@ -310,7 +341,7 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       console.error('Failed to unlock audio:', error);
       return false;
     }
-  }, []);
+  }, [ensureAudioContext]);
 
   // Schedule playback at specific server timestamp
   const schedulePlayback = useCallback((
@@ -406,29 +437,31 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
 
   // Resume playback from paused position
   const resumePlayback = useCallback(async (): Promise<boolean> => {
-    if (!isPaused || !audioBufferRef.current || !audioContextRef.current) {
+    if (!isPaused || !audioBufferRef.current) {
       return false;
     }
 
     try {
-      if (audioContextRef.current.state === 'suspended') {
-        await audioContextRef.current.resume();
+      const ctx = ensureAudioContext();
+
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
       }
 
-      const source = audioContextRef.current.createBufferSource();
+      const source = ctx.createBufferSource();
       source.buffer = audioBufferRef.current;
 
       if (analyserRef.current) {
         source.connect(analyserRef.current);
-        analyserRef.current.connect(audioContextRef.current.destination);
+        analyserRef.current.connect(ctx.destination);
       } else {
-        source.connect(audioContextRef.current.destination);
+        source.connect(ctx.destination);
       }
       sourceRef.current = source;
 
       // Start from paused position
       const offset = pausedAtPositionRef.current;
-      playbackStartTimeRef.current = audioContextRef.current.currentTime - offset;
+      playbackStartTimeRef.current = ctx.currentTime - offset;
 
       source.start(0, offset);
       setIsPlaying(true);
@@ -453,7 +486,7 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       console.error('Failed to resume audio:', error);
       return false;
     }
-  }, [isPaused]);
+  }, [isPaused, ensureAudioContext]);
 
   // Stop playback immediately
   const stopPlayback = useCallback(() => {
@@ -478,11 +511,6 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
 
   // Play immediately (must be called from user gesture for cross-browser support)
   const playNow = useCallback(async (): Promise<boolean> => {
-    if (!audioBufferRef.current || !audioContextRef.current) {
-      console.warn('Audio not ready for playback');
-      return false;
-    }
-
     // Prevent multiple simultaneous playback attempts
     if (isPlaying) {
       console.warn('Already playing');
@@ -490,15 +518,33 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
     }
 
     try {
+      // Ensure AudioContext exists (create during user gesture for iOS)
+      const ctx = ensureAudioContext();
+
       // Resume AudioContext if suspended (required for Safari/WebKit and Chrome autoplay policy)
-      if (audioContextRef.current.state === 'suspended') {
-        await audioContextRef.current.resume();
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
       }
 
       // iOS Safari: ensure context is running
-      if (audioContextRef.current.state !== 'running') {
-        console.warn('AudioContext not running, state:', audioContextRef.current.state);
-        await audioContextRef.current.resume();
+      if (ctx.state !== 'running') {
+        console.warn('AudioContext not running, state:', ctx.state);
+        await ctx.resume();
+        // Give iOS a moment
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      // Decode audio if not yet decoded
+      if (!audioBufferRef.current && audioDataRef.current) {
+        const buffer = await ctx.decodeAudioData(audioDataRef.current.slice(0));
+        audioBufferRef.current = buffer;
+        setDuration(buffer.duration);
+        setRemainingTime(buffer.duration);
+      }
+
+      if (!audioBufferRef.current) {
+        console.warn('Audio not ready for playback');
+        return false;
       }
 
       setIsUnlocked(true);
@@ -514,20 +560,20 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       }
 
       // Create new source and connect through analyser for visualization
-      const source = audioContextRef.current.createBufferSource();
+      const source = ctx.createBufferSource();
       source.buffer = audioBufferRef.current;
 
       // Connect: source -> analyser -> destination
       if (analyserRef.current) {
         source.connect(analyserRef.current);
-        analyserRef.current.connect(audioContextRef.current.destination);
+        analyserRef.current.connect(ctx.destination);
       } else {
-        source.connect(audioContextRef.current.destination);
+        source.connect(ctx.destination);
       }
       sourceRef.current = source;
 
       // Track playback start time
-      playbackStartTimeRef.current = audioContextRef.current.currentTime;
+      playbackStartTimeRef.current = ctx.currentTime;
       const currentDuration = audioBufferRef.current.duration;
       setRemainingTime(currentDuration);
 
@@ -553,7 +599,7 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       console.error('Failed to play audio:', error);
       return false;
     }
-  }, [isPlaying]);
+  }, [isPlaying, ensureAudioContext]);
 
   // Get current audio level for visualization (0-1)
   const getAudioLevel = useCallback((): number => {
