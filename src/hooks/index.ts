@@ -327,7 +327,7 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       await audioElementRef.current.play();
       audioElementRef.current.pause();
       audioElementRef.current.muted = false;
-      audioElementRef.current.currentTime = 0;
+      // Don't reset currentTime here - let playAt handle position
 
       // Setup analyser during user gesture
       setupAnalyser();
