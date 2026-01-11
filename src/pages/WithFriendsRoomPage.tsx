@@ -17,6 +17,7 @@ import { BreathingCircle } from '../components/BreathingCircle';
 import { PresetSelector } from '../components/PresetSelector';
 import { CountdownOverlay } from '../components/CountdownOverlay';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { ThemeToggle } from '../components/ThemeToggle';
 import type { PresetId } from '../types';
 
 const SINGLE_USER_WAIT_MS = 3000; // 3 seconds wait for single user
@@ -336,7 +337,10 @@ export function WithFriendsRoomPage() {
             {onlineCount} {texts.online}
           </span>
         </div>
-        <LanguageSwitcher />
+        <div className="header-controls">
+          <ThemeToggle />
+          <LanguageSwitcher />
+        </div>
       </header>
 
       <main className="room-content">

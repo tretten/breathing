@@ -8,6 +8,7 @@ import { BreathingCircle } from '../components/BreathingCircle';
 import { PresetSelector } from '../components/PresetSelector';
 import { CountdownOverlay } from '../components/CountdownOverlay';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { ThemeToggle } from '../components/ThemeToggle';
 import type { PresetId } from '../types';
 
 type RoomStatus = 'idle' | 'countdown' | 'playing';
@@ -150,7 +151,10 @@ export function SoloRoomPage() {
           {texts.back}
         </button>
         <h2>{texts.title}</h2>
-        <LanguageSwitcher />
+        <div className="header-controls">
+          <ThemeToggle />
+          <LanguageSwitcher />
+        </div>
       </header>
 
       <main className="room-content">

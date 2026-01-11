@@ -54,11 +54,10 @@
   width: 80%;
   height: 80%;
   border-radius: 50%;
-  background: rgba(14, 21, 41, 0.7);
+  background: var(--bg-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(8px);
 }
 
 .breathing-core {
