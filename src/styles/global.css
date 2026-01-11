@@ -662,6 +662,7 @@ body {
 /* Action Buttons - consistent sizing */
 .start-now-button,
 .stop-button,
+.exit-button,
 .ready-button {
   min-width: 180px;
   padding: 1rem 2rem;
@@ -699,6 +700,40 @@ body {
 .stop-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+}
+
+/* Exit Button - more neutral color */
+.exit-button {
+  background: var(--bg-card);
+  border: 2px solid var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.exit-button:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Session Ended Message */
+.session-ended-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  animation: fade-in 0.5s ease;
+}
+
+.session-ended-message span {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+  text-shadow: 0 0 20px var(--accent-glow);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 /* Control Buttons Container */
@@ -953,6 +988,7 @@ body {
   /* Buttons smaller */
   .start-now-button,
   .stop-button,
+  .exit-button,
   .ready-button {
     min-width: 140px;
     padding: 0.85rem 1.5rem;
@@ -1063,6 +1099,7 @@ body {
 
   .start-now-button,
   .stop-button,
+  .exit-button,
   .ready-button {
     min-width: 120px;
     padding: 0.75rem 1rem;
@@ -1071,5 +1108,9 @@ body {
 
   .countdown-number {
     font-size: 6rem;
+  }
+
+  .session-ended-message span {
+    font-size: 1.2rem;
   }
 }

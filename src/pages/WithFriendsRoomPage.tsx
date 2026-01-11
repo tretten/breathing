@@ -76,6 +76,12 @@ export function WithFriendsRoomPage() {
   // Calculate countdown seconds for overlay
   const [countdownSeconds, setCountdownSeconds] = useState(0);
 
+  // Track if user manually exited (vs audio ending naturally)
+  const exitedManuallyRef = useRef(false);
+
+  // Show "session ended" message state
+  const [showSessionEnded, setShowSessionEnded] = useState(false);
+
   useEffect(() => {
     if (roomStatus !== 'countdown' || !startTimestamp) {
       setCountdownSeconds(0);
@@ -144,17 +150,26 @@ export function WithFriendsRoomPage() {
     }
   }, [roomStatus, countdownSeconds, isLoaded, isPlaying, playNow]);
 
-  // Track playback state and reset room when audio finishes
+  // Track playback state and handle audio ending naturally
   useEffect(() => {
     if (isPlaying) {
       hasStartedPlayingRef.current = true;
-    } else if (hasStartedPlayingRef.current) {
-      // Audio finished playing - reset room
+      exitedManuallyRef.current = false;
+    } else if (hasStartedPlayingRef.current && !exitedManuallyRef.current) {
+      // Audio finished playing naturally - show message and navigate home
+      setShowSessionEnded(true);
       resetCustomRoom();
       setIsReady(false);
       hasStartedPlayingRef.current = false;
+
+      // Navigate to home after showing message
+      const timer = setTimeout(() => {
+        navigate('/');
+      }, 2500);
+
+      return () => clearTimeout(timer);
     }
-  }, [isPlaying]);
+  }, [isPlaying, navigate]);
 
   // Reset playback flag when room goes back to idle
   useEffect(() => {
@@ -189,11 +204,13 @@ export function WithFriendsRoomPage() {
     setIsReady(prev => !prev);
   }, [roomStatus, isReady, unlockAudio]);
 
-  const handleStop = useCallback(async () => {
+  const handleExit = useCallback(() => {
+    // Only stop audio locally - don't reset room for others
+    exitedManuallyRef.current = true;
     stopPlayback();
-    await resetCustomRoom();
     setIsReady(false);
-  }, [stopPlayback]);
+    navigate('/');
+  }, [stopPlayback, navigate]);
 
   const canChangePreset = roomStatus === 'idle' && !isReady;
   const canPressReady = hasSelectedPreset && isLoaded;
@@ -209,7 +226,8 @@ export function WithFriendsRoomPage() {
     readyCount: 'ready',
     loading: 'Loading...',
     sessionEnd: 'Session ends in',
-    stop: 'Stop',
+    exit: 'Exit',
+    sessionEnded: 'Session ended',
     online: 'online'
   } : {
     back: '← Назад',
@@ -221,7 +239,8 @@ export function WithFriendsRoomPage() {
     readyCount: 'готовы',
     loading: 'Загрузка...',
     sessionEnd: 'До конца сессии',
-    stop: 'Остановить',
+    exit: 'Выйти',
+    sessionEnded: 'Сеанс завершен',
     online: 'онлайн'
   };
 
@@ -283,21 +302,27 @@ export function WithFriendsRoomPage() {
 
           {roomStatus === 'countdown' && !isPlaying && (
             <div className="countdown-message">
-              <button className="stop-button" onClick={handleStop}>
-                {texts.stop}
+              <button className="exit-button" onClick={handleExit}>
+                {texts.exit}
               </button>
             </div>
           )}
 
-          {isPlaying && (
+          {isPlaying && !showSessionEnded && (
             <div className="playing-message">
               <div className="session-timer">
                 <span className="timer-label">{texts.sessionEnd}</span>
                 <span className="timer-value">{formatRemainingTime(remainingTime)}</span>
               </div>
-              <button className="stop-button" onClick={handleStop}>
-                {texts.stop}
+              <button className="exit-button" onClick={handleExit}>
+                {texts.exit}
               </button>
+            </div>
+          )}
+
+          {showSessionEnded && (
+            <div className="session-ended-message">
+              <span>{texts.sessionEnded}</span>
             </div>
           )}
         </div>
