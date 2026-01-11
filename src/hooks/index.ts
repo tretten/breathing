@@ -218,7 +218,7 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
   useEffect(() => {
     const audio = new Audio();
     audio.preload = 'auto';
-    audio.playsInline = true; // Important for iOS
+    (audio as any).playsInline = true; // Important for iOS
     (audio as any).webkitPlaysinline = true; // Safari
     audioElementRef.current = audio;
 
