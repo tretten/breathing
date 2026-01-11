@@ -858,31 +858,218 @@ body {
 
 /* Responsive */
 @media (max-width: 640px) {
+  /* Prevent body scroll */
+  html, body {
+    overflow-x: hidden;
+  }
+
+  /* Room list page */
+  .room-list-page {
+    padding: 1rem;
+    min-height: 100vh;
+    padding-bottom: 4rem;
+  }
+
+  .page-header {
+    padding: 1.5rem 0;
+  }
+
   .page-header h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
   }
 
   .rooms-grid {
     grid-template-columns: 1fr;
+    padding: 1rem 0;
+    gap: 1rem;
   }
 
-  .countdown-time {
-    font-size: 2.5rem;
+  .room-card {
+    padding: 1.25rem;
   }
 
-  .countdown-number {
-    font-size: 10rem;
+  .page-footer {
+    padding: 1.5rem 0;
+  }
+
+  /* Room page - fit in viewport */
+  .room-page {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile */
+    overflow: hidden;
   }
 
   .room-header {
-    padding: 1rem;
+    padding: 0.75rem 1rem;
+    flex-shrink: 0;
+  }
+
+  .room-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .back-button {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.9rem;
   }
 
   .room-content {
+    flex: 1;
     padding: 1rem;
+    gap: 1rem;
+    justify-content: flex-start;
+    padding-top: 0.5rem;
+    overflow-y: auto;
+    padding-bottom: 3.5rem;
+  }
+
+  /* Room info - reduce minimum height */
+  .room-info {
+    min-height: auto;
+    gap: 1rem;
+  }
+
+  /* Preset selector compact */
+  .preset-selector label {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
   }
 
   .preset-options {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .preset-option {
+    padding: 0.6rem;
+    font-size: 0.8rem;
+    border-radius: 8px;
+  }
+
+  /* Buttons smaller */
+  .start-now-button,
+  .stop-button,
+  .ready-button {
+    min-width: 140px;
+    padding: 0.85rem 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  .icon-button {
+    width: 48px;
+    height: 48px;
+    font-size: 1rem;
+  }
+
+  /* Session timer compact */
+  .session-timer,
+  .next-session-timer {
+    min-height: 80px;
+    padding: 0.75rem 1rem;
+  }
+
+  .timer-label {
+    font-size: 0.8rem;
+  }
+
+  .timer-value {
+    font-size: 1.5rem;
+  }
+
+  /* Ready status */
+  .ready-status span {
+    font-size: 0.8rem;
+  }
+
+  .ready-bar {
+    height: 6px;
+  }
+
+  /* Countdown overlay */
+  .countdown-number {
+    font-size: 8rem;
+  }
+
+  .countdown-time {
+    font-size: 2rem;
+  }
+
+  /* Global online indicator - smaller, at bottom */
+  .global-online-indicator {
+    bottom: 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  /* Welcome modal */
+  .welcome-overlay {
+    padding: 1rem;
+  }
+
+  .welcome-content h2 {
+    font-size: 1.75rem;
+  }
+
+  .welcome-subtitle {
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .language-options {
+    gap: 0.75rem;
+  }
+
+  .language-option {
+    padding: 1rem 1.25rem;
+    min-width: 100px;
+  }
+
+  .lang-flag {
+    font-size: 2rem;
+  }
+
+  .lang-name {
+    font-size: 0.9rem;
+  }
+
+  .welcome-continue-button {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+  }
+
+  .language-selection {
+    margin-bottom: 1.5rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 380px) {
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .preset-options {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+  }
+
+  .preset-option {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .start-now-button,
+  .stop-button,
+  .ready-button {
+    min-width: 120px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .countdown-number {
+    font-size: 6rem;
   }
 }

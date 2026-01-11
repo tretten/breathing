@@ -106,12 +106,26 @@
 /* Smaller version for mobile */
 @media (max-width: 640px) {
   .breathing-container {
-    width: 220px;
-    height: 220px;
+    width: 180px;
+    height: 180px;
+    flex-shrink: 0;
   }
 
   .breathing-circle {
-    width: 120px;
-    height: 120px;
+    width: 100px;
+    height: 100px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 380px) {
+  .breathing-container {
+    width: 150px;
+    height: 150px;
+  }
+
+  .breathing-circle {
+    width: 85px;
+    height: 85px;
   }
 }
