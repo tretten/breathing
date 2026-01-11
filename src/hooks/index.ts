@@ -193,7 +193,7 @@ export function useCountdown(
 }
 
 // ============================================================================
-// useAudioPlayback - Load and play audio with Web Audio API
+// useAudioPlayback - HTML5 Audio with Web Audio API for visualization
 // ============================================================================
 
 export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackReturn {
@@ -204,402 +204,254 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
   const [duration, setDuration] = useState<number>(0);
   const [remainingTime, setRemainingTime] = useState<number>(0);
 
+  // HTML5 Audio element for reliable iOS playback
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
+
+  // Web Audio API for visualization only
   const audioContextRef = useRef<AudioContext | null>(null);
-  const audioBufferRef = useRef<AudioBuffer | null>(null);
-  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const playbackStartTimeRef = useRef<number>(0);
-  const pausedAtPositionRef = useRef<number>(0);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
-  const isStoppingIntentionallyRef = useRef<boolean>(false);
-  const audioDataRef = useRef<ArrayBuffer | null>(null);
+  const connectedRef = useRef<boolean>(false);
 
-  // Helper: ensure AudioContext exists (create lazily for iOS)
-  const ensureAudioContext = useCallback((): AudioContext => {
-    if (!audioContextRef.current) {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      audioContextRef.current = new AudioContextClass();
-
-      // Create analyser for audio visualization
-      const analyser = audioContextRef.current.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.8;
-      analyserRef.current = analyser;
-      dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
-    }
-    return audioContextRef.current;
-  }, []);
-
-  // Cleanup on unmount
+  // Create audio element
   useEffect(() => {
+    const audio = new Audio();
+    audio.preload = 'auto';
+    audio.playsInline = true; // Important for iOS
+    (audio as any).webkitPlaysinline = true; // Safari
+    audioElementRef.current = audio;
+
+    // Event handlers
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration);
+      setRemainingTime(audio.duration);
+      setIsLoaded(true);
+    };
+
+    const handleCanPlayThrough = () => {
+      setIsLoaded(true);
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setIsPaused(false);
+      setRemainingTime(0);
+    };
+
+    const handleError = (e: Event) => {
+      console.error('Audio error:', e);
+      setIsLoaded(false);
+    };
+
+    const handleTimeUpdate = () => {
+      if (audio.duration) {
+        setRemainingTime(Math.max(0, audio.duration - audio.currentTime));
+      }
+    };
+
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('canplaythrough', handleCanPlayThrough);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+
     return () => {
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('canplaythrough', handleCanPlayThrough);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.pause();
+      audio.src = '';
+
       if (audioContextRef.current) {
         audioContextRef.current.close();
-        audioContextRef.current = null;
       }
     };
   }, []);
 
-  // Load audio data (just fetch, don't decode yet - for iOS compatibility)
+  // Load audio when URL changes
   useEffect(() => {
-    if (!audioUrl) {
+    if (!audioUrl || !audioElementRef.current) {
       setIsLoaded(false);
-      audioDataRef.current = null;
-      audioBufferRef.current = null;
       return;
     }
 
-    const loadAudio = async () => {
-      try {
-        setIsLoaded(false);
-        const response = await fetch(audioUrl);
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const arrayBuffer = await response.arrayBuffer();
-        audioDataRef.current = arrayBuffer;
-
-        // Try to decode if AudioContext already exists
-        if (audioContextRef.current) {
-          try {
-            const buffer = await audioContextRef.current.decodeAudioData(arrayBuffer.slice(0));
-            audioBufferRef.current = buffer;
-            setDuration(buffer.duration);
-            setRemainingTime(buffer.duration);
-          } catch (e) {
-            // Will decode later when AudioContext is ready
-            console.log('Will decode audio later');
-          }
-        }
-
-        setIsLoaded(true);
-      } catch (error) {
-        console.error('Failed to load audio:', error);
-        setIsLoaded(false);
-      }
-    };
-
-    loadAudio();
+    setIsLoaded(false);
+    audioElementRef.current.src = audioUrl;
+    audioElementRef.current.load();
   }, [audioUrl]);
 
-  // Update remaining time during playback
-  useEffect(() => {
-    if (!isPlaying || !audioContextRef.current) {
-      return;
-    }
+  // Setup Web Audio API for visualization (connect on first play)
+  const setupAnalyser = useCallback(() => {
+    if (connectedRef.current || !audioElementRef.current) return;
 
-    const interval = setInterval(() => {
-      if (audioContextRef.current && playbackStartTimeRef.current > 0) {
-        const elapsed = audioContextRef.current.currentTime - playbackStartTimeRef.current;
-        const remaining = Math.max(0, duration - elapsed);
-        setRemainingTime(remaining);
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContextClass();
       }
-    }, 1000);
 
-    return () => clearInterval(interval);
-  }, [isPlaying, duration]);
+      const ctx = audioContextRef.current;
+
+      // Create analyser
+      if (!analyserRef.current) {
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.8;
+        analyserRef.current = analyser;
+        dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
+      }
+
+      // Connect audio element to analyser (only once)
+      if (!sourceNodeRef.current) {
+        const source = ctx.createMediaElementSource(audioElementRef.current);
+        source.connect(analyserRef.current);
+        analyserRef.current.connect(ctx.destination);
+        sourceNodeRef.current = source;
+        connectedRef.current = true;
+      }
+    } catch (e) {
+      console.warn('Could not setup audio analyser:', e);
+    }
+  }, []);
 
   // Unlock audio (must be called from user gesture)
-  // iOS Safari requires AudioContext to be created during user gesture
   const unlockAudio = useCallback(async (): Promise<boolean> => {
+    if (!audioElementRef.current) return false;
+
     try {
-      // Create AudioContext during user gesture (critical for iOS)
-      const ctx = ensureAudioContext();
+      // Play and immediately pause to unlock iOS audio
+      audioElementRef.current.muted = true;
+      await audioElementRef.current.play();
+      audioElementRef.current.pause();
+      audioElementRef.current.muted = false;
+      audioElementRef.current.currentTime = 0;
 
-      // Resume AudioContext if suspended
-      if (ctx.state === 'suspended') {
-        await ctx.resume();
+      // Setup analyser during user gesture
+      setupAnalyser();
+
+      // Resume AudioContext if it exists
+      if (audioContextRef.current?.state === 'suspended') {
+        await audioContextRef.current.resume();
       }
-
-      // iOS Safari fix: play a silent buffer to fully unlock audio
-      const silentBuffer = ctx.createBuffer(1, 1, 22050);
-      const silentSource = ctx.createBufferSource();
-      silentSource.buffer = silentBuffer;
-      silentSource.connect(ctx.destination);
-      silentSource.start(0);
-
-      // Decode audio if not yet decoded
-      if (!audioBufferRef.current && audioDataRef.current) {
-        try {
-          const buffer = await ctx.decodeAudioData(audioDataRef.current.slice(0));
-          audioBufferRef.current = buffer;
-          setDuration(buffer.duration);
-          setRemainingTime(buffer.duration);
-        } catch (e) {
-          console.error('Failed to decode audio:', e);
-        }
-      }
-
-      // Wait a bit for iOS to process
-      await new Promise(resolve => setTimeout(resolve, 100));
 
       setIsUnlocked(true);
       return true;
     } catch (error) {
       console.error('Failed to unlock audio:', error);
-      return false;
+      // Still mark as unlocked - some browsers don't need the trick
+      setIsUnlocked(true);
+      return true;
     }
-  }, [ensureAudioContext]);
+  }, [setupAnalyser]);
 
   // Schedule playback at specific server timestamp
   const schedulePlayback = useCallback((
-    startTimestamp: number, 
+    startTimestamp: number,
     getServerTime: () => number
   ): boolean => {
-    if (!audioBufferRef.current || !audioContextRef.current) {
+    if (!audioElementRef.current || !isLoaded) {
       console.warn('Audio not ready for playback');
-      return false;
-    }
-
-    if (audioContextRef.current.state === 'suspended') {
-      console.warn('AudioContext is suspended, cannot schedule playback');
       return false;
     }
 
     const serverTime = getServerTime();
     const delayMs = startTimestamp - serverTime;
 
-    // Don't schedule if already significantly past
     if (delayMs < -1000) {
       console.warn('Start timestamp already passed');
       return false;
     }
 
-    // Cancel any existing playback
-    if (sourceRef.current) {
-      try {
-        sourceRef.current.stop();
-        sourceRef.current.disconnect();
-      } catch (e) {
-        // Ignore errors from already stopped sources
-      }
-    }
-
-    // Create new source and connect through analyser for visualization
-    const source = audioContextRef.current.createBufferSource();
-    source.buffer = audioBufferRef.current;
-
-    // Connect: source -> analyser -> destination
-    if (analyserRef.current) {
-      source.connect(analyserRef.current);
-      analyserRef.current.connect(audioContextRef.current.destination);
-    } else {
-      source.connect(audioContextRef.current.destination);
-    }
-    sourceRef.current = source;
-
-    // Calculate delay in audio context time
-    const delaySeconds = Math.max(0, delayMs / 1000);
-    const startTime = audioContextRef.current.currentTime + delaySeconds;
-    
-    source.start(startTime);
-
-    // Update playing state
     setTimeout(() => {
-      setIsPlaying(true);
+      if (audioElementRef.current) {
+        audioElementRef.current.currentTime = 0;
+        audioElementRef.current.play().then(() => {
+          setIsPlaying(true);
+        }).catch(console.error);
+      }
     }, Math.max(0, delayMs));
 
-    source.onended = () => {
-      setIsPlaying(false);
-      sourceRef.current = null;
-    };
-
     return true;
-  }, []);
+  }, [isLoaded]);
 
   // Pause playback
   const pausePlayback = useCallback(() => {
-    if (!isPlaying || !audioContextRef.current) return;
+    if (!audioElementRef.current || !isPlaying) return;
 
-    // Calculate current position
-    const elapsed = audioContextRef.current.currentTime - playbackStartTimeRef.current;
-    pausedAtPositionRef.current = elapsed;
-
-    // Mark as intentional stop to prevent onended from resetting state
-    isStoppingIntentionallyRef.current = true;
-
-    // Stop the source
-    if (sourceRef.current) {
-      try {
-        sourceRef.current.stop();
-        sourceRef.current.disconnect();
-      } catch (e) {
-        // Ignore errors
-      }
-      sourceRef.current = null;
-    }
-
+    audioElementRef.current.pause();
     setIsPlaying(false);
     setIsPaused(true);
   }, [isPlaying]);
 
   // Resume playback from paused position
   const resumePlayback = useCallback(async (): Promise<boolean> => {
-    if (!isPaused || !audioBufferRef.current) {
-      return false;
-    }
+    if (!audioElementRef.current || !isPaused) return false;
 
     try {
-      const ctx = ensureAudioContext();
-
-      if (ctx.state === 'suspended') {
-        await ctx.resume();
+      // Resume AudioContext if suspended
+      if (audioContextRef.current?.state === 'suspended') {
+        await audioContextRef.current.resume();
       }
 
-      const source = ctx.createBufferSource();
-      source.buffer = audioBufferRef.current;
-
-      if (analyserRef.current) {
-        source.connect(analyserRef.current);
-        analyserRef.current.connect(ctx.destination);
-      } else {
-        source.connect(ctx.destination);
-      }
-      sourceRef.current = source;
-
-      // Start from paused position
-      const offset = pausedAtPositionRef.current;
-      playbackStartTimeRef.current = ctx.currentTime - offset;
-
-      source.start(0, offset);
+      await audioElementRef.current.play();
       setIsPlaying(true);
       setIsPaused(false);
-      isStoppingIntentionallyRef.current = false;
-
-      source.onended = () => {
-        // Only reset state if this was a natural end, not a pause/stop
-        if (!isStoppingIntentionallyRef.current) {
-          setIsPlaying(false);
-          setIsPaused(false);
-          setRemainingTime(0);
-          sourceRef.current = null;
-          playbackStartTimeRef.current = 0;
-          pausedAtPositionRef.current = 0;
-        }
-        isStoppingIntentionallyRef.current = false;
-      };
-
       return true;
     } catch (error) {
       console.error('Failed to resume audio:', error);
       return false;
     }
-  }, [isPaused, ensureAudioContext]);
+  }, [isPaused]);
 
   // Stop playback immediately
   const stopPlayback = useCallback(() => {
-    // Mark as intentional stop to prevent onended from resetting state
-    isStoppingIntentionallyRef.current = true;
+    if (!audioElementRef.current) return;
 
-    if (sourceRef.current) {
-      try {
-        sourceRef.current.stop();
-        sourceRef.current.disconnect();
-      } catch (e) {
-        // Ignore errors
-      }
-      sourceRef.current = null;
-    }
+    audioElementRef.current.pause();
+    audioElementRef.current.currentTime = 0;
     setIsPlaying(false);
     setIsPaused(false);
     setRemainingTime(duration);
-    playbackStartTimeRef.current = 0;
-    pausedAtPositionRef.current = 0;
   }, [duration]);
 
-  // Play immediately (must be called from user gesture for cross-browser support)
+  // Play immediately (must be called from user gesture)
   const playNow = useCallback(async (): Promise<boolean> => {
-    // Prevent multiple simultaneous playback attempts
+    if (!audioElementRef.current || !isLoaded) {
+      console.warn('Audio not ready for playback');
+      return false;
+    }
+
     if (isPlaying) {
       console.warn('Already playing');
       return false;
     }
 
     try {
-      // Ensure AudioContext exists (create during user gesture for iOS)
-      const ctx = ensureAudioContext();
+      // Setup analyser if not done yet
+      setupAnalyser();
 
-      // Resume AudioContext if suspended (required for Safari/WebKit and Chrome autoplay policy)
-      if (ctx.state === 'suspended') {
-        await ctx.resume();
+      // Resume AudioContext if suspended
+      if (audioContextRef.current?.state === 'suspended') {
+        await audioContextRef.current.resume();
       }
 
-      // iOS Safari: ensure context is running
-      if (ctx.state !== 'running') {
-        console.warn('AudioContext not running, state:', ctx.state);
-        await ctx.resume();
-        // Give iOS a moment
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
+      // Reset to beginning and play
+      audioElementRef.current.currentTime = 0;
+      await audioElementRef.current.play();
 
-      // Decode audio if not yet decoded
-      if (!audioBufferRef.current && audioDataRef.current) {
-        const buffer = await ctx.decodeAudioData(audioDataRef.current.slice(0));
-        audioBufferRef.current = buffer;
-        setDuration(buffer.duration);
-        setRemainingTime(buffer.duration);
-      }
-
-      if (!audioBufferRef.current) {
-        console.warn('Audio not ready for playback');
-        return false;
-      }
-
-      setIsUnlocked(true);
-
-      // Cancel any existing playback
-      if (sourceRef.current) {
-        try {
-          sourceRef.current.stop();
-          sourceRef.current.disconnect();
-        } catch (e) {
-          // Ignore errors from already stopped sources
-        }
-      }
-
-      // Create new source and connect through analyser for visualization
-      const source = ctx.createBufferSource();
-      source.buffer = audioBufferRef.current;
-
-      // Connect: source -> analyser -> destination
-      if (analyserRef.current) {
-        source.connect(analyserRef.current);
-        analyserRef.current.connect(ctx.destination);
-      } else {
-        source.connect(ctx.destination);
-      }
-      sourceRef.current = source;
-
-      // Track playback start time
-      playbackStartTimeRef.current = ctx.currentTime;
-      const currentDuration = audioBufferRef.current.duration;
-      setRemainingTime(currentDuration);
-
-      source.start(0);
       setIsPlaying(true);
-      isStoppingIntentionallyRef.current = false;
-
-      source.onended = () => {
-        // Only reset state if this was a natural end, not a pause/stop
-        if (!isStoppingIntentionallyRef.current) {
-          setIsPlaying(false);
-          setIsPaused(false);
-          setRemainingTime(0);
-          sourceRef.current = null;
-          playbackStartTimeRef.current = 0;
-          pausedAtPositionRef.current = 0;
-        }
-        isStoppingIntentionallyRef.current = false;
-      };
+      setIsPaused(false);
+      setIsUnlocked(true);
 
       return true;
     } catch (error) {
       console.error('Failed to play audio:', error);
       return false;
     }
-  }, [isPlaying, ensureAudioContext]);
+  }, [isLoaded, isPlaying, setupAnalyser]);
 
   // Get current audio level for visualization (0-1)
   const getAudioLevel = useCallback((): number => {
@@ -607,10 +459,14 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       return 0;
     }
 
-    analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-    const sum = dataArrayRef.current.reduce((acc, val) => acc + val, 0);
-    const average = sum / dataArrayRef.current.length;
-    return average / 255; // Normalize to 0-1
+    try {
+      analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+      const sum = dataArrayRef.current.reduce((acc, val) => acc + val, 0);
+      const average = sum / dataArrayRef.current.length;
+      return average / 255;
+    } catch {
+      return 0;
+    }
   }, [isPlaying]);
 
   return {
