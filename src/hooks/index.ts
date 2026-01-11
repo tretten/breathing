@@ -453,6 +453,42 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
     }
   }, [isLoaded, isPlaying, setupAnalyser]);
 
+  // Play from specific position (for late join sync)
+  const playAt = useCallback(async (positionSeconds: number): Promise<boolean> => {
+    if (!audioElementRef.current || !isLoaded) {
+      console.warn('Audio not ready for playback');
+      return false;
+    }
+
+    if (isPlaying) {
+      console.warn('Already playing');
+      return false;
+    }
+
+    try {
+      // Setup analyser if not done yet
+      setupAnalyser();
+
+      // Resume AudioContext if suspended
+      if (audioContextRef.current?.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+
+      // Seek to position and play
+      audioElementRef.current.currentTime = Math.max(0, positionSeconds);
+      await audioElementRef.current.play();
+
+      setIsPlaying(true);
+      setIsPaused(false);
+      setIsUnlocked(true);
+
+      return true;
+    } catch (error) {
+      console.error('Failed to play audio at position:', error);
+      return false;
+    }
+  }, [isLoaded, isPlaying, setupAnalyser]);
+
   // Get current audio level for visualization (0-1)
   const getAudioLevel = useCallback((): number => {
     if (!analyserRef.current || !dataArrayRef.current || !isPlaying) {
@@ -479,6 +515,7 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
     unlockAudio,
     schedulePlayback,
     playNow,
+    playAt,
     pausePlayback,
     resumePlayback,
     stopPlayback,

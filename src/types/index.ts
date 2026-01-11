@@ -51,6 +51,7 @@ export interface UseAudioPlaybackReturn {
   unlockAudio: () => Promise<boolean>;
   schedulePlayback: (startTimestamp: number, getServerTime: () => number) => boolean;
   playNow: () => Promise<boolean>;
+  playAt: (positionSeconds: number) => Promise<boolean>;
   pausePlayback: () => void;
   resumePlayback: () => Promise<boolean>;
   stopPlayback: () => void;

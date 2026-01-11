@@ -58,9 +58,11 @@ export function WithFriendsRoomPage() {
   const {
     isLoaded,
     isPlaying,
+    duration,
     remainingTime,
     unlockAudio,
     playNow,
+    playAt,
     stopPlayback,
     getAudioLevel
   } = useAudioPlayback(audioUrl);
@@ -212,6 +214,29 @@ export function WithFriendsRoomPage() {
     navigate('/');
   }, [stopPlayback, navigate]);
 
+  // Check if this is a late join (session already started)
+  const isLateJoin = roomStatus === 'countdown' &&
+    startTimestamp !== null &&
+    getServerTime() > startTimestamp &&
+    !isPlaying;
+
+  // Handle joining an active session (late join)
+  const handleJoinSession = useCallback(async () => {
+    if (!startTimestamp || !isLoaded || !duration) return;
+
+    // First unlock audio with user gesture
+    await unlockAudio();
+
+    // Calculate how many seconds into the session we are
+    const elapsedMs = getServerTime() - startTimestamp;
+    const elapsedSeconds = elapsedMs / 1000;
+
+    // If session is still within audio duration, sync to position
+    if (elapsedSeconds < duration) {
+      await playAt(elapsedSeconds);
+    }
+  }, [startTimestamp, isLoaded, duration, unlockAudio, getServerTime, playAt]);
+
   const canChangePreset = roomStatus === 'idle' && !isReady;
   const canPressReady = hasSelectedPreset && isLoaded;
 
@@ -227,7 +252,9 @@ export function WithFriendsRoomPage() {
     loading: 'Loading...',
     sessionEnd: 'Session ends in',
     exit: 'Exit',
+    join: 'Join Session',
     sessionEnded: 'Session ended',
+    sessionInProgress: 'Session in progress',
     online: 'online'
   } : {
     back: '← Назад',
@@ -240,7 +267,9 @@ export function WithFriendsRoomPage() {
     loading: 'Загрузка...',
     sessionEnd: 'До конца сессии',
     exit: 'Выйти',
+    join: 'Присоединиться',
     sessionEnded: 'Сеанс завершен',
+    sessionInProgress: 'Сеанс идет',
     online: 'онлайн'
   };
 
@@ -300,10 +329,23 @@ export function WithFriendsRoomPage() {
             </>
           )}
 
-          {roomStatus === 'countdown' && !isPlaying && (
+          {roomStatus === 'countdown' && !isPlaying && !isLateJoin && (
             <div className="countdown-message">
               <button className="exit-button" onClick={handleExit}>
                 {texts.exit}
+              </button>
+            </div>
+          )}
+
+          {isLateJoin && (
+            <div className="late-join-message">
+              <p className="session-status">{texts.sessionInProgress}</p>
+              <button
+                className="join-button"
+                onClick={handleJoinSession}
+                disabled={!isLoaded}
+              >
+                {isLoaded ? texts.join : texts.loading}
               </button>
             </div>
           )}

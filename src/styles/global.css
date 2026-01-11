@@ -663,6 +663,7 @@ body {
 .start-now-button,
 .stop-button,
 .exit-button,
+.join-button,
 .ready-button {
   min-width: 180px;
   padding: 1rem 2rem;
@@ -712,6 +713,37 @@ body {
 .exit-button:hover {
   transform: translateY(-2px);
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* Join Button - positive action for late joiners */
+.join-button {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  border: none;
+  color: var(--bg-primary);
+}
+
+.join-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px var(--accent-glow);
+}
+
+.join-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Late Join Message */
+.late-join-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.session-status {
+  color: var(--accent-primary);
+  font-size: 1.1rem;
+  animation: pulse-text 2s infinite;
 }
 
 /* Session Ended Message */
@@ -989,6 +1021,7 @@ body {
   .start-now-button,
   .stop-button,
   .exit-button,
+  .join-button,
   .ready-button {
     min-width: 140px;
     padding: 0.85rem 1.5rem;
@@ -1100,6 +1133,7 @@ body {
   .start-now-button,
   .stop-button,
   .exit-button,
+  .join-button,
   .ready-button {
     min-width: 120px;
     padding: 0.75rem 1rem;
@@ -1112,5 +1146,9 @@ body {
 
   .session-ended-message span {
     font-size: 1.2rem;
+  }
+
+  .session-status {
+    font-size: 1rem;
   }
 }
