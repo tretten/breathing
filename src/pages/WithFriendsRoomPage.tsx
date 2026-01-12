@@ -18,6 +18,7 @@ import { PresetSelector } from '../components/PresetSelector';
 import { CountdownOverlay } from '../components/CountdownOverlay';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { GlobalOnlineIndicator } from '../components/GlobalOnlineIndicator';
 import type { PresetId } from '../types';
 
 const SINGLE_USER_WAIT_MS = 3000; // 3 seconds wait for single user
@@ -327,16 +328,13 @@ export function WithFriendsRoomPage() {
       )}
 
       <header className="room-header">
-        <button className="back-button" onClick={handleBack}>
-          {texts.back}
-        </button>
-        <div className="header-title">
-          <h2>{texts.title}</h2>
-          <span className="online-indicator">
-            <span className="online-dot" />
-            {onlineCount} {texts.online}
-          </span>
+        <div className="header-left">
+          <button className="back-button" onClick={handleBack}>
+            {texts.back}
+          </button>
+          <GlobalOnlineIndicator />
         </div>
+        <h2>{texts.title}</h2>
         <div className="header-controls">
           <ThemeToggle />
           <LanguageSwitcher />

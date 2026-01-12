@@ -9,6 +9,7 @@ import { PresetSelector } from '../components/PresetSelector';
 import { CountdownOverlay } from '../components/CountdownOverlay';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { GlobalOnlineIndicator } from '../components/GlobalOnlineIndicator';
 import type { PresetId } from '../types';
 
 type RoomStatus = 'idle' | 'countdown' | 'playing';
@@ -147,9 +148,12 @@ export function SoloRoomPage() {
       )}
 
       <header className="room-header">
-        <button className="back-button" onClick={handleBack}>
-          {texts.back}
-        </button>
+        <div className="header-left">
+          <button className="back-button" onClick={handleBack}>
+            {texts.back}
+          </button>
+          <GlobalOnlineIndicator />
+        </div>
         <h2>{texts.title}</h2>
         <div className="header-controls">
           <ThemeToggle />

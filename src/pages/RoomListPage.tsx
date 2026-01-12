@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { GlobalOnlineIndicator } from '../components/GlobalOnlineIndicator';
 import type { RoomId } from '../types';
 
 export function RoomListPage() {
@@ -35,8 +36,11 @@ export function RoomListPage() {
     <div className="room-list-page">
       <header className="page-header">
         <div className="page-header-row">
-          <ThemeToggle />
-          <LanguageSwitcher />
+          <GlobalOnlineIndicator />
+          <div className="page-header-controls">
+            <ThemeToggle />
+            <LanguageSwitcher />
+          </div>
         </div>
         <h1>{texts.title}</h1>
         <p className="subtitle">{texts.subtitle}</p>
