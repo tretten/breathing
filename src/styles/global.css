@@ -1,7 +1,7 @@
 /* src/styles/global.css */
-/* Claude.ai inspired design with dark/light themes */
+/* Wim Hof Breathing - Dark/Light themes */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oranienbaum&family=Public+Sans:wght@400;500;600&display=swap');
 
 * {
   margin: 0;
@@ -11,16 +11,18 @@
 
 /* Dark theme (default) */
 :root {
+  --font-sans: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --bg-primary: #1a1a1a;
   --bg-secondary: #232323;
   --bg-card: #2a2a2a;
   --bg-hover: #333333;
-  --text-primary: #ececec;
+  --text-primary: #f0f0f0;
   --text-secondary: #9a9a9a;
   --text-tertiary: #6e6e6e;
-  --accent-primary: #d97757;
-  --accent-hover: #e08a6d;
-  --accent-glow: rgba(217, 119, 87, 0.2);
+  --accent-primary: #e07850;
+  --accent-secondary: #e89070;
+  --accent-hover: #e89070;
+  --accent-glow: rgba(224, 120, 80, 0.3);
   --border-color: #3a3a3a;
   --border-light: #2f2f2f;
   --success: #5cb85c;
@@ -37,9 +39,10 @@
   --text-primary: #1a1a1a;
   --text-secondary: #6e6e6e;
   --text-tertiary: #9a9a9a;
-  --accent-primary: #d97757;
-  --accent-hover: #c96a4a;
-  --accent-glow: rgba(217, 119, 87, 0.15);
+  --accent-primary: #e07850;
+  --accent-secondary: #d06840;
+  --accent-hover: #d06840;
+  --accent-glow: rgba(224, 120, 80, 0.15);
   --border-color: #e5e5e5;
   --border-light: #ebebeb;
   --success: #5cb85c;
@@ -48,13 +51,18 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.5;
   letter-spacing: -0.011em;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1, h2, h3 {
+  font-family: Oranienbaum, serif;
+  font-weight: 400;
 }
 
 .app {
