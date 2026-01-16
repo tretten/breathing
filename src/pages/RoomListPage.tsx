@@ -57,44 +57,40 @@ export function RoomListPage() {
       </header>
 
       <div className="rooms-grid">
-        <div
+        <article
           className="room-card"
           onClick={() => handleEnterRoom('solo')}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => e.key === 'Enter' && handleEnterRoom('solo')}
         >
-          <div className="room-card-header">
+          <header>
             <h3>{texts.solo}</h3>
-          </div>
-          <div className="room-card-body">
-            <p>{texts.soloDesc}</p>
-          </div>
-          <div className="room-card-footer">
+          </header>
+          <p>{texts.soloDesc}</p>
+          <footer>
             <span className="enter-hint">{texts.enter} →</span>
-          </div>
-        </div>
+          </footer>
+        </article>
 
-        <div
+        <article
           className={`room-card ${isSessionActive ? 'room-card-active' : ''}`}
           onClick={() => handleEnterRoom('with_friends')}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => e.key === 'Enter' && handleEnterRoom('with_friends')}
         >
-          <div className="room-card-header">
+          <header>
             <h3>{texts.withFriends}</h3>
             {isSessionActive && (
               <span className="session-badge">{texts.sessionActive}</span>
             )}
-          </div>
-          <div className="room-card-body">
-            <p>{texts.withFriendsDesc}</p>
-          </div>
-          <div className="room-card-footer">
+          </header>
+          <p>{texts.withFriendsDesc}</p>
+          <footer>
             <span className="enter-hint">{texts.enter} →</span>
-          </div>
-        </div>
+          </footer>
+        </article>
       </div>
 
       {/* Footer space for global online indicator */}

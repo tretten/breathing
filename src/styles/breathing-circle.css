@@ -1,5 +1,5 @@
 /* src/styles/breathing-circle.css */
-/* From reference build */
+/* Breathing Circle - Uses Pico CSS variables */
 
 .breathing-container {
   position: relative;
@@ -63,8 +63,8 @@
   width: 80%;
   height: 80%;
   border-radius: 50%;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: var(--pico-card-background-color, var(--bg-secondary));
+  border: 1px solid var(--pico-muted-border-color, var(--border-color));
   display: flex;
   align-items: center;
   justify-content: center;

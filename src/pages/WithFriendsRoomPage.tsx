@@ -359,7 +359,7 @@ export function WithFriendsRoomPage() {
               </div>
 
               <button
-                className={`ready-button ${isReady ? 'ready' : ''}`}
+                className={`ready-button ${isReady ? 'ready' : 'secondary outline'}`}
                 onClick={handleToggleReady}
                 disabled={!canPressReady}
               >
@@ -374,7 +374,7 @@ export function WithFriendsRoomPage() {
 
           {roomStatus === 'countdown' && !isPlaying && !isLateJoin && (
             <div className="countdown-message">
-              <button className="exit-button" onClick={handleExit}>
+              <button className="exit-button secondary outline" onClick={handleExit}>
                 {texts.exit}
               </button>
             </div>
@@ -392,7 +392,6 @@ export function WithFriendsRoomPage() {
                 </div>
               )}
               <button
-                className="join-button"
                 onClick={handleJoinSession}
                 disabled={!isLoaded}
               >
@@ -407,7 +406,7 @@ export function WithFriendsRoomPage() {
                 <span className="timer-label">{texts.sessionEnd}</span>
                 <span className="timer-value">{formatRemainingTime(remainingTime)}</span>
               </div>
-              <button className="exit-button" onClick={handleExit}>
+              <button className="secondary outline" onClick={handleExit}>
                 {texts.exit}
               </button>
             </div>

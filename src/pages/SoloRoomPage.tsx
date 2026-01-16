@@ -175,7 +175,6 @@ export function SoloRoomPage() {
               />
 
               <button
-                className="start-now-button"
                 onClick={handleStart}
                 disabled={!canStart}
               >
@@ -186,7 +185,7 @@ export function SoloRoomPage() {
 
           {status === 'countdown' && (
             <div className="countdown-message">
-              <button className="stop-button" onClick={handleStop}>
+              <button className="secondary outline" onClick={handleStop}>
                 {texts.stop}
               </button>
             </div>
@@ -200,16 +199,16 @@ export function SoloRoomPage() {
               </div>
               <div className="control-buttons">
                 {isPlaying && (
-                  <button className="pause-button icon-button" onClick={pausePlayback} title={texts.pause}>
+                  <button className="secondary outline icon-button" onClick={pausePlayback} title={texts.pause}>
                     <span className="icon-pause">| |</span>
                   </button>
                 )}
                 {isPaused && (
-                  <button className="resume-button icon-button" onClick={resumePlayback} title={texts.resume}>
+                  <button className="icon-button" onClick={resumePlayback} title={texts.resume}>
                     <span className="icon-play">▶</span>
                   </button>
                 )}
-                <button className="stop-button" onClick={handleStop}>
+                <button className="secondary outline" onClick={handleStop}>
                   {texts.stop}
                 </button>
               </div>
