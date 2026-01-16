@@ -22,6 +22,7 @@ import { GlobalOnlineIndicator } from '../components/GlobalOnlineIndicator';
 import type { PresetId } from '../types';
 
 const SINGLE_USER_WAIT_MS = 3000; // 3 seconds wait for single user
+const EMPTY_ROOM_TIMEOUT_MS = 5000; // 5 seconds before ending session if no listeners
 
 export function WithFriendsRoomPage() {
   const navigate = useNavigate();
@@ -40,6 +41,9 @@ export function WithFriendsRoomPage() {
 
   // Single user waiting timer ref
   const singleUserTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Empty room timer ref (for ending session when no listeners)
+  const emptyRoomTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track if playback has been initiated to prevent duplicate calls
   const hasStartedPlayingRef = useRef(false);
@@ -244,6 +248,32 @@ export function WithFriendsRoomPage() {
       resetCustomRoom();
     }
   }, [isSessionExpired]);
+
+  // Auto-end session if no active listeners for 5 seconds
+  useEffect(() => {
+    // Clear any existing timer
+    if (emptyRoomTimerRef.current) {
+      clearTimeout(emptyRoomTimerRef.current);
+      emptyRoomTimerRef.current = null;
+    }
+
+    // Only check during active session (countdown started, audio should be playing)
+    const isActiveSession = roomStatus === 'countdown' && startTimestamp !== null && getServerTime() > startTimestamp;
+
+    if (isActiveSession && onlineCount === 0) {
+      // No one in room - start 5 second timer to end session
+      emptyRoomTimerRef.current = setTimeout(() => {
+        resetCustomRoom();
+      }, EMPTY_ROOM_TIMEOUT_MS);
+    }
+
+    return () => {
+      if (emptyRoomTimerRef.current) {
+        clearTimeout(emptyRoomTimerRef.current);
+        emptyRoomTimerRef.current = null;
+      }
+    };
+  }, [roomStatus, startTimestamp, onlineCount, getServerTime]);
 
   // Update late join remaining time
   useEffect(() => {
