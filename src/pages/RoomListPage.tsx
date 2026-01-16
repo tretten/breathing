@@ -76,7 +76,7 @@ export function RoomListPage() {
         </div>
 
         <div
-          className={`room-card ${isSessionActive ? 'session-active' : ''}`}
+          className={`room-card ${isSessionActive ? 'room-card-active' : ''}`}
           onClick={() => handleEnterRoom('with_friends')}
           role="button"
           tabIndex={0}
