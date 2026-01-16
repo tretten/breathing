@@ -215,14 +215,9 @@ export function WithFriendsRoomPage() {
     exitedManuallyRef.current = true;
     stopPlayback();
     setIsReady(false);
-
-    // If this is the last user, reset the room for everyone
-    if (onlineCount <= 1) {
-      await resetCustomRoom();
-    }
-
+    // Don't reset room on exit - let the session continue so user can rejoin
     navigate('/');
-  }, [stopPlayback, navigate, onlineCount]);
+  }, [stopPlayback, navigate]);
 
   // Calculate elapsed time since session started
   const getElapsedSeconds = useCallback(() => {
