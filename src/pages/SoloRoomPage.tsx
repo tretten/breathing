@@ -7,9 +7,7 @@ import { AUDIO_URLS } from '../utils/constants';
 import { BreathingCircle } from '../components/BreathingCircle';
 import { PresetSelector } from '../components/PresetSelector';
 import { CountdownOverlay } from '../components/CountdownOverlay';
-import { LanguageSwitcher } from '../components/LanguageSwitcher';
-import { ThemeToggle } from '../components/ThemeToggle';
-import { GlobalOnlineIndicator } from '../components/GlobalOnlineIndicator';
+import { TopBar } from '../components/TopBar';
 import type { PresetId } from '../types';
 
 type RoomStatus = 'idle' | 'countdown' | 'playing';
@@ -97,6 +95,9 @@ export function SoloRoomPage() {
   const handlePresetChange = useCallback((preset: PresetId) => {
     if (status !== 'idle') return;
     setSelectedPreset(preset);
+    // Reset playback flags when preset changes
+    hasStartedPlayingRef.current = false;
+    audioDidPlayRef.current = false;
   }, [status]);
 
   const handleStart = useCallback(async () => {
@@ -111,6 +112,9 @@ export function SoloRoomPage() {
     stopPlayback();
     setStatus('idle');
     setCountdownSeconds(0);
+    // Reset playback flags
+    hasStartedPlayingRef.current = false;
+    audioDidPlayRef.current = false;
   }, [stopPlayback]);
 
   const canChangePreset = status === 'idle';
@@ -118,7 +122,7 @@ export function SoloRoomPage() {
 
   // Text based on language
   const texts = language === 'en' ? {
-    back: '← Back',
+    appTitle: 'Wim Hof Breathing',
     title: 'Solo',
     selectPreset: 'Select preset',
     start: 'Start',
@@ -129,7 +133,7 @@ export function SoloRoomPage() {
     resume: 'Resume',
     paused: 'Paused'
   } : {
-    back: '← Назад',
+    appTitle: 'Дыхание по Виму Хофу',
     title: 'Сам',
     selectPreset: 'Выберите пресет',
     start: 'Начать',
@@ -142,78 +146,78 @@ export function SoloRoomPage() {
   };
 
   return (
-    <div className="room-page solo-room">
+    <div className="page-container">
       {status === 'countdown' && countdownSeconds > 0 && (
         <CountdownOverlay seconds={countdownSeconds} />
       )}
 
-      <header className="room-header">
-        <div className="header-left">
-          <button className="back-button" onClick={handleBack}>
-            {texts.back}
-          </button>
-          <GlobalOnlineIndicator />
-        </div>
-        <h2>{texts.title}</h2>
-        <div className="header-controls">
-          <ThemeToggle />
-          <LanguageSwitcher />
-        </div>
-      </header>
+      <TopBar showBack onBack={handleBack} />
 
-      <main className="room-content">
-        <BreathingCircle isActive={isPlaying || isPaused} getAudioLevel={isPlaying ? getAudioLevel : undefined} />
+      <main className="page-content">
+        <div className="content-centered">
+          <header className="page-header">
+            <p className="page-subtitle">{texts.appTitle}</p>
+            <h1>{texts.title}</h1>
+          </header>
 
-        <div className="room-info">
+          <BreathingCircle isActive={isPlaying || isPaused} getAudioLevel={isPlaying ? getAudioLevel : undefined} />
 
-          {status === 'idle' && (
-            <>
-              <PresetSelector
-                selected={selectedPreset}
-                onChange={handlePresetChange}
-                disabled={!canChangePreset}
-              />
+          <div className="room-info">
+            {status === 'idle' && (
+              <>
+                <PresetSelector
+                  selected={selectedPreset}
+                  onChange={handlePresetChange}
+                  disabled={!canChangePreset}
+                />
 
-              <button
-                onClick={handleStart}
-                disabled={!canStart}
-              >
-                {!selectedPreset ? texts.selectPreset : (!isLoaded ? texts.loading : texts.start)}
-              </button>
-            </>
-          )}
+                <button
+                  className="start-now-button"
+                  onClick={handleStart}
+                  disabled={!canStart}
+                >
+                  {!selectedPreset ? texts.selectPreset : (!isLoaded ? texts.loading : texts.start)}
+                </button>
+              </>
+            )}
 
-          {status === 'countdown' && (
-            <div className="countdown-message">
-              <button className="secondary outline" onClick={handleStop}>
-                {texts.stop}
-              </button>
-            </div>
-          )}
-
-          {(isPlaying || isPaused) && (
-            <div className="playing-message">
-              <div className="session-timer">
-                <span className="timer-label">{isPaused ? texts.paused : texts.sessionEnd}</span>
-                <span className="timer-value">{formatRemainingTime(remainingTime)}</span>
-              </div>
-              <div className="control-buttons">
-                {isPlaying && (
-                  <button className="secondary outline icon-button" onClick={pausePlayback} title={texts.pause}>
-                    <span className="icon-pause">| |</span>
-                  </button>
-                )}
-                {isPaused && (
-                  <button className="icon-button" onClick={resumePlayback} title={texts.resume}>
-                    <span className="icon-play">▶</span>
-                  </button>
-                )}
-                <button className="secondary outline" onClick={handleStop}>
+            {status === 'countdown' && (
+              <div className="countdown-message">
+                <button className="stop-button" onClick={handleStop}>
                   {texts.stop}
                 </button>
               </div>
-            </div>
-          )}
+            )}
+
+            {(isPlaying || isPaused) && (
+              <div className="playing-message">
+                <div className="session-timer">
+                  <span className="timer-label">{isPaused ? texts.paused : texts.sessionEnd}</span>
+                  <span className="timer-value">{formatRemainingTime(remainingTime)}</span>
+                </div>
+                <div className="control-buttons">
+                  {isPlaying && (
+                    <button className="pause-button icon-button-circle" onClick={pausePlayback} title={texts.pause}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="6" y="4" width="4" height="16" rx="1"/>
+                        <rect x="14" y="4" width="4" height="16" rx="1"/>
+                      </svg>
+                    </button>
+                  )}
+                  {isPaused && (
+                    <button className="resume-button icon-button-circle" onClick={resumePlayback} title={texts.resume}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5.14v14l11-7-11-7z"/>
+                      </svg>
+                    </button>
+                  )}
+                  <button className="stop-button" onClick={handleStop}>
+                    {texts.stop}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>

@@ -7,3 +7,4 @@ export { GlobalOnlineIndicator } from './GlobalOnlineIndicator';
 export { PresetSelector } from './PresetSelector';
 export { ReadyButton } from './ReadyButton';
 export { ReadyStatus } from './ReadyStatus';
+export { TopBar } from './TopBar';

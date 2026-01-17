@@ -2,7 +2,6 @@
 import { Routes, Route } from 'react-router-dom';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { WelcomeModal } from './components/WelcomeModal';
-import { GlobalOnlineIndicator } from './components/GlobalOnlineIndicator';
 import { RoomListPage } from './pages/RoomListPage';
 import { SoloRoomPage } from './pages/SoloRoomPage';
 import { WithFriendsRoomPage } from './pages/WithFriendsRoomPage';
@@ -15,14 +14,11 @@ function AppContent() {
   }
 
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<RoomListPage />} />
-        <Route path="/room/solo" element={<SoloRoomPage />} />
-        <Route path="/room/with_friends" element={<WithFriendsRoomPage />} />
-      </Routes>
-      <GlobalOnlineIndicator />
-    </>
+    <Routes>
+      <Route path="/" element={<RoomListPage />} />
+      <Route path="/room/solo" element={<SoloRoomPage />} />
+      <Route path="/room/with_friends" element={<WithFriendsRoomPage />} />
+    </Routes>
   );
 }
 

@@ -1,400 +1,426 @@
 /* src/styles/global.css */
-/* Wim Hof Breathing - Built on Pico CSS */
+/* Wim Hof Breathing - Dark/Light themes */
 
-/* Import Pico CSS */
-@import url('https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css');
-
-/* Import fonts */
 @import url('https://fonts.googleapis.com/css2?family=Oranienbaum&family=Public+Sans:wght@400;500;600&display=swap');
 
-/* ============================================
-   Pico CSS Variable Overrides
-   ============================================ */
-
-:root {
-  /* Typography */
-  --pico-font-family-sans-serif: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --pico-font-family: var(--pico-font-family-sans-serif);
-
-  /* Primary color - Orange */
-  --pico-primary: #e07850;
-  --pico-primary-background: #e07850;
-  --pico-primary-border: #e07850;
-  --pico-primary-underline: rgba(224, 120, 80, 0.5);
-  --pico-primary-hover: #eb8c68;
-  --pico-primary-hover-background: #eb8c68;
-  --pico-primary-hover-border: #eb8c68;
-  --pico-primary-focus: rgba(224, 120, 80, 0.25);
-  --pico-primary-inverse: #fff;
-
-  /* Border radius */
-  --pico-border-radius: 8px;
-
-  /* Transitions */
-  --pico-transition: 0.15s ease-in-out;
-
-  /* Custom variables */
-  --accent-primary: #e07850;
-  --accent-secondary: #d4603a;
-  --accent-hover: #eb8c68;
-  --accent-glow: rgba(224, 120, 80, 0.25);
-  --success: #4ade80;
-  --danger: #e05555;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/* Dark theme overrides */
-[data-theme="dark"] {
-  --pico-background-color: #1a1a1a;
-  --pico-card-background-color: #232323;
-  --pico-card-sectioning-background-color: #2a2a2a;
-  --pico-color: #f0f0f0;
-  --pico-muted-color: #a8a8a8;
-  --pico-muted-border-color: #404040;
-  --pico-secondary: #a8a8a8;
-  --pico-secondary-background: #333333;
-  --pico-secondary-border: #404040;
-  --pico-secondary-hover: #f0f0f0;
-  --pico-secondary-hover-background: #404040;
-  --pico-contrast: #f0f0f0;
-  --pico-contrast-background: #f0f0f0;
-  --pico-contrast-border: #f0f0f0;
-
+/* Dark theme (default) */
+:root {
+  --font-sans: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --bg-primary: #1a1a1a;
   --bg-secondary: #232323;
   --bg-card: #2a2a2a;
   --bg-hover: #333333;
   --text-primary: #f0f0f0;
-  --text-secondary: #a8a8a8;
-  --border-color: #404040;
+  --text-secondary: #9a9a9a;
+  --text-tertiary: #6e6e6e;
+  --accent-primary: #e07850;
+  --accent-secondary: #e89070;
+  --accent-hover: #e89070;
+  --accent-glow: rgba(224, 120, 80, 0.3);
+  --border-color: #3a3a3a;
+  --border-light: #2f2f2f;
+  --success: #5cb85c;
+  --warning: #f0ad4e;
+  --danger: #d9534f;
 }
 
-/* Light theme overrides */
+/* Light theme */
 [data-theme="light"] {
-  --pico-background-color: #f5f4f0;
-  --pico-card-background-color: #ffffff;
-  --pico-card-sectioning-background-color: #ffffff;
-  --pico-color: #1a1a1a;
-  --pico-muted-color: #555555;
-  --pico-muted-border-color: #d0d0d0;
-  --pico-secondary: #555555;
-  --pico-secondary-background: #ebe9e5;
-  --pico-secondary-border: #d0d0d0;
-  --pico-secondary-hover: #1a1a1a;
-  --pico-secondary-hover-background: #e0ded9;
-
-  --pico-primary: #c45a3a;
-  --pico-primary-background: #c45a3a;
-  --pico-primary-border: #c45a3a;
-  --pico-primary-hover: #a84d32;
-  --pico-primary-hover-background: #a84d32;
-  --pico-primary-focus: rgba(196, 90, 58, 0.15);
-
-  --accent-primary: #c45a3a;
-  --accent-secondary: #b04a2c;
-  --accent-hover: #a84d32;
-  --accent-glow: rgba(196, 90, 58, 0.15);
-
   --bg-primary: #f5f4f0;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
   --bg-hover: #ebe9e5;
   --text-primary: #1a1a1a;
-  --text-secondary: #555555;
-  --border-color: #d0d0d0;
+  --text-secondary: #6e6e6e;
+  --text-tertiary: #9a9a9a;
+  --accent-primary: #e07850;
+  --accent-secondary: #d06840;
+  --accent-hover: #d06840;
+  --accent-glow: rgba(224, 120, 80, 0.15);
+  --border-color: #e5e5e5;
+  --border-light: #ebebeb;
+  --success: #5cb85c;
+  --warning: #f0ad4e;
+  --danger: #d9534f;
 }
 
-/* ============================================
-   Base Overrides
-   ============================================ */
-
 body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   min-height: 100vh;
-  min-height: 100dvh;
+  line-height: 1.5;
+  letter-spacing: -0.011em;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 h1, h2, h3 {
   font-family: Oranienbaum, serif;
   font-weight: 400;
-  letter-spacing: 0.01em;
-  --pico-font-weight: 400;
 }
-
-/* ============================================
-   Layout
-   ============================================ */
 
 .app {
   min-height: 100vh;
-  min-height: 100dvh;
-  background: var(--pico-background-color);
+  background: var(--bg-primary);
 }
 
-/* Top bar */
+/* Global Page Container */
+.page-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top Bar - global header */
 .top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
   padding: 1rem 1.5rem;
-  padding-top: calc(1rem + env(safe-area-inset-top, 0px));
-  background: var(--pico-card-background-color);
-  border-bottom: 1px solid var(--pico-muted-border-color);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
-.top-bar-left,
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .top-bar-right {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-/* ============================================
-   Room List Page
-   ============================================ */
-
-.room-list-page {
-  min-height: 100vh;
-  padding: 2rem;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.page-header {
-  text-align: center;
-  padding: 3rem 0 2rem;
-  margin-bottom: 0;
-}
-
-.page-header h1 {
-  margin-bottom: 0.5rem;
-}
-
-.page-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.page-header-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.rooms-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  padding: 2rem 0;
-}
-
-/* Room cards using Pico article */
-.room-card {
-  margin: 0;
-  cursor: pointer;
-  transition: transform var(--pico-transition), border-color var(--pico-transition);
-}
-
-.room-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--pico-primary);
-}
-
-.room-card-active {
-  border-color: var(--pico-primary);
-}
-
-.room-card header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  padding-bottom: 0.75rem;
-}
-
-.room-card header h3 {
-  margin: 0;
-}
-
-.room-card p {
-  color: var(--pico-muted-color);
-  margin-bottom: 0;
-}
-
-.room-card footer {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 0.75rem;
-}
-
-.enter-hint {
-  color: var(--pico-primary);
-  font-weight: 500;
-  opacity: 0;
-  transition: opacity var(--pico-transition);
-}
-
-.room-card:hover .enter-hint {
-  opacity: 1;
-}
-
-/* Session badge */
-.session-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  background: var(--accent-glow);
-  color: var(--accent-primary);
-  font-size: 0.7rem;
-  font-weight: 600;
-  border-radius: 9999px;
-  animation: pulse-badge 2s ease-in-out infinite;
-}
-
-.session-badge::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  background: var(--accent-primary);
-  border-radius: 50%;
-}
-
-@keyframes pulse-badge {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
-/* ============================================
-   Room Page
-   ============================================ */
-
-.room-page {
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-}
-
-.room-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.5rem;
-  background: var(--pico-card-background-color);
-  border-bottom: 1px solid var(--pico-muted-border-color);
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.header-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.room-header h2 {
-  margin: 0;
-}
-
-.room-content {
+/* Page Content */
+.page-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
-  gap: 2rem;
 }
 
+.content-centered {
+  text-align: center;
+  max-width: 450px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.page-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.room-online-count {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+/* Theme Toggle - same height as language switcher */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--text-tertiary);
+}
+
+.theme-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Header Controls */
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Page Header */
+.page-header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+/* Room Options - styled like language options */
+.room-options {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.room-option {
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.5rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 140px;
+  flex: 1;
+  font-family: inherit;
+  position: relative;
+}
+
+.room-option:hover {
+  border-color: var(--accent-primary);
+  transform: translateY(-2px);
+}
+
+.room-option.session-active {
+  border-color: var(--accent-primary);
+}
+
+.room-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.room-option .room-name {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.room-desc {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+/* Session Active Option */
+.room-option.session-active {
+  border-color: var(--accent-primary);
+  background: var(--bg-card);
+}
+
+/* Session Badge */
+.session-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.5rem;
+  background: var(--accent-glow);
+  border-radius: 100px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--accent-primary);
+  white-space: nowrap;
+  margin-top: 0.25rem;
+}
+
+.session-badge::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  background: var(--accent-primary);
+  border-radius: 50%;
+  animation: dot-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes dot-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
+}
+
+.page-footer {
+  text-align: center;
+  padding: 3rem 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+/* Language Switcher */
+.language-switcher {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-secondary);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  height: 32px;
+}
+
+.lang-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0 0.6rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lang-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.lang-btn.active {
+  background: var(--accent-primary);
+  color: #ffffff;
+}
+
+/* Online Counter */
+.online-counter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.online-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+/* Back Button */
+.back-button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.back-button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.back-arrow {
+  font-size: 1rem;
+}
+
+/* Global Online Indicator - in topbar */
+.global-online-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 0.4rem 0.75rem;
+  background: var(--bg-primary);
+  border-radius: 100px;
+  border: 1px solid var(--border-color);
+}
+
+/* Room Info */
 .room-info {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.25rem;
+  justify-content: flex-start;
+  gap: 1.5rem;
   width: 100%;
-  max-width: 360px;
+  max-width: 400px;
+  min-height: 200px;
 }
 
-/* ============================================
-   Buttons - Using Pico classes
-   ============================================ */
-
-/* Back button as outline */
-.back-button {
-  --pico-background-color: transparent;
-  --pico-border-color: var(--pico-muted-border-color);
-  --pico-color: var(--pico-muted-color);
-  padding: 0.5rem 0.75rem;
-  margin: 0;
+/* Countdown Timer */
+.countdown-timer {
+  text-align: center;
 }
 
-.back-button:hover {
-  --pico-background-color: var(--bg-hover);
-  --pico-color: var(--pico-color);
+.countdown-label {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
 }
 
-/* Ready button */
-.ready-button {
-  min-width: 140px;
+.countdown-time {
+  font-family: 'Inter', sans-serif;
+  font-size: 3rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
-.ready-button.ready {
-  --pico-background-color: var(--pico-primary);
-  --pico-border-color: var(--pico-primary);
-  --pico-color: var(--pico-primary-inverse);
-}
-
-/* Exit button */
-.exit-button {
-  min-width: 140px;
-}
-
-/* Join button */
-.join-button {
-  min-width: 140px;
-}
-
-/* Stop button (danger) */
-.stop-button {
-  --pico-background-color: transparent;
-  --pico-border-color: var(--danger);
-  --pico-color: var(--danger);
-  min-width: 140px;
-}
-
-.stop-button:hover {
-  --pico-background-color: rgba(224, 85, 85, 0.1);
-}
-
-/* Control buttons container */
-.control-buttons {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-/* ============================================
-   Preset Selector
-   ============================================ */
-
+/* Preset Selector */
 .preset-selector {
   width: 100%;
 }
 
 .preset-selector label {
   display: block;
-  font-size: 0.875rem;
-  color: var(--pico-muted-color);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
   margin-bottom: 0.75rem;
 }
 
@@ -405,33 +431,27 @@ h1, h2, h3 {
 }
 
 .preset-option {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
   padding: 0.75rem;
-  background: var(--pico-background-color);
-  border: 1px solid var(--pico-muted-border-color);
-  border-radius: var(--pico-border-radius);
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--pico-muted-color);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: all var(--pico-transition);
-  margin: 0;
-  width: 100%;
+  transition: all 0.15s ease;
+  font-family: inherit;
 }
 
-.preset-option:hover:not(:disabled):not(.selected) {
-  background: var(--pico-card-background-color);
-  border-color: var(--pico-color);
-  color: var(--pico-color);
+.preset-option:hover:not(:disabled) {
+  border-color: var(--text-tertiary);
+  color: var(--text-primary);
+  background: var(--bg-hover);
 }
 
 .preset-option.selected {
   background: var(--accent-glow);
-  border-color: var(--pico-primary);
-  color: var(--pico-primary);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
 }
 
 .preset-option:disabled {
@@ -439,231 +459,84 @@ h1, h2, h3 {
   cursor: not-allowed;
 }
 
-/* ============================================
-   Ready Status
-   ============================================ */
-
+/* Ready Status */
 .ready-status {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-}
-
-.ready-status span {
-  font-size: 0.875rem;
-  color: var(--pico-muted-color);
+  gap: 0.5rem;
 }
 
 .ready-bar {
   width: 100%;
   height: 4px;
-  background: var(--pico-muted-border-color);
-  border-radius: 9999px;
+  background: var(--border-color);
+  border-radius: 100px;
   overflow: hidden;
 }
 
 .ready-fill {
   height: 100%;
-  background: var(--pico-primary);
-  border-radius: 9999px;
+  background: var(--accent-primary);
+  border-radius: 100px;
   transition: width 0.3s ease;
 }
 
-/* ============================================
-   Timer Display
-   ============================================ */
-
-.timer-display,
-.session-timer,
-.next-session-timer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  padding: 1.25rem 1.5rem;
-  background: var(--pico-card-background-color);
-  border-radius: var(--pico-border-radius);
-  border: 1px solid var(--pico-muted-border-color);
-  width: 100%;
-  min-height: 90px;
-}
-
-.timer-label {
-  color: var(--pico-muted-color);
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.timer-value {
-  font-size: 2rem;
-  font-weight: 600;
-  color: var(--pico-color);
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-
-/* ============================================
-   Online Indicator
-   ============================================ */
-
-.online-indicator,
-.global-online-indicator {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+.ready-status span {
+  color: var(--text-secondary);
   font-size: 0.85rem;
-  color: var(--pico-muted-color);
-  padding: 0.4rem 0.75rem;
-  background: var(--pico-background-color);
-  border-radius: 9999px;
-  border: 1px solid var(--pico-muted-border-color);
 }
 
-.online-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 6px var(--success);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.1); }
-}
-
-/* ============================================
-   Theme Toggle
-   ============================================ */
-
-.theme-toggle {
+/* Action Buttons Container */
+.action-buttons {
   display: flex;
+  gap: 1rem;
   align-items: center;
+  flex-wrap: wrap;
   justify-content: center;
-  min-width: 36px;
-  padding: 0.35rem 0.6rem;
+}
+
+/* Ready Button */
+.ready-button {
   background: transparent;
-  border: 1px solid var(--pico-muted-border-color);
-  border-radius: var(--pico-border-radius);
-  color: var(--pico-muted-color);
-  cursor: pointer;
-  transition: all var(--pico-transition);
-  margin: 0;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
-.theme-toggle:hover {
-  background: var(--pico-card-background-color);
-  color: var(--pico-color);
-  border-color: var(--pico-color);
-}
-
-/* ============================================
-   Language Switcher
-   ============================================ */
-
-.lang-switcher,
-.language-switcher {
-  display: flex;
-  gap: 2px;
-  background: var(--pico-background-color);
-  padding: 3px;
-  border-radius: var(--pico-border-radius);
-  border: 1px solid var(--pico-muted-border-color);
-}
-
-.lang-btn {
-  background: transparent;
-  border: none;
-  color: var(--pico-muted-color);
-  font-size: 0.8rem;
-  font-weight: 500;
-  padding: 0.35rem 0.6rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all var(--pico-transition);
-  margin: 0;
-}
-
-.lang-btn:hover {
-  color: var(--pico-color);
+.ready-button:hover:not(:disabled) {
   background: var(--bg-hover);
+  border-color: var(--text-tertiary);
 }
 
-.lang-btn.active {
-  background: var(--pico-primary);
-  color: #fff;
+.ready-button.ready {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #ffffff;
 }
 
-/* ============================================
-   Messages
-   ============================================ */
+.ready-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
+/* Waiting Message */
 .waiting-message {
-  color: var(--pico-muted-color);
+  color: var(--text-secondary);
   font-size: 0.9rem;
   animation: pulse-text 2s infinite;
 }
 
 @keyframes pulse-text {
-  0%, 100% { opacity: 0.7; }
+  0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
 
-.late-join-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.session-status {
-  color: var(--pico-primary);
-  font-size: 1.1rem;
-  animation: pulse-text 2s infinite;
-}
-
-.session-ended-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  animation: fade-in 0.5s ease;
-}
-
-.session-ended-message span {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--pico-primary);
-  text-shadow: 0 0 20px var(--accent-glow);
-}
-
-@keyframes fade-in {
-  0% { opacity: 0; transform: scale(0.9); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-.playing-message,
-.countdown-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  text-align: center;
-}
-
-/* ============================================
-   Countdown Overlay
-   ============================================ */
-
+/* Countdown Overlay */
 .countdown-overlay {
   position: fixed;
   inset: 0;
-  background: var(--pico-background-color);
+  background: var(--bg-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -673,7 +546,7 @@ h1, h2, h3 {
 .countdown-number {
   font-size: 10rem;
   font-weight: 600;
-  color: var(--pico-primary);
+  color: var(--accent-primary);
   animation: countdown-pop 1s ease-out;
 }
 
@@ -683,105 +556,129 @@ h1, h2, h3 {
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* ============================================
-   Welcome Screen
-   ============================================ */
-
-.welcome-screen,
+/* Welcome Modal */
 .welcome-overlay {
   position: fixed;
   inset: 0;
-  background: var(--pico-background-color);
+  background: var(--bg-primary);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 300;
   padding: 2rem;
 }
 
 .welcome-content {
   text-align: center;
-  max-width: 420px;
+  max-width: 450px;
   width: 100%;
 }
 
 .welcome-icon {
-  font-size: 64px;
+  font-size: 5rem;
   margin-bottom: 1rem;
 }
 
 .welcome-content h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--text-primary), var(--accent-primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin-bottom: 0.5rem;
 }
 
 .welcome-subtitle {
-  color: var(--pico-muted-color);
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  margin-bottom: 2.5rem;
+}
+
+.language-selection {
   margin-bottom: 2rem;
 }
 
-.welcome-section {
-  width: 100%;
-  margin-bottom: 1.5rem;
-}
-
-.welcome-section-label {
-  font-size: 0.875rem;
-  color: var(--pico-muted-color);
+.selection-label {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
   margin-bottom: 1rem;
 }
 
-.welcome-lang-options {
+.language-options {
   display: flex;
   gap: 1rem;
   justify-content: center;
 }
 
-.lang-option {
+.language-option {
+  background: var(--bg-card);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
-  padding: 1.25rem 1.5rem;
-  background: var(--pico-background-color);
-  border: 2px solid var(--pico-muted-border-color);
-  border-radius: var(--pico-border-radius);
-  cursor: pointer;
-  transition: all var(--pico-transition);
-  min-width: 110px;
-  min-height: 140px;
+  min-width: 130px;
+  font-family: inherit;
 }
 
-.lang-option:hover {
-  border-color: var(--pico-primary);
+.language-option:hover {
+  border-color: rgba(78, 205, 196, 0.3);
   transform: translateY(-2px);
 }
 
-.lang-option.selected {
-  border-color: var(--pico-primary);
-  background: var(--accent-glow);
+.language-option.selected {
+  border-color: var(--accent-primary);
+  background: rgba(255, 179, 0, 0.1);
 }
 
-.lang-option .flag {
-  font-size: 40px;
+.lang-flag {
+  font-size: 2.5rem;
 }
 
-.lang-option .name {
+.lang-name {
+  color: var(--text-primary);
+  font-size: 1rem;
   font-weight: 500;
-  color: var(--pico-color);
+}
+
+.welcome-continue-button {
+  background: var(--accent-primary);
+  border: none;
+  border-radius: 50px;
+  padding: 1.25rem 3rem;
+  color: #0e1529;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  width: 100%;
+  max-width: 320px;
+}
+
+.welcome-continue-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: var(--accent-secondary);
+  box-shadow: 0 12px 40px var(--accent-glow);
+}
+
+.welcome-continue-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .welcome-hint {
-  font-size: 0.875rem;
-  color: var(--pico-muted-color);
-  margin-top: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-top: 1.5rem;
 }
 
-/* ============================================
-   Modal
-   ============================================ */
-
+/* Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -794,10 +691,10 @@ h1, h2, h3 {
 }
 
 .modal-content {
-  background: var(--pico-card-background-color);
-  border: 1px solid var(--pico-muted-border-color);
-  border-radius: 12px;
-  padding: 2rem;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 3rem;
   text-align: center;
   max-width: 400px;
 }
@@ -808,24 +705,26 @@ h1, h2, h3 {
 }
 
 .modal-content h3 {
+  font-size: 1.5rem;
   margin-bottom: 0.5rem;
 }
 
 .modal-content p {
-  color: var(--pico-muted-color);
-  margin-bottom: 1.5rem;
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
 }
 
 .unlock-button {
   background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
   border: none;
-  border-radius: var(--pico-border-radius);
-  padding: 1rem 2rem;
-  color: #fff;
+  border-radius: 12px;
+  padding: 1rem 2.5rem;
+  color: var(--bg-primary);
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  font-family: inherit;
 }
 
 .unlock-button:hover {
@@ -833,101 +732,459 @@ h1, h2, h3 {
   box-shadow: 0 10px 30px var(--accent-glow);
 }
 
-/* ============================================
-   Utility Classes
-   ============================================ */
+/* Action Buttons - Claude.ai style */
+.start-now-button,
+.stop-button,
+.exit-button,
+.join-button,
+.ready-button {
+  min-width: 160px;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
 
-.text-center { text-align: center; }
-.text-muted { color: var(--pico-muted-color); }
-.w-full { width: 100%; }
+/* Primary button */
+.start-now-button,
+.join-button {
+  background: var(--accent-primary);
+  border: none;
+  color: #ffffff;
+}
 
-/* ============================================
-   Responsive Styles
-   ============================================ */
+.start-now-button:hover:not(:disabled),
+.join-button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
 
+.start-now-button:disabled,
+.join-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Stop Button */
+.stop-button {
+  background: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+.stop-button:hover {
+  background: rgba(217, 83, 79, 0.1);
+}
+
+/* Exit Button - secondary style */
+.exit-button {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.exit-button:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-tertiary);
+}
+
+/* Late Join Message */
+.late-join-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.session-status {
+  color: var(--accent-primary);
+  font-size: 1.1rem;
+  animation: pulse-text 2s infinite;
+}
+
+/* Session Ended Message */
+.session-ended-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  animation: fade-in 0.5s ease;
+}
+
+.session-ended-message span {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+  text-shadow: 0 0 20px var(--accent-glow);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Control Buttons Container */
+.control-buttons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Circle Icon Buttons (Pause/Resume) - same height as stop button */
+.icon-button-circle {
+  min-width: unset;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pause-button.icon-button-circle {
+  background: transparent;
+  border: 2px solid var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.pause-button.icon-button-circle:hover {
+  background: var(--accent-glow);
+}
+
+.resume-button.icon-button-circle {
+  background: var(--accent-primary);
+  border: none;
+  color: #ffffff;
+}
+
+.resume-button.icon-button-circle:hover {
+  background: var(--accent-hover);
+}
+
+.resume-button.icon-button-circle svg {
+  margin-left: 2px; /* Visual centering for play icon */
+}
+
+/* Messages */
+.playing-message, .countdown-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+.playing-message p, .countdown-message p {
+  color: var(--accent-primary);
+  font-size: 1.1rem;
+}
+
+
+.loading-audio, .unlock-hint {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+/* Session Timer (shared styles for next session & session ends) */
+.next-session-timer,
+.session-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  width: 100%;
+  min-height: 90px;
+}
+
+.timer-label {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.timer-value {
+  font-family: 'Inter', sans-serif;
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+/* Or Divider */
+.or-divider {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-transform: lowercase;
+  position: relative;
+  padding: 0.5rem 1rem;
+}
+
+.or-divider::before,
+.or-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.or-divider::before {
+  right: 100%;
+}
+
+.or-divider::after {
+  left: 100%;
+}
+
+/* Error page */
+.page-container.error .page-content {
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.page-container.error p {
+  color: var(--text-secondary);
+}
+
+.page-container.error button {
+  background: var(--accent-primary);
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  color: var(--bg-primary);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Responsive */
 @media (max-width: 640px) {
-  .room-list-page {
-    padding: 1rem;
+  /* Prevent body scroll */
+  html, body {
+    overflow-x: hidden;
   }
 
-  .page-header {
-    padding: 1.5rem 0;
-  }
-
-  .rooms-grid {
-    grid-template-columns: 1fr;
-    padding: 1rem 0;
-    gap: 1rem;
-  }
-
-  .room-page {
+  /* Page container - fit in viewport */
+  .page-container {
     height: 100vh;
     height: 100dvh;
-    overflow: hidden;
   }
 
-  .room-header {
+  /* Top bar */
+  .top-bar {
     padding: 0.75rem 1rem;
   }
 
-  .room-content {
-    flex: 1;
-    padding: 1rem;
-    gap: 1.5rem;
-    justify-content: flex-start;
-    overflow-y: auto;
-    padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+  .back-button {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.9rem;
   }
 
-  .room-info {
+  .back-text {
+    display: none;
+  }
+
+  /* Page content */
+  .page-content {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    justify-content: flex-start;
+    padding-top: 1.5rem;
+  }
+
+  .content-centered {
     gap: 1rem;
   }
 
+  .page-header {
+    margin-bottom: 0.5rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.8rem;
+  }
+
+  /* Room options */
+  .room-options {
+    gap: 0.75rem;
+  }
+
+  .room-option {
+    padding: 1.25rem 1rem;
+    min-width: 120px;
+  }
+
+  .room-icon {
+    font-size: 2rem;
+  }
+
+  .room-option .room-name {
+    font-size: 1rem;
+  }
+
+  .room-desc {
+    font-size: 0.75rem;
+  }
+
+  /* Room info - reduce minimum height */
+  .room-info {
+    min-height: auto;
+    gap: 1rem;
+  }
+
+  /* Preset selector compact */
+  .preset-selector label {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+
   .preset-options {
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.5rem;
   }
 
   .preset-option {
     padding: 0.6rem;
     font-size: 0.8rem;
+    border-radius: 8px;
   }
 
-  .timer-display,
+  /* Buttons smaller */
+  .start-now-button,
+  .stop-button,
+  .exit-button,
+  .join-button,
+  .ready-button {
+    min-width: 140px;
+    padding: 0.85rem 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  .icon-button-circle {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Session timer compact */
   .session-timer,
   .next-session-timer {
     min-height: 80px;
     padding: 0.75rem 1rem;
   }
 
+  .timer-label {
+    font-size: 0.8rem;
+  }
+
   .timer-value {
     font-size: 1.5rem;
   }
 
-  .countdown-number {
-    font-size: 80px;
+  /* Ready status */
+  .ready-status span {
+    font-size: 0.8rem;
   }
 
-  .welcome-content {
+  .ready-bar {
+    height: 6px;
+  }
+
+  /* Countdown overlay */
+  .countdown-number {
+    font-size: 8rem;
+  }
+
+  .countdown-time {
+    font-size: 2rem;
+  }
+
+
+  /* Welcome modal */
+  .welcome-overlay {
     padding: 1rem;
   }
 
-  .welcome-lang-options {
+  .welcome-content h2 {
+    font-size: 1.75rem;
+  }
+
+  .welcome-subtitle {
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .language-options {
     gap: 0.75rem;
   }
 
-  .lang-option {
-    padding: 1rem;
+  .language-option {
+    padding: 1rem 1.25rem;
     min-width: 100px;
-    min-height: 130px;
   }
 
-  .lang-option .flag {
-    font-size: 32px;
+  .lang-flag {
+    font-size: 2rem;
+  }
+
+  .lang-name {
+    font-size: 0.9rem;
+  }
+
+  .welcome-continue-button {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+  }
+
+  .language-selection {
+    margin-bottom: 1.5rem;
   }
 }
 
+/* Extra small screens */
 @media (max-width: 380px) {
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .room-option {
+    padding: 1rem 0.75rem;
+    min-width: 100px;
+  }
+
+  .room-icon {
+    font-size: 1.75rem;
+  }
+
+  .room-option .room-name {
+    font-size: 0.9rem;
+  }
+
+  .room-desc {
+    font-size: 0.7rem;
+  }
+
   .preset-options {
+    grid-template-columns: 1fr 1fr;
     gap: 0.4rem;
   }
 
@@ -936,7 +1193,25 @@ h1, h2, h3 {
     font-size: 0.75rem;
   }
 
+  .start-now-button,
+  .stop-button,
+  .exit-button,
+  .join-button,
+  .ready-button {
+    min-width: 120px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
   .countdown-number {
-    font-size: 64px;
+    font-size: 6rem;
+  }
+
+  .session-ended-message span {
+    font-size: 1.2rem;
+  }
+
+  .session-status {
+    font-size: 1rem;
   }
 }

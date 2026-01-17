@@ -3,9 +3,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useRoomState, useServerTime, resetCustomRoom } from '../hooks';
-import { LanguageSwitcher } from '../components/LanguageSwitcher';
-import { ThemeToggle } from '../components/ThemeToggle';
-import { GlobalOnlineIndicator } from '../components/GlobalOnlineIndicator';
+import { TopBar } from '../components/TopBar';
 import type { RoomId } from '../types';
 
 export function RoomListPage() {
@@ -55,58 +53,40 @@ export function RoomListPage() {
   };
 
   return (
-    <div className="room-list-page">
-      <header className="page-header">
-        <div className="page-header-row">
-          <GlobalOnlineIndicator />
-          <div className="page-header-controls">
-            <ThemeToggle />
-            <LanguageSwitcher />
+    <div className="page-container">
+      <TopBar />
+
+      <main className="page-content">
+        <div className="content-centered">
+          <header className="page-header">
+            <h1>{texts.title}</h1>
+            <p className="subtitle">{texts.subtitle}</p>
+          </header>
+
+          <div className="room-options">
+            <button
+              className="room-option"
+              onClick={() => handleEnterRoom('solo')}
+            >
+              <span className="room-icon">🧘</span>
+              <span className="room-name">{texts.solo}</span>
+              <span className="room-desc">{texts.soloDesc}</span>
+            </button>
+
+            <button
+              className={`room-option ${isSessionActive ? 'session-active' : ''}`}
+              onClick={() => handleEnterRoom('with_friends')}
+            >
+              <span className="room-icon">👥</span>
+              <span className="room-name">{texts.withFriends}</span>
+              <span className="room-desc">{texts.withFriendsDesc}</span>
+              {isSessionActive && (
+                <span className="session-badge">{texts.sessionActive}</span>
+              )}
+            </button>
           </div>
         </div>
-        <h1>{texts.title}</h1>
-        <p className="subtitle">{texts.subtitle}</p>
-      </header>
-
-      <div className="rooms-grid">
-        <article
-          className="room-card"
-          onClick={() => handleEnterRoom('solo')}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && handleEnterRoom('solo')}
-        >
-          <header>
-            <h3>{texts.solo}</h3>
-          </header>
-          <p>{texts.soloDesc}</p>
-          <footer>
-            <span className="enter-hint">{texts.enter} →</span>
-          </footer>
-        </article>
-
-        <article
-          className={`room-card ${isSessionActive ? 'room-card-active' : ''}`}
-          onClick={() => handleEnterRoom('with_friends')}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && handleEnterRoom('with_friends')}
-        >
-          <header>
-            <h3>{texts.withFriends}</h3>
-            {isSessionActive && (
-              <span className="session-badge">{texts.sessionActive}</span>
-            )}
-          </header>
-          <p>{texts.withFriendsDesc}</p>
-          <footer>
-            <span className="enter-hint">{texts.enter} →</span>
-          </footer>
-        </article>
-      </div>
-
-      {/* Footer space for global online indicator */}
-      <footer className="page-footer" />
+      </main>
     </div>
   );
 }

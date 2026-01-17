@@ -16,9 +16,7 @@ import { AUDIO_URLS } from '../utils/constants';
 import { BreathingCircle } from '../components/BreathingCircle';
 import { PresetSelector } from '../components/PresetSelector';
 import { CountdownOverlay } from '../components/CountdownOverlay';
-import { LanguageSwitcher } from '../components/LanguageSwitcher';
-import { ThemeToggle } from '../components/ThemeToggle';
-import { GlobalOnlineIndicator } from '../components/GlobalOnlineIndicator';
+import { TopBar } from '../components/TopBar';
 import type { PresetId } from '../types';
 
 const SINGLE_USER_WAIT_MS = 3000; // 3 seconds wait for single user
@@ -324,8 +322,9 @@ export function WithFriendsRoomPage() {
 
   // Text based on language
   const texts = language === 'en' ? {
-    back: '← Back',
+    appTitle: 'Wim Hof Breathing',
     title: 'With Friends',
+    inRoom: 'in room',
     selectPreset: 'Select preset',
     ready: "I'm Ready",
     notReady: 'Not Ready',
@@ -339,8 +338,9 @@ export function WithFriendsRoomPage() {
     sessionInProgress: 'Session in progress',
     online: 'online'
   } : {
-    back: '← Назад',
+    appTitle: 'Дыхание по Виму Хофу',
     title: 'С друзьями',
+    inRoom: 'в комнате',
     selectPreset: 'Выберите пресет',
     ready: 'Я готов',
     notReady: 'Не готов',
@@ -356,106 +356,103 @@ export function WithFriendsRoomPage() {
   };
 
   return (
-    <div className="room-page with-friends-room">
+    <div className="page-container">
       {roomStatus === 'countdown' && countdownSeconds > 0 && (
         <CountdownOverlay seconds={countdownSeconds} />
       )}
 
-      <header className="room-header">
-        <div className="header-left">
-          <button className="back-button" onClick={handleBack}>
-            {texts.back}
-          </button>
-          <GlobalOnlineIndicator />
-        </div>
-        <h2>{texts.title}</h2>
-        <div className="header-controls">
-          <ThemeToggle />
-          <LanguageSwitcher />
-        </div>
-      </header>
+      <TopBar showBack onBack={handleBack} />
 
-      <main className="room-content">
-        <BreathingCircle isActive={isPlaying} getAudioLevel={getAudioLevel} />
+      <main className="page-content">
+        <div className="content-centered">
+          <header className="page-header">
+            <p className="page-subtitle">{texts.appTitle}</p>
+            <h1>{texts.title}</h1>
+            <p className="room-online-count">{onlineCount} {texts.inRoom}</p>
+          </header>
 
-        <div className="room-info">
-          {roomStatus === 'idle' && (
-            <>
-              <PresetSelector
-                selected={selectedPreset}
-                onChange={handlePresetChange}
-                disabled={!canChangePreset}
-              />
+          <BreathingCircle isActive={isPlaying} getAudioLevel={getAudioLevel} />
 
-              <div className="ready-status">
-                <div className="ready-bar">
-                  <div
-                    className="ready-fill"
-                    style={{ width: onlineCount > 0 ? `${(readyCount / onlineCount) * 100}%` : '0%' }}
-                  />
+          <div className="room-info">
+            {roomStatus === 'idle' && (
+              <>
+                <PresetSelector
+                  selected={selectedPreset}
+                  onChange={handlePresetChange}
+                  disabled={!canChangePreset}
+                />
+
+                <div className="ready-status">
+                  <div className="ready-bar">
+                    <div
+                      className="ready-fill"
+                      style={{ width: onlineCount > 0 ? `${(readyCount / onlineCount) * 100}%` : '0%' }}
+                    />
+                  </div>
+                  <span>{readyCount} / {onlineCount} {texts.readyCount}</span>
                 </div>
-                <span>{readyCount} / {onlineCount} {texts.readyCount}</span>
+
+                <button
+                  className={`ready-button ${isReady ? 'ready' : ''}`}
+                  onClick={handleToggleReady}
+                  disabled={!canPressReady}
+                >
+                  {!hasSelectedPreset ? texts.selectPreset : (!isLoaded ? texts.loading : (isReady ? texts.notReady : texts.ready))}
+                </button>
+
+                {isReady && onlineCount > 1 && !allReady && (
+                  <p className="waiting-message">{texts.waiting}</p>
+                )}
+              </>
+            )}
+
+            {roomStatus === 'countdown' && !isPlaying && !isLateJoin && (
+              <div className="countdown-message">
+                <button className="exit-button" onClick={handleExit}>
+                  {texts.exit}
+                </button>
               </div>
+            )}
 
-              <button
-                className={`ready-button ${isReady ? 'ready' : 'secondary outline'}`}
-                onClick={handleToggleReady}
-                disabled={!canPressReady}
-              >
-                {!hasSelectedPreset ? texts.selectPreset : (!isLoaded ? texts.loading : (isReady ? texts.notReady : texts.ready))}
-              </button>
+            {isLateJoin && (
+              <div className="late-join-message">
+                <p className="session-status">{texts.sessionInProgress}</p>
+                {lateJoinRemaining > 0 && (
+                  <div className="session-timer">
+                    <span className="timer-label">{texts.sessionEnd}</span>
+                    <span className="timer-value">
+                      {formatRemainingTime(lateJoinRemaining)}
+                    </span>
+                  </div>
+                )}
+                <button
+                  className="join-button"
+                  onClick={handleJoinSession}
+                  disabled={!isLoaded}
+                >
+                  {isLoaded ? texts.join : texts.loading}
+                </button>
+              </div>
+            )}
 
-              {isReady && onlineCount > 1 && !allReady && (
-                <p className="waiting-message">{texts.waiting}</p>
-              )}
-            </>
-          )}
-
-          {roomStatus === 'countdown' && !isPlaying && !isLateJoin && (
-            <div className="countdown-message">
-              <button className="exit-button secondary outline" onClick={handleExit}>
-                {texts.exit}
-              </button>
-            </div>
-          )}
-
-          {isLateJoin && (
-            <div className="late-join-message">
-              <p className="session-status">{texts.sessionInProgress}</p>
-              {lateJoinRemaining > 0 && (
+            {isPlaying && !showSessionEnded && (
+              <div className="playing-message">
                 <div className="session-timer">
                   <span className="timer-label">{texts.sessionEnd}</span>
-                  <span className="timer-value">
-                    {formatRemainingTime(lateJoinRemaining)}
-                  </span>
+                  <span className="timer-value">{formatRemainingTime(remainingTime)}</span>
                 </div>
-              )}
-              <button
-                onClick={handleJoinSession}
-                disabled={!isLoaded}
-              >
-                {isLoaded ? texts.join : texts.loading}
-              </button>
-            </div>
-          )}
-
-          {isPlaying && !showSessionEnded && (
-            <div className="playing-message">
-              <div className="session-timer">
-                <span className="timer-label">{texts.sessionEnd}</span>
-                <span className="timer-value">{formatRemainingTime(remainingTime)}</span>
+                <button className="exit-button" onClick={handleExit}>
+                  {texts.exit}
+                </button>
               </div>
-              <button className="secondary outline" onClick={handleExit}>
-                {texts.exit}
-              </button>
-            </div>
-          )}
+            )}
 
-          {showSessionEnded && (
-            <div className="session-ended-message">
-              <span>{texts.sessionEnded}</span>
-            </div>
-          )}
+            {showSessionEnded && (
+              <div className="session-ended-message">
+                <span>{texts.sessionEnded}</span>
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>
