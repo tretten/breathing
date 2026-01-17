@@ -22,7 +22,6 @@ import { GlobalOnlineIndicator } from '../components/GlobalOnlineIndicator';
 import type { PresetId } from '../types';
 
 const SINGLE_USER_WAIT_MS = 3000; // 3 seconds wait for single user
-const EMPTY_ROOM_TIMEOUT_MS = 5000; // 5 seconds before ending session if no listeners
 
 export function WithFriendsRoomPage() {
   const navigate = useNavigate();
@@ -41,9 +40,6 @@ export function WithFriendsRoomPage() {
 
   // Single user waiting timer ref
   const singleUserTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Empty room timer ref (for ending session when no listeners)
-  const emptyRoomTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track if playback has been initiated to prevent duplicate calls
   const hasStartedPlayingRef = useRef(false);
@@ -69,6 +65,8 @@ export function WithFriendsRoomPage() {
     unlockAudio,
     playNow,
     playAt,
+    syncTo,
+    getCurrentTime,
     stopPlayback,
     getAudioLevel
   } = useAudioPlayback(audioUrl);
@@ -189,6 +187,30 @@ export function WithFriendsRoomPage() {
     }
   }, [roomStatus]);
 
+  // Periodic audio sync - correct drift if audio position differs from expected
+  useEffect(() => {
+    if (!isPlaying || !startTimestamp) return;
+
+    const SYNC_THRESHOLD = 0.5; // Sync if drift > 0.5 seconds
+    const SYNC_INTERVAL = 1000; // Check every second
+
+    const syncAudio = () => {
+      const expectedPosition = (getServerTime() - startTimestamp) / 1000;
+      const actualPosition = getCurrentTime();
+      const drift = Math.abs(expectedPosition - actualPosition);
+
+      if (drift > SYNC_THRESHOLD && expectedPosition > 0 && expectedPosition < duration) {
+        syncTo(expectedPosition);
+      }
+    };
+
+    const interval = setInterval(syncAudio, SYNC_INTERVAL);
+    // Also sync immediately
+    syncAudio();
+
+    return () => clearInterval(interval);
+  }, [isPlaying, startTimestamp, duration, getServerTime, getCurrentTime, syncTo]);
+
   // Format remaining time as MM:SS
   const formatRemainingTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -249,30 +271,15 @@ export function WithFriendsRoomPage() {
     }
   }, [isSessionExpired]);
 
-  // Auto-end session if no active listeners for 5 seconds
+  // Auto-end session immediately if no active listeners
   useEffect(() => {
-    // Clear any existing timer
-    if (emptyRoomTimerRef.current) {
-      clearTimeout(emptyRoomTimerRef.current);
-      emptyRoomTimerRef.current = null;
-    }
-
     // Only check during active session (countdown started, audio should be playing)
     const isActiveSession = roomStatus === 'countdown' && startTimestamp !== null && getServerTime() > startTimestamp;
 
     if (isActiveSession && onlineCount === 0) {
-      // No one in room - start 5 second timer to end session
-      emptyRoomTimerRef.current = setTimeout(() => {
-        resetCustomRoom();
-      }, EMPTY_ROOM_TIMEOUT_MS);
+      // No one in room - end session immediately
+      resetCustomRoom();
     }
-
-    return () => {
-      if (emptyRoomTimerRef.current) {
-        clearTimeout(emptyRoomTimerRef.current);
-        emptyRoomTimerRef.current = null;
-      }
-    };
   }, [roomStatus, startTimestamp, onlineCount, getServerTime]);
 
   // Update late join remaining time
@@ -300,13 +307,15 @@ export function WithFriendsRoomPage() {
     // First unlock audio with user gesture
     await unlockAudio();
 
-    // Calculate how many seconds into the session we are
+    // Calculate initial elapsed time
     const elapsedMs = getServerTime() - startTimestamp;
     const elapsedSeconds = elapsedMs / 1000;
 
     // If session is still within audio duration, sync to position
-    if (elapsedSeconds < duration) {
-      await playAt(elapsedSeconds);
+    if (elapsedSeconds >= 0 && elapsedSeconds < duration) {
+      // Pass function to recalculate exact position right before play
+      const getExactPosition = () => (getServerTime() - startTimestamp) / 1000;
+      await playAt(elapsedSeconds, getExactPosition);
     }
   }, [startTimestamp, isLoaded, duration, unlockAudio, getServerTime, playAt]);
 

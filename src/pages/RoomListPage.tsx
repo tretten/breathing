@@ -1,7 +1,8 @@
 // src/pages/RoomListPage.tsx
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { useRoomState, useServerTime } from '../hooks';
+import { useRoomState, useServerTime, resetCustomRoom } from '../hooks';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { GlobalOnlineIndicator } from '../components/GlobalOnlineIndicator';
@@ -18,9 +19,20 @@ export function RoomListPage() {
   };
 
   // Check if there's an active session in "with_friends" room
-  const isSessionActive = roomState?.status === 'countdown' &&
+  const onlineCount = roomState?.online ? Object.keys(roomState.online).length : 0;
+  const isSessionStarted = roomState?.status === 'countdown' &&
     roomState?.startTimestamp !== null &&
     getServerTime() > roomState.startTimestamp;
+
+  // Auto-reset abandoned sessions (session started but no participants)
+  useEffect(() => {
+    if (isSessionStarted && onlineCount === 0) {
+      resetCustomRoom();
+    }
+  }, [isSessionStarted, onlineCount]);
+
+  // Only show as active if there are participants
+  const isSessionActive = isSessionStarted && onlineCount > 0;
 
   const texts = language === 'en' ? {
     title: 'Wim Hof Breathing',

@@ -26,7 +26,7 @@ export interface AutoRoomState {
 
 export interface CustomRoomState {
   online: Record<string, ClientPresence>;
-  selectedPreset: PresetId;
+  selectedPreset: PresetId | null;
   status: RoomStatus;
   startTimestamp: number | null;
 }
@@ -51,7 +51,9 @@ export interface UseAudioPlaybackReturn {
   unlockAudio: () => Promise<boolean>;
   schedulePlayback: (startTimestamp: number, getServerTime: () => number) => boolean;
   playNow: () => Promise<boolean>;
-  playAt: (positionSeconds: number) => Promise<boolean>;
+  playAt: (positionSeconds: number, getPositionFn?: () => number) => Promise<boolean>;
+  syncTo: (positionSeconds: number) => boolean;
+  getCurrentTime: () => number;
   pausePlayback: () => void;
   resumePlayback: () => Promise<boolean>;
   stopPlayback: () => void;

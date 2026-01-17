@@ -148,7 +148,7 @@ export function useRoomState(roomId: 'with_friends'): CustomRoomState | null {
       if (data) {
         setRoomState({
           online: data.online || {},
-          selectedPreset: data.selectedPreset || 'ru_4rounds',
+          selectedPreset: data.selectedPreset || null,
           status: data.status || 'idle',
           startTimestamp: data.startTimestamp || null
         });
@@ -321,6 +321,16 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
   const unlockAudio = useCallback(async (): Promise<boolean> => {
     if (!audioElementRef.current) return false;
 
+    // Skip if already unlocked
+    if (isUnlocked) {
+      // Just setup analyser and resume context
+      setupAnalyser();
+      if (audioContextRef.current?.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+      return true;
+    }
+
     try {
       // Play and immediately pause to unlock iOS audio
       audioElementRef.current.muted = true;
@@ -345,7 +355,7 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       setIsUnlocked(true);
       return true;
     }
-  }, [setupAnalyser]);
+  }, [isUnlocked, setupAnalyser]);
 
   // Schedule playback at specific server timestamp
   const schedulePlayback = useCallback((
@@ -454,7 +464,11 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
   }, [isLoaded, isPlaying, setupAnalyser]);
 
   // Play from specific position (for late join sync)
-  const playAt = useCallback(async (positionSeconds: number): Promise<boolean> => {
+  // getPositionFn allows recalculating position right before play for better accuracy
+  const playAt = useCallback(async (
+    positionSeconds: number,
+    getPositionFn?: () => number
+  ): Promise<boolean> => {
     if (!audioElementRef.current || !isLoaded) {
       console.warn('Audio not ready for playback');
       return false;
@@ -474,9 +488,38 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
         await audioContextRef.current.resume();
       }
 
-      // Seek to position and play
-      audioElementRef.current.currentTime = Math.max(0, positionSeconds);
-      await audioElementRef.current.play();
+      const audio = audioElementRef.current;
+
+      // Wait for audio to be ready for seeking (if not already)
+      if (audio.readyState < 3) { // HAVE_FUTURE_DATA = 3
+        await new Promise<void>((resolve) => {
+          const onCanPlay = () => {
+            audio.removeEventListener('canplay', onCanPlay);
+            resolve();
+          };
+          audio.addEventListener('canplay', onCanPlay);
+          // Fallback timeout
+          setTimeout(() => {
+            audio.removeEventListener('canplay', onCanPlay);
+            resolve();
+          }, 500);
+        });
+      }
+
+      // Add compensation for play() startup latency
+      const PLAY_LATENCY_COMPENSATION = 0.3; // 300ms
+
+      // Calculate exact position RIGHT NOW (use callback if provided)
+      const targetPosition = getPositionFn
+        ? getPositionFn() + PLAY_LATENCY_COMPENSATION
+        : positionSeconds + PLAY_LATENCY_COMPENSATION;
+
+      // Clamp to valid range
+      const clampedPosition = Math.max(0, Math.min(targetPosition, duration - 0.1));
+
+      // Set position and play immediately
+      audio.currentTime = clampedPosition;
+      await audio.play();
 
       setIsPlaying(true);
       setIsPaused(false);
@@ -487,7 +530,23 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       console.error('Failed to play audio at position:', error);
       return false;
     }
-  }, [isLoaded, isPlaying, setupAnalyser]);
+  }, [isLoaded, isPlaying, duration, setupAnalyser]);
+
+  // Force sync audio to specific position (for correcting drift)
+  const syncTo = useCallback((positionSeconds: number): boolean => {
+    if (!audioElementRef.current || !isPlaying) {
+      return false;
+    }
+
+    const clampedPosition = Math.max(0, Math.min(positionSeconds, duration - 0.1));
+    audioElementRef.current.currentTime = clampedPosition;
+    return true;
+  }, [isPlaying, duration]);
+
+  // Get current audio playback position
+  const getCurrentTime = useCallback((): number => {
+    return audioElementRef.current?.currentTime || 0;
+  }, []);
 
   // Get current audio level for visualization (0-1)
   const getAudioLevel = useCallback((): number => {
@@ -516,6 +575,8 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
     schedulePlayback,
     playNow,
     playAt,
+    syncTo,
+    getCurrentTime,
     pausePlayback,
     resumePlayback,
     stopPlayback,
