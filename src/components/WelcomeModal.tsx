@@ -1,6 +1,7 @@
 // src/components/WelcomeModal.tsx
 import { useState } from 'react';
 import { TopBar } from './TopBar';
+import { BreathingIcon, LangRuIcon, LangEnIcon } from './Icons';
 
 type Language = 'ru' | 'en';
 
@@ -34,7 +35,7 @@ export function WelcomeModal({ onComplete }: WelcomeModalProps) {
       <main className="page-content">
         <div className="content-centered">
           <header className="page-header">
-            <div className="page-icon" aria-hidden="true">🌬️</div>
+            <BreathingIcon className="page-icon" />
             <h1>{texts.title}</h1>
             <p className="subtitle">{texts.subtitle}</p>
           </header>
@@ -48,7 +49,7 @@ export function WelcomeModal({ onComplete }: WelcomeModalProps) {
                 onClick={() => setSelectedLang('ru')}
                 aria-pressed={selectedLang === 'ru'}
               >
-                <span className="lang-flag" aria-hidden="true">🇷🇺</span>
+                <LangRuIcon className="lang-icon" size={32} />
                 <span className="lang-name">Русский</span>
               </button>
               <button
@@ -57,7 +58,7 @@ export function WelcomeModal({ onComplete }: WelcomeModalProps) {
                 onClick={() => setSelectedLang('en')}
                 aria-pressed={selectedLang === 'en'}
               >
-                <span className="lang-flag" aria-hidden="true">🇬🇧</span>
+                <LangEnIcon className="lang-icon" size={32} />
                 <span className="lang-name">English</span>
               </button>
             </div>

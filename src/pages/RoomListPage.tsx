@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useRoomState, useServerTime, resetCustomRoom } from '../hooks';
 import { TopBar } from '../components/TopBar';
+import { BreathingIcon, MeditationIcon, FriendsIcon } from '../components/Icons';
 import type { RoomId } from '../types';
 
 export function RoomListPage() {
@@ -59,7 +60,7 @@ export function RoomListPage() {
       <main className="page-content">
         <div className="content-centered">
           <header className="page-header">
-            <div className="page-icon" aria-hidden="true">🌬️</div>
+            <BreathingIcon className="page-icon" />
             <h1>{texts.title}</h1>
             <p className="subtitle">{texts.subtitle}</p>
           </header>
@@ -69,7 +70,7 @@ export function RoomListPage() {
               className="room-option"
               onClick={() => handleEnterRoom('solo')}
             >
-              <span className="room-icon">🧘</span>
+              <MeditationIcon className="room-icon" />
               <span className="room-name">{texts.solo}</span>
               <span className="room-desc">{texts.soloDesc}</span>
             </button>
@@ -78,7 +79,7 @@ export function RoomListPage() {
               className={`room-option ${isSessionActive ? 'session-active' : ''}`}
               onClick={() => handleEnterRoom('with_friends')}
             >
-              <span className="room-icon">👥</span>
+              <FriendsIcon className="room-icon" />
               <span className="room-name">{texts.withFriends}</span>
               <span className="room-desc">{texts.withFriendsDesc}</span>
               {isSessionActive && (
