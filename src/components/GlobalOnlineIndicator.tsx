@@ -46,10 +46,11 @@ export function GlobalOnlineIndicator() {
   }, []);
 
   const text = language === 'en' ? 'online' : 'онлайн';
+  const ariaLabel = language === 'en' ? `${onlineCount} users online` : `${onlineCount} пользователей онлайн`;
 
   return (
-    <div className="global-online-indicator">
-      <span className="online-dot" />
+    <div className="global-online-indicator" role="status" aria-live="polite" aria-label={ariaLabel}>
+      <span className="online-dot" aria-hidden="true" />
       <span>{onlineCount} {text}</span>
     </div>
   );

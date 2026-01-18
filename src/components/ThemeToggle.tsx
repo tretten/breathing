@@ -13,11 +13,15 @@ export function ThemeToggle() {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
+  const label = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+
   return (
     <button
       className="theme-toggle"
       onClick={() => setIsDark(!isDark)}
-      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-label={label}
+      aria-pressed={isDark}
+      title={label}
     >
       {isDark ? (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

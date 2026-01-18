@@ -48,8 +48,11 @@ export function WithFriendsRoomPage() {
   // Track presence with ready status
   const { onlineCount, clients } = usePresence('with_friends', clientId, { isReady });
 
+  // Room's preset (what others selected)
+  const roomPreset = roomState?.selectedPreset || null;
+
   // Use local preset for audio loading (immediate), fall back to room state
-  const selectedPreset = localPreset || roomState?.selectedPreset || null;
+  const selectedPreset = localPreset || roomPreset;
   const audioUrl = selectedPreset ? AUDIO_URLS[selectedPreset] : null;
 
   // Track if user has selected a preset
@@ -239,9 +242,14 @@ export function WithFriendsRoomPage() {
     exitedManuallyRef.current = true;
     stopPlayback();
     setIsReady(false);
-    // Don't reset room on exit - let the session continue so user can rejoin
+
+    // If we're the last participant, end the session
+    if (onlineCount <= 1) {
+      resetCustomRoom();
+    }
+
     navigate('/');
-  }, [stopPlayback, navigate]);
+  }, [stopPlayback, navigate, onlineCount]);
 
   // Calculate elapsed time since session started
   const getElapsedSeconds = useCallback(() => {
@@ -374,10 +382,12 @@ export function WithFriendsRoomPage() {
           <BreathingCircle isActive={isPlaying} getAudioLevel={getAudioLevel} />
 
           <div className="room-info">
-            {roomStatus === 'idle' && (
+            {/* Idle state - show only when not playing and not showing session ended */}
+            {roomStatus === 'idle' && !isPlaying && !showSessionEnded && (
               <>
                 <PresetSelector
-                  selected={selectedPreset}
+                  selected={localPreset}
+                  preselected={roomPreset}
                   onChange={handlePresetChange}
                   disabled={!canChangePreset}
                 />
@@ -406,7 +416,8 @@ export function WithFriendsRoomPage() {
               </>
             )}
 
-            {roomStatus === 'countdown' && !isPlaying && !isLateJoin && (
+            {/* Countdown state - waiting for countdown to finish */}
+            {roomStatus === 'countdown' && !isPlaying && !isLateJoin && !showSessionEnded && (
               <div className="countdown-message">
                 <button className="exit-button" onClick={handleExit}>
                   {texts.exit}
@@ -414,11 +425,12 @@ export function WithFriendsRoomPage() {
               </div>
             )}
 
-            {isLateJoin && (
+            {/* Late join state - session in progress, user can join */}
+            {isLateJoin && !isPlaying && !showSessionEnded && (
               <div className="late-join-message">
                 <p className="session-status">{texts.sessionInProgress}</p>
                 {lateJoinRemaining > 0 && (
-                  <div className="session-timer">
+                  <div className="session-timer" aria-live="polite" aria-atomic="true">
                     <span className="timer-label">{texts.sessionEnd}</span>
                     <span className="timer-value">
                       {formatRemainingTime(lateJoinRemaining)}
@@ -435,9 +447,10 @@ export function WithFriendsRoomPage() {
               </div>
             )}
 
+            {/* Playing state - audio is playing */}
             {isPlaying && !showSessionEnded && (
               <div className="playing-message">
-                <div className="session-timer">
+                <div className="session-timer" aria-live="polite" aria-atomic="true">
                   <span className="timer-label">{texts.sessionEnd}</span>
                   <span className="timer-value">{formatRemainingTime(remainingTime)}</span>
                 </div>
@@ -447,8 +460,9 @@ export function WithFriendsRoomPage() {
               </div>
             )}
 
+            {/* Session ended state */}
             {showSessionEnded && (
-              <div className="session-ended-message">
+              <div className="session-ended-message" role="status" aria-live="polite">
                 <span>{texts.sessionEnded}</span>
               </div>
             )}

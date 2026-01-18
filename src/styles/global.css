@@ -9,6 +9,13 @@
   box-sizing: border-box;
 }
 
+/* Ensure text scales properly at 200% zoom */
+html {
+  font-size: 100%; /* Base 16px, scales with browser zoom */
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
 /* Dark theme (default) */
 :root {
   --font-sans: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -60,14 +67,69 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-h1, h2, h3 {
+/* Typography - Headings */
+h1, h2, h3, h4 {
   font-family: Oranienbaum, serif;
   font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+h1 {
+  font-size: 2.5rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+h4 {
+  font-size: 1.25rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
 }
 
 .app {
   min-height: 100vh;
   background: var(--bg-primary);
+}
+
+/* Focus Indicators (WCAG 2.1 Level A) */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+.lang-btn:focus-visible,
+.preset-option:focus-visible,
+.room-option:focus-visible,
+.language-option:focus-visible {
+  outline: 3px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.theme-toggle:focus-visible {
+  outline: 3px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.back-button:focus-visible {
+  outline: 3px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* High contrast focus for dark backgrounds */
+[data-theme="light"] :focus-visible {
+  outline-color: var(--accent-secondary);
 }
 
 /* Global Page Container */
@@ -117,7 +179,6 @@ h1, h2, h3 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
 }
 
 .page-subtitle {
@@ -132,13 +193,13 @@ h1, h2, h3 {
   margin-top: 0.5rem;
 }
 
-/* Theme Toggle - same height as language switcher */
+/* Theme Toggle - same size as language switcher */
 .theme-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 34px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -168,7 +229,6 @@ h1, h2, h3 {
 /* Page Header */
 .page-header {
   text-align: center;
-  margin-bottom: 1rem;
 }
 
 .page-header h1 {
@@ -185,12 +245,18 @@ h1, h2, h3 {
   font-weight: 400;
 }
 
+.page-icon {
+  font-size: 4rem;
+  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+
 /* Room Options - styled like language options */
 .room-options {
   display: flex;
   gap: 1rem;
   justify-content: center;
-  margin-bottom: 2rem;
+  margin: 2rem 0;
 }
 
 .room-option {
@@ -291,23 +357,19 @@ h1, h2, h3 {
   padding: 3px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
-  height: 32px;
 }
 
 .lang-btn {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 500;
-  padding: 0 0.6rem;
-  border-radius: 5px;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
   font-family: inherit;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .lang-btn:hover {
@@ -342,30 +404,33 @@ h1, h2, h3 {
   50% { opacity: 0.5; transform: scale(1.2); }
 }
 
-/* Back Button */
+/* Back Button - pill shape */
 .back-button {
-  background: none;
-  border: none;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   cursor: pointer;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
+  padding: 0.5rem 0.875rem;
+  height: 36px;
+  border-radius: 100px;
   transition: all 0.15s ease;
   font-family: inherit;
   font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
+  gap: 0.375rem;
 }
 
 .back-button:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
+  border-color: var(--text-tertiary);
 }
 
 .back-arrow {
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 /* Global Online Indicator - in topbar */
@@ -417,11 +482,11 @@ h1, h2, h3 {
   width: 100%;
 }
 
-.preset-selector label {
+.preset-selector span {
   display: block;
   color: var(--text-secondary);
-  font-size: 0.85rem;
-  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  margin-bottom: 0.625rem;
 }
 
 .preset-options {
@@ -435,6 +500,7 @@ h1, h2, h3 {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 0.75rem;
+  min-height: 44px;
   color: var(--text-secondary);
   font-size: 0.85rem;
   cursor: pointer;
@@ -452,6 +518,13 @@ h1, h2, h3 {
   background: var(--accent-glow);
   border-color: var(--accent-primary);
   color: var(--accent-primary);
+}
+
+/* Preselected - shows what others selected (hover-like style, persistent) */
+.preset-option.preselected {
+  border-color: var(--text-tertiary);
+  color: var(--text-primary);
+  background: var(--bg-hover);
 }
 
 .preset-option:disabled {
@@ -497,27 +570,42 @@ h1, h2, h3 {
   justify-content: center;
 }
 
-/* Ready Button */
+/* Ready Button - expressive style like welcome button */
 .ready-button {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: 50px;
+  color: #ffffff;
+  min-width: 200px;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
 .ready-button:hover:not(:disabled) {
-  background: var(--bg-hover);
-  border-color: var(--text-tertiary);
+  transform: translateY(-2px);
+  background: var(--accent-secondary);
+  box-shadow: 0 8px 24px var(--accent-glow);
 }
 
 .ready-button.ready {
-  background: var(--accent-primary);
-  border-color: var(--accent-primary);
-  color: #ffffff;
+  background: var(--bg-secondary);
+  border: 2px solid var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.ready-button.ready:hover:not(:disabled) {
+  background: var(--accent-glow);
+  transform: translateY(-2px);
+  box-shadow: none;
 }
 
 .ready-button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Waiting Message */
@@ -556,126 +644,65 @@ h1, h2, h3 {
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* Welcome Modal */
-.welcome-overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--bg-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 300;
-  padding: 2rem;
-}
-
-.welcome-content {
-  text-align: center;
-  max-width: 450px;
+/* Language Selection Page - same structure as Room Options */
+.language-selection-page {
   width: 100%;
+  margin-bottom: 1.5rem;
 }
 
-.welcome-icon {
-  font-size: 5rem;
-  margin-bottom: 1rem;
-}
-
-.welcome-content h2 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--text-primary), var(--accent-primary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 0.5rem;
-}
-
-.welcome-subtitle {
-  color: var(--text-secondary);
-  font-size: 1.1rem;
-  margin-bottom: 2.5rem;
-}
-
-.language-selection {
-  margin-bottom: 2rem;
-}
-
-.selection-label {
+.language-selection-page .selection-label {
   color: var(--text-secondary);
   font-size: 0.9rem;
   margin-bottom: 1rem;
 }
 
-.language-options {
+.language-options-page {
   display: flex;
   gap: 1rem;
   justify-content: center;
 }
 
-.language-option {
+.language-option-page {
   background: var(--bg-card);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  border: 2px solid var(--border-color);
   border-radius: 16px;
-  padding: 1.5rem 2rem;
+  padding: 1.5rem 1.5rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  min-width: 130px;
+  min-width: 140px;
+  flex: 1;
   font-family: inherit;
 }
 
-.language-option:hover {
-  border-color: rgba(78, 205, 196, 0.3);
-  transform: translateY(-2px);
-}
-
-.language-option.selected {
+.language-option-page:hover {
   border-color: var(--accent-primary);
-  background: rgba(255, 179, 0, 0.1);
-}
-
-.lang-flag {
-  font-size: 2.5rem;
-}
-
-.lang-name {
-  color: var(--text-primary);
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-.welcome-continue-button {
-  background: var(--accent-primary);
-  border: none;
-  border-radius: 50px;
-  padding: 1.25rem 3rem;
-  color: #0e1529;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: inherit;
-  width: 100%;
-  max-width: 320px;
-}
-
-.welcome-continue-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  background: var(--accent-secondary);
-  box-shadow: 0 12px 40px var(--accent-glow);
 }
 
-.welcome-continue-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.language-option-page.selected {
+  border-color: var(--accent-primary);
+  background: var(--accent-glow);
+}
+
+.language-option-page .lang-flag {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.language-option-page .lang-name {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 500;
 }
 
 .welcome-hint {
   color: var(--text-secondary);
   font-size: 0.85rem;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
 /* Modal */
@@ -732,13 +759,11 @@ h1, h2, h3 {
   box-shadow: 0 10px 30px var(--accent-glow);
 }
 
-/* Action Buttons - Claude.ai style */
-.start-now-button,
+/* Secondary Action Buttons - 44px minimum touch target */
 .stop-button,
-.exit-button,
-.join-button,
-.ready-button {
+.exit-button {
   min-width: 160px;
+  min-height: 44px;
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
   font-size: 0.9rem;
@@ -748,23 +773,36 @@ h1, h2, h3 {
   font-family: inherit;
 }
 
-/* Primary button */
+/* Primary Action Buttons - expressive style (same as ready-button) */
 .start-now-button,
 .join-button {
   background: var(--accent-primary);
   border: none;
+  border-radius: 50px;
   color: #ffffff;
+  min-width: 200px;
+  min-height: 44px;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
 }
 
 .start-now-button:hover:not(:disabled),
 .join-button:hover:not(:disabled) {
-  background: var(--accent-hover);
+  transform: translateY(-2px);
+  background: var(--accent-secondary);
+  box-shadow: 0 8px 24px var(--accent-glow);
 }
 
 .start-now-button:disabled,
 .join-button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Stop Button */
@@ -991,12 +1029,17 @@ h1, h2, h3 {
   }
 
   .back-button {
-    padding: 0.4rem 0.5rem;
-    font-size: 0.9rem;
+    padding: 0.375rem 0.625rem;
+    height: 32px;
+    font-size: 0.85rem;
   }
 
   .back-text {
     display: none;
+  }
+
+  .back-arrow {
+    font-size: 1rem;
   }
 
   /* Page content */
@@ -1020,8 +1063,18 @@ h1, h2, h3 {
     font-size: 1.75rem;
   }
 
+  .page-icon {
+    font-size: 3rem;
+  }
+
   .page-subtitle {
     font-size: 0.8rem;
+  }
+
+  .ready-button {
+    min-width: 180px;
+    padding: 0.875rem 1.5rem;
+    font-size: 0.95rem;
   }
 
   /* Room options */
@@ -1053,7 +1106,7 @@ h1, h2, h3 {
   }
 
   /* Preset selector compact */
-  .preset-selector label {
+  .preset-selector span {
     font-size: 0.8rem;
     margin-bottom: 0.5rem;
   }
@@ -1069,14 +1122,19 @@ h1, h2, h3 {
     border-radius: 8px;
   }
 
-  /* Buttons smaller */
-  .start-now-button,
+  /* Secondary buttons smaller */
   .stop-button,
-  .exit-button,
-  .join-button,
-  .ready-button {
+  .exit-button {
     min-width: 140px;
     padding: 0.85rem 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  /* Primary action buttons - match ready-button responsive */
+  .start-now-button,
+  .join-button {
+    min-width: 180px;
+    padding: 0.875rem 1.5rem;
     font-size: 0.95rem;
   }
 
@@ -1119,56 +1177,36 @@ h1, h2, h3 {
   }
 
 
-  /* Welcome modal */
-  .welcome-overlay {
-    padding: 1rem;
-  }
-
-  .welcome-content h2 {
-    font-size: 1.75rem;
-  }
-
-  .welcome-subtitle {
-    font-size: 0.95rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .language-options {
+  /* Language selection page - same as room options */
+  .language-options-page {
     gap: 0.75rem;
   }
 
-  .language-option {
-    padding: 1rem 1.25rem;
-    min-width: 100px;
+  .language-option-page {
+    padding: 1.25rem 1rem;
+    min-width: 120px;
   }
 
-  .lang-flag {
+  .language-option-page .lang-flag {
     font-size: 2rem;
   }
 
-  .lang-name {
-    font-size: 0.9rem;
-  }
-
-  .welcome-continue-button {
-    padding: 1rem 2rem;
+  .language-option-page .lang-name {
     font-size: 1rem;
-  }
-
-  .language-selection {
-    margin-bottom: 1.5rem;
   }
 }
 
-/* Extra small screens */
+/* Extra small screens (380px) */
 @media (max-width: 380px) {
   .page-header h1 {
     font-size: 1.5rem;
   }
 
-  .room-option {
+  .room-option,
+  .language-option-page {
     padding: 1rem 0.75rem;
-    min-width: 100px;
+    min-width: 0;
+    flex: 1;
   }
 
   .room-icon {
@@ -1183,6 +1221,14 @@ h1, h2, h3 {
     font-size: 0.7rem;
   }
 
+  .language-option-page .lang-flag {
+    font-size: 1.75rem;
+  }
+
+  .language-option-page .lang-name {
+    font-size: 0.9rem;
+  }
+
   .preset-options {
     grid-template-columns: 1fr 1fr;
     gap: 0.4rem;
@@ -1191,16 +1237,29 @@ h1, h2, h3 {
   .preset-option {
     padding: 0.5rem;
     font-size: 0.75rem;
+    min-height: 44px;
   }
 
-  .start-now-button,
+  /* Secondary buttons - full width */
   .stop-button,
-  .exit-button,
-  .join-button,
-  .ready-button {
-    min-width: 120px;
+  .exit-button {
+    min-width: 0;
+    width: 100%;
     padding: 0.75rem 1rem;
     font-size: 0.9rem;
+  }
+
+  /* Primary action buttons - full width, same as ready-button */
+  .start-now-button,
+  .join-button,
+  .ready-button {
+    min-width: 0;
+    width: 100%;
+    padding: 0.875rem 1rem;
+  }
+
+  .page-icon {
+    font-size: 2.5rem;
   }
 
   .countdown-number {
@@ -1213,5 +1272,139 @@ h1, h2, h3 {
 
   .session-status {
     font-size: 1rem;
+  }
+}
+
+/* Minimum viewport (320px) - prevent horizontal scroll */
+@media (max-width: 320px) {
+  /* Reduce page padding */
+  .page-content {
+    padding: 0.75rem;
+    padding-top: 1rem;
+  }
+
+  .top-bar {
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Stack room options vertically if needed */
+  .room-options {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .room-option {
+    min-width: 0;
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .room-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .room-option .room-name {
+    font-size: 1rem;
+  }
+
+  .room-desc {
+    font-size: 0.75rem;
+  }
+
+  /* Language selection - stack vertically like room options */
+  .language-options-page {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .language-option-page {
+    min-width: 0;
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .language-option-page .lang-flag {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .language-option-page .lang-name {
+    font-size: 1rem;
+  }
+
+  /* Page header */
+  .page-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.75rem;
+  }
+
+  /* Session timer */
+  .session-timer,
+  .next-session-timer {
+    padding: 0.5rem 0.75rem;
+    min-height: 70px;
+  }
+
+  .timer-value {
+    font-size: 1.25rem;
+  }
+
+  /* Countdown */
+  .countdown-number {
+    font-size: 5rem;
+  }
+
+  /* Control buttons */
+  .control-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .control-buttons .stop-button {
+    width: 100%;
+  }
+}
+
+/* Reflow support for 400% zoom (WCAG 1.4.10) */
+@media (max-width: 1280px) and (min-width: 320px) {
+  .content-centered {
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+
+  .room-info {
+    max-width: 100%;
+  }
+}
+
+/* Ensure line height and spacing work at increased text sizes */
+@supports (font-size: clamp(1rem, 2vw, 1.5rem)) {
+  .page-header h1 {
+    font-size: clamp(1.25rem, 5vw, 2.5rem);
+  }
+
+  .welcome-content h1 {
+    font-size: clamp(1.5rem, 6vw, 2.5rem);
+  }
+
+  .timer-value {
+    font-size: clamp(1.25rem, 4vw, 2rem);
+  }
+
+  .countdown-number {
+    font-size: clamp(4rem, 20vw, 10rem);
   }
 }

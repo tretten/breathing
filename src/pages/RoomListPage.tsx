@@ -59,6 +59,7 @@ export function RoomListPage() {
       <main className="page-content">
         <div className="content-centered">
           <header className="page-header">
+            <div className="page-icon" aria-hidden="true">🌬️</div>
             <h1>{texts.title}</h1>
             <p className="subtitle">{texts.subtitle}</p>
           </header>

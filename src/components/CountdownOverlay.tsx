@@ -8,8 +8,10 @@ export function CountdownOverlay({ seconds }: CountdownOverlayProps) {
   if (seconds <= 0 || seconds > 3) return null;
 
   return (
-    <div className="countdown-overlay">
-      <div className="countdown-number">{Math.ceil(seconds)}</div>
+    <div className="countdown-overlay" role="alert" aria-live="assertive" aria-atomic="true">
+      <div className="countdown-number" aria-label={`Starting in ${Math.ceil(seconds)}`}>
+        {Math.ceil(seconds)}
+      </div>
     </div>
   );
 }

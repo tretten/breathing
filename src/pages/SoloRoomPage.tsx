@@ -191,22 +191,22 @@ export function SoloRoomPage() {
 
             {(isPlaying || isPaused) && (
               <div className="playing-message">
-                <div className="session-timer">
+                <div className="session-timer" aria-live="polite" aria-atomic="true">
                   <span className="timer-label">{isPaused ? texts.paused : texts.sessionEnd}</span>
                   <span className="timer-value">{formatRemainingTime(remainingTime)}</span>
                 </div>
                 <div className="control-buttons">
                   {isPlaying && (
-                    <button className="pause-button icon-button-circle" onClick={pausePlayback} title={texts.pause}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <button className="pause-button icon-button-circle" onClick={pausePlayback} aria-label={texts.pause} title={texts.pause}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                         <rect x="6" y="4" width="4" height="16" rx="1"/>
                         <rect x="14" y="4" width="4" height="16" rx="1"/>
                       </svg>
                     </button>
                   )}
                   {isPaused && (
-                    <button className="resume-button icon-button-circle" onClick={resumePlayback} title={texts.resume}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <button className="resume-button icon-button-circle" onClick={resumePlayback} aria-label={texts.resume} title={texts.resume}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                         <path d="M8 5.14v14l11-7-11-7z"/>
                       </svg>
                     </button>

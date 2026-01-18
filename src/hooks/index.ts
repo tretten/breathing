@@ -74,6 +74,9 @@ interface UsePresenceOptions {
   isReady?: boolean;
 }
 
+// Max age for presence entries before considered stale (5 minutes)
+const PRESENCE_MAX_AGE_MS = 5 * 60 * 1000;
+
 export function usePresence(
   roomId: RoomId | null,
   clientId: string,
@@ -92,23 +95,69 @@ export function usePresence(
     const myRef = ref(db, `rooms/${roomId}/online/${clientId}`);
     const onlineRef = ref(db, `rooms/${roomId}/online`);
 
-    // Register presence with initial data
-    const presenceData: ClientPresence = {
-      joinedAt: Date.now(),
-      isReady: false
+    // Clean up stale entries first, then register ourselves
+    const cleanupAndRegister = async () => {
+      try {
+        // Get current entries
+        const snapshot = await get(onlineRef);
+        const data = snapshot.val() as Record<string, ClientPresence> | null;
+
+        if (data) {
+          const now = Date.now();
+          const staleClientIds = Object.entries(data)
+            .filter(([id, presence]) => {
+              // Don't remove our own entry
+              if (id === clientId) return false;
+              // Remove if joinedAt is too old
+              return now - presence.joinedAt > PRESENCE_MAX_AGE_MS;
+            })
+            .map(([id]) => id);
+
+          // Remove stale entries
+          for (const staleId of staleClientIds) {
+            await remove(ref(db, `rooms/${roomId}/online/${staleId}`));
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to cleanup stale presence entries:', e);
+      }
+
+      // Register presence with initial data
+      const presenceData: ClientPresence = {
+        joinedAt: Date.now(),
+        isReady: false
+      };
+
+      set(myRef, presenceData);
     };
 
-    set(myRef, presenceData);
+    cleanupAndRegister();
 
     // Setup disconnect handler
     onDisconnect(myRef).remove();
 
-    // Listen to online users
+    // Listen to online users - filter out stale entries
     const unsubscribe = onValue(onlineRef, (snapshot) => {
       const data = snapshot.val() as Record<string, ClientPresence> | null;
-      const validData = data || {};
-      setClients(validData);
-      setOnlineCount(Object.keys(validData).length);
+      if (!data) {
+        setClients({});
+        setOnlineCount(0);
+        return;
+      }
+
+      // Filter out stale entries from display
+      const now = Date.now();
+      const activeClients: Record<string, ClientPresence> = {};
+
+      for (const [id, presence] of Object.entries(data)) {
+        // Always include our own entry, filter stale others
+        if (id === clientId || now - presence.joinedAt <= PRESENCE_MAX_AGE_MS) {
+          activeClients[id] = presence;
+        }
+      }
+
+      setClients(activeClients);
+      setOnlineCount(Object.keys(activeClients).length);
     });
 
     // Cleanup on unmount
@@ -127,6 +176,22 @@ export function usePresence(
     const myRef = ref(db, `rooms/${roomId}/online/${clientId}`);
     update(myRef, { isReady });
   }, [roomId, clientId, isReady]);
+
+  // Heartbeat - update joinedAt periodically to stay "alive"
+  useEffect(() => {
+    if (!roomId || !clientId) {
+      return;
+    }
+
+    const myRef = ref(db, `rooms/${roomId}/online/${clientId}`);
+    const HEARTBEAT_INTERVAL = 60 * 1000; // Every 1 minute
+
+    const heartbeat = setInterval(() => {
+      update(myRef, { joinedAt: Date.now() });
+    }, HEARTBEAT_INTERVAL);
+
+    return () => clearInterval(heartbeat);
+  }, [roomId, clientId]);
 
   return { onlineCount, clients };
 }
