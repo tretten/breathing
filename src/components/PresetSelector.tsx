@@ -13,9 +13,9 @@ interface PresetSelectorProps {
 export function PresetSelector({ selected, preselected, onChange, disabled }: PresetSelectorProps) {
   const { language } = useAppContext();
 
-  const label = language === 'en' ? 'Select preset:' : 'Выберите пресет:';
+  const label = language === 'en' ? 'Preset:' : 'Пресет:';
 
-  const groupLabel = language === 'en' ? 'Breathing presets' : 'Пресеты дыхания';
+  const groupLabel = language === 'en' ? 'Presets' : 'Пресеты';
 
   const getClassName = (presetId: PresetId) => {
     if (selected === presetId) return 'preset-option selected';

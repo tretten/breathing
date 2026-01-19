@@ -19,13 +19,13 @@ export function WelcomeModal({ onComplete }: WelcomeModalProps) {
   };
 
   const texts = {
-    title: 'Wim Hof Breathing',
-    subtitle: 'Совместное дыхание в реальном времени',
-    selectLabel: 'Выберите язык / Select language:',
-    continueEn: 'Enable Sound & Continue',
-    continueRu: 'Включить звук и продолжить',
-    hintEn: 'Sound is required for breathing guidance',
-    hintRu: 'Звук необходим для голосового сопровождения'
+    title: 'Wim Hof',
+    subtitle: 'Breathe together · Дышим вместе',
+    selectLabel: 'Select language · Выберите язык',
+    continueEn: 'Enable Sound',
+    continueRu: 'Включить звук',
+    hintEn: 'Sound required for guidance',
+    hintRu: 'Звук нужен для практики'
   };
 
   return (

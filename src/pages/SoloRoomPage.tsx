@@ -122,26 +122,26 @@ export function SoloRoomPage() {
 
   // Text based on language
   const texts = language === 'en' ? {
-    appTitle: 'Wim Hof Breathing',
+    appTitle: 'Wim Hof',
     title: 'Solo',
-    selectPreset: 'Select preset',
+    selectPreset: 'Choose',
     start: 'Start',
-    loading: 'Loading...',
-    sessionEnd: 'Session ends in',
+    loading: 'Wait...',
+    sessionEnd: 'Remaining',
     stop: 'Stop',
     pause: 'Pause',
-    resume: 'Resume',
+    resume: 'Play',
     paused: 'Paused'
   } : {
-    appTitle: 'Дыхание по Виму Хофу',
-    title: 'Сам',
-    selectPreset: 'Выберите пресет',
-    start: 'Начать',
-    loading: 'Загрузка...',
-    sessionEnd: 'До конца сессии',
-    stop: 'Остановить',
+    appTitle: 'Вим Хоф',
+    title: 'Соло',
+    selectPreset: 'Выбор',
+    start: 'Старт',
+    loading: 'Ждите',
+    sessionEnd: 'Осталось',
+    stop: 'Стоп',
     pause: 'Пауза',
-    resume: 'Продолжить',
+    resume: 'Плей',
     paused: 'Пауза'
   };
 

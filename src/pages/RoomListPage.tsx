@@ -34,23 +34,23 @@ export function RoomListPage() {
   const isSessionActive = isSessionStarted && onlineCount > 0;
 
   const texts = language === 'en' ? {
-    title: 'Wim Hof Breathing',
-    subtitle: 'Breathe together in real time',
+    title: 'Wim Hof',
+    subtitle: 'Breathe together',
     solo: 'Solo',
-    soloDesc: 'Practice breathing on your own',
-    withFriends: 'With Friends',
-    withFriendsDesc: 'Breathe together with others',
+    soloDesc: 'Practice alone',
+    withFriends: 'Together',
+    withFriendsDesc: 'Breathe with friends',
     enter: 'Enter',
-    sessionActive: 'Session in progress'
+    sessionActive: 'Live'
   } : {
-    title: 'Дыхание по Виму Хофу',
-    subtitle: 'Совместное дыхание в реальном времени',
-    solo: 'Сам',
-    soloDesc: 'Практикуй дыхание самостоятельно',
-    withFriends: 'С друзьями',
-    withFriendsDesc: 'Дыши вместе с другими',
+    title: 'Вим Хоф',
+    subtitle: 'Дышим вместе',
+    solo: 'Соло',
+    soloDesc: 'Практика соло',
+    withFriends: 'Вместе',
+    withFriendsDesc: 'Дышать с друзьями',
     enter: 'Войти',
-    sessionActive: 'Идет сессия'
+    sessionActive: 'Live'
   };
 
   return (

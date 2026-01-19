@@ -23,7 +23,7 @@ export function TopBar({ showBack = false, onBack }: TopBarProps) {
   };
 
   const backText = language === 'en' ? 'Back' : 'Назад';
-  const backLabel = language === 'en' ? 'Go back to home' : 'Вернуться на главную';
+  const backLabel = language === 'en' ? 'Back to home' : 'На главную';
 
   return (
     <header className="top-bar">

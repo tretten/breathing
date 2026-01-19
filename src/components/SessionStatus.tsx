@@ -9,10 +9,10 @@ export function SessionStatus({ isPlaying }: SessionStatusProps) {
   const { language } = useAppContext();
 
   const texts = language === 'en' ? {
-    playing: 'Session in progress',
+    playing: 'In progress',
     waiting: 'Waiting'
   } : {
-    playing: 'Сессия идёт',
+    playing: 'Идёт сеанс',
     waiting: 'Ожидание'
   };
 
