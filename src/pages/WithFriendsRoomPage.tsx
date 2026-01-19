@@ -379,7 +379,9 @@ export function WithFriendsRoomPage() {
             <p className="room-online-count">{onlineCount} {texts.inRoom}</p>
           </header>
 
-          <BreathingCircle isActive={isPlaying} getAudioLevel={getAudioLevel} />
+          {(roomStatus !== 'idle' || isPlaying) && (
+            <BreathingCircle isActive={isPlaying} getAudioLevel={getAudioLevel} />
+          )}
 
           <div className="room-info">
             {/* Idle state - show only when not playing and not showing session ended */}

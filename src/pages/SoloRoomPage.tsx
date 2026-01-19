@@ -160,7 +160,9 @@ export function SoloRoomPage() {
             <h1>{texts.title}</h1>
           </header>
 
-          <BreathingCircle isActive={isPlaying || isPaused} getAudioLevel={isPlaying ? getAudioLevel : undefined} />
+          {status !== 'idle' && (
+            <BreathingCircle isActive={isPlaying || isPaused} getAudioLevel={isPlaying ? getAudioLevel : undefined} />
+          )}
 
           <div className="room-info">
             {status === 'idle' && (
