@@ -8,12 +8,14 @@ import {
   usePresence,
   useRoomState,
   useAudioPlayback,
+  usePhaseCues,
   updateRoomPreset,
   startCustomRoomCountdown,
   resetCustomRoom
 } from '../hooks';
 import { AUDIO_URLS } from '../utils/constants';
 import { BreathingCircle } from '../components/BreathingCircle';
+import { PhaseOverlay } from '../components/PhaseOverlay';
 import { PresetSelector } from '../components/PresetSelector';
 import { CountdownOverlay } from '../components/CountdownOverlay';
 import { TopBar } from '../components/TopBar';
@@ -71,6 +73,9 @@ export function WithFriendsRoomPage() {
     stopPlayback,
     getAudioLevel
   } = useAudioPlayback(audioUrl);
+
+  // Phase cues for displaying Breathe/Pause/Hold
+  const { currentPhase, phaseRemaining } = usePhaseCues(audioUrl, getCurrentTime, isPlaying);
 
   // Calculate ready count
   const readyCount = Object.values(clients).filter(c => c.isReady).length;
@@ -380,7 +385,7 @@ export function WithFriendsRoomPage() {
           </header>
 
           {(roomStatus !== 'idle' || isPlaying) && (
-            <BreathingCircle isActive={isPlaying} getAudioLevel={getAudioLevel} />
+            <BreathingCircle isActive={isPlaying} getAudioLevel={getAudioLevel} phase={currentPhase} />
           )}
 
           <div className="room-info">
@@ -452,9 +457,12 @@ export function WithFriendsRoomPage() {
             {/* Playing state - audio is playing */}
             {isPlaying && !showSessionEnded && (
               <div className="playing-message">
-                <div className="session-timer" aria-live="polite" aria-atomic="true">
-                  <span className="timer-label">{texts.sessionEnd}</span>
-                  <span className="timer-value">{formatRemainingTime(remainingTime)}</span>
+                <div className="timers-section">
+                  <PhaseOverlay phase={currentPhase} remaining={phaseRemaining} />
+                  <div className="total-timer" aria-live="polite" aria-atomic="true">
+                    <span className="total-timer-label">{texts.sessionEnd}</span>
+                    <span className="total-timer-value">{formatRemainingTime(remainingTime)}</span>
+                  </div>
                 </div>
                 <button className="exit-button" onClick={handleExit}>
                   {texts.exit}

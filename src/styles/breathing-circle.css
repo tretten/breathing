@@ -1,5 +1,5 @@
 /* src/styles/breathing-circle.css */
-/* Breathing Circle - Uses Pico CSS variables */
+/* Breathing Circle - Uses CSS variables for phase colors */
 
 .breathing-container {
   position: relative;
@@ -8,19 +8,55 @@
   display: flex;
   align-items: center;
   justify-content: center;
+
+  /* Default colors (breathe phase) */
+  --circle-primary: var(--accent-primary);
+  --circle-secondary: var(--accent-secondary);
+  --circle-glow: var(--accent-glow);
+}
+
+/* Phase-specific colors */
+.breathing-container.phase-breathe {
+  --circle-primary: rgba(120, 200, 255, 0.95);
+  --circle-secondary: rgba(80, 160, 220, 0.8);
+  --circle-glow: rgba(120, 200, 255, 0.25);
+}
+
+.breathing-container.phase-hold {
+  --circle-primary: rgba(251, 191, 36, 0.95);
+  --circle-secondary: rgba(245, 158, 11, 0.8);
+  --circle-glow: rgba(251, 191, 36, 0.25);
+}
+
+.breathing-container.phase-pause {
+  --circle-primary: rgba(160, 160, 170, 0.8);
+  --circle-secondary: rgba(120, 120, 130, 0.6);
+  --circle-glow: rgba(160, 160, 170, 0.15);
+}
+
+.breathing-container.phase-intro {
+  --circle-primary: rgba(167, 139, 250, 0.9);
+  --circle-secondary: rgba(139, 92, 246, 0.7);
+  --circle-glow: rgba(167, 139, 250, 0.2);
+}
+
+.breathing-container.phase-outro {
+  --circle-primary: rgba(52, 211, 153, 0.9);
+  --circle-secondary: rgba(16, 185, 129, 0.7);
+  --circle-glow: rgba(52, 211, 153, 0.2);
 }
 
 .breathing-circle {
   width: 160px;
   height: 160px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(135deg, var(--circle-primary), var(--circle-secondary));
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0.7;
-  box-shadow: 0 0 30px var(--accent-glow);
-  transition: opacity 0.5s ease, filter 0.5s ease, box-shadow 0.5s ease;
+  box-shadow: 0 0 30px var(--circle-glow);
+  transition: opacity 0.5s ease, filter 0.5s ease, box-shadow 0.5s ease, background 0.4s ease;
   animation: breathe-idle 6s ease-in-out infinite;
 }
 
@@ -74,9 +110,10 @@
   width: 60%;
   height: 60%;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(135deg, var(--circle-primary), var(--circle-secondary));
   opacity: 0.9;
-  box-shadow: 0 0 20px var(--accent-glow);
+  box-shadow: 0 0 20px var(--circle-glow);
+  transition: background 0.4s ease, box-shadow 0.4s ease;
 }
 
 .breathing-rings {
@@ -89,8 +126,9 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 1px solid var(--accent-primary);
+  border: 1px solid var(--circle-primary);
   opacity: 0;
+  transition: border-color 0.4s ease;
 }
 
 .ring.active {
@@ -115,26 +153,26 @@
 /* Mobile */
 @media (max-width: 640px) {
   .breathing-container {
-    width: 180px;
-    height: 180px;
+    width: 140px;
+    height: 140px;
     flex-shrink: 0;
   }
 
   .breathing-circle {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
   }
 }
 
 /* Extra small screens */
 @media (max-width: 380px) {
   .breathing-container {
-    width: 150px;
-    height: 150px;
+    width: 120px;
+    height: 120px;
   }
 
   .breathing-circle {
-    width: 85px;
-    height: 85px;
+    width: 70px;
+    height: 70px;
   }
 }

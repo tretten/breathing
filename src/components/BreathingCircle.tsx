@@ -1,13 +1,16 @@
 // src/components/BreathingCircle.tsx
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import '../styles/breathing-circle.css';
+import type { PhaseType } from '../utils/phaseCues';
 
 interface BreathingCircleProps {
   isActive: boolean;
   getAudioLevel?: () => number;
+  phase?: PhaseType | null;
+  children?: ReactNode;
 }
 
-export function BreathingCircle({ isActive, getAudioLevel }: BreathingCircleProps) {
+export function BreathingCircle({ isActive, getAudioLevel, phase, children }: BreathingCircleProps) {
   const [scale, setScale] = useState(1);
   const [glowIntensity, setGlowIntensity] = useState(60);
   const frameRef = useRef<number>(0);
@@ -50,23 +53,33 @@ export function BreathingCircle({ isActive, getAudioLevel }: BreathingCircleProp
     };
   }, [isActive, getAudioLevel]);
 
-  // Determine CSS class based on state
-  // When not active: no special class (static dimmed appearance)
-  // When active with audio: reactive (JS-controlled)
-  // When active without audio: active (CSS animation fallback)
-  const circleClass = isActive
-    ? (getAudioLevel ? 'breathing-circle reactive' : 'breathing-circle active')
-    : 'breathing-circle';
+  // Determine CSS class based on state and phase
+  const getCircleClass = () => {
+    const classes = ['breathing-circle'];
+
+    if (isActive) {
+      classes.push(getAudioLevel ? 'reactive' : 'active');
+    }
+
+    if (phase) {
+      classes.push(`phase-${phase}`);
+    }
+
+    return classes.join(' ');
+  };
 
   // Inline styles for reactive mode
   const reactiveStyle = isActive && getAudioLevel ? {
     transform: `scale(${scale})`,
-    boxShadow: `0 0 ${glowIntensity}px var(--accent-glow)`
+    boxShadow: `0 0 ${glowIntensity}px var(--circle-glow, var(--accent-glow))`
   } : undefined;
 
+  // Phase class for container (affects rings too)
+  const containerClass = phase ? `breathing-container phase-${phase}` : 'breathing-container';
+
   return (
-    <div className="breathing-container">
-      <div className={circleClass} style={reactiveStyle}>
+    <div className={containerClass}>
+      <div className={getCircleClass()} style={reactiveStyle}>
         <div className="breathing-inner">
           <div className="breathing-core" />
         </div>
@@ -76,6 +89,7 @@ export function BreathingCircle({ isActive, getAudioLevel }: BreathingCircleProp
           <div key={i} className={`ring ring-${i + 1} ${isActive ? 'active' : ''}`} />
         ))}
       </div>
+      {children}
     </div>
   );
 }

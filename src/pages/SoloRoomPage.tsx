@@ -2,9 +2,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { useAudioPlayback } from '../hooks';
+import { useAudioPlayback, usePhaseCues } from '../hooks';
 import { AUDIO_URLS } from '../utils/constants';
 import { BreathingCircle } from '../components/BreathingCircle';
+import { PhaseOverlay } from '../components/PhaseOverlay';
 import { PresetSelector } from '../components/PresetSelector';
 import { CountdownOverlay } from '../components/CountdownOverlay';
 import { TopBar } from '../components/TopBar';
@@ -34,8 +35,12 @@ export function SoloRoomPage() {
     pausePlayback,
     resumePlayback,
     stopPlayback,
-    getAudioLevel
+    getAudioLevel,
+    getCurrentTime
   } = useAudioPlayback(audioUrl);
+
+  // Phase cues for displaying Breathe/Pause/Hold (keep active during pause)
+  const { currentPhase, phaseRemaining } = usePhaseCues(audioUrl, getCurrentTime, isPlaying || isPaused);
 
   // Run countdown timer
   useEffect(() => {
@@ -161,7 +166,7 @@ export function SoloRoomPage() {
           </header>
 
           {status !== 'idle' && (
-            <BreathingCircle isActive={isPlaying || isPaused} getAudioLevel={isPlaying ? getAudioLevel : undefined} />
+            <BreathingCircle isActive={isPlaying || isPaused} getAudioLevel={isPlaying ? getAudioLevel : undefined} phase={currentPhase} />
           )}
 
           <div className="room-info">
@@ -193,9 +198,12 @@ export function SoloRoomPage() {
 
             {(isPlaying || isPaused) && (
               <div className="playing-message">
-                <div className="session-timer" aria-live="polite" aria-atomic="true">
-                  <span className="timer-label">{isPaused ? texts.paused : texts.sessionEnd}</span>
-                  <span className="timer-value">{formatRemainingTime(remainingTime)}</span>
+                <div className="timers-section">
+                  <PhaseOverlay phase={currentPhase} remaining={phaseRemaining} />
+                  <div className="total-timer" aria-live="polite" aria-atomic="true">
+                    <span className="total-timer-label">{isPaused ? texts.paused : texts.sessionEnd}</span>
+                    <span className="total-timer-value">{formatRemainingTime(remainingTime)}</span>
+                  </div>
                 </div>
                 <div className="control-buttons">
                   {isPlaying && (

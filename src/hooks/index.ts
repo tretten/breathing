@@ -14,15 +14,22 @@ import {
   get
 } from 'firebase/database';
 import { db } from '../firebase/config';
-import type { 
-  UseServerTimeReturn, 
-  UsePresenceReturn, 
+import type {
+  UseServerTimeReturn,
+  UsePresenceReturn,
   UseAudioPlaybackReturn,
   ClientPresence,
   CustomRoomState,
   RoomId,
   PresetId
 } from '../types';
+import {
+  parsePhaseCues,
+  getCurrentPhase,
+  getCueUrlFromAudioUrl,
+  type PhaseCue,
+  type PhaseType
+} from '../utils/phaseCues';
 
 // ============================================================================
 // useClientId - Generate and persist anonymous client ID
@@ -416,6 +423,10 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       return true;
     } catch (error) {
       console.error('Failed to unlock audio:', error);
+      // Ensure muted is reset even if play() failed
+      if (audioElementRef.current) {
+        audioElementRef.current.muted = false;
+      }
       // Still mark as unlocked - some browsers don't need the trick
       setIsUnlocked(true);
       return true;
@@ -471,6 +482,9 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
         await audioContextRef.current.resume();
       }
 
+      // Ensure audio is not muted
+      audioElementRef.current.muted = false;
+
       await audioElementRef.current.play();
       setIsPlaying(true);
       setIsPaused(false);
@@ -512,6 +526,9 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       if (audioContextRef.current?.state === 'suspended') {
         await audioContextRef.current.resume();
       }
+
+      // Ensure audio is not muted (could be left muted from failed unlock)
+      audioElementRef.current.muted = false;
 
       // Reset to beginning and play
       audioElementRef.current.currentTime = 0;
@@ -581,6 +598,9 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
 
       // Clamp to valid range
       const clampedPosition = Math.max(0, Math.min(targetPosition, duration - 0.1));
+
+      // Ensure audio is not muted (could be left muted from failed unlock)
+      audio.muted = false;
 
       // Set position and play immediately
       audio.currentTime = clampedPosition;
@@ -733,4 +753,87 @@ export async function resetCustomRoom(): Promise<void> {
 export async function setRoomStatus(status: string): Promise<void> {
   const roomRef = ref(db, 'rooms/with_friends');
   await update(roomRef, { status });
+}
+
+// ============================================================================
+// usePhaseCues - Fetch and track phase cues for audio
+// ============================================================================
+
+export interface UsePhaseCuesReturn {
+  currentPhase: PhaseType | null;
+  phaseRemaining: number;
+  cues: PhaseCue[];
+  isLoaded: boolean;
+}
+
+export function usePhaseCues(
+  audioUrl: string | null,
+  getCurrentTime: () => number,
+  isActive: boolean // true when playing OR paused (not stopped)
+): UsePhaseCuesReturn {
+  const [cues, setCues] = useState<PhaseCue[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [currentPhase, setCurrentPhase] = useState<PhaseType | null>(null);
+  const [phaseRemaining, setPhaseRemaining] = useState<number>(0);
+
+  // Fetch cue file when audio URL changes
+  useEffect(() => {
+    if (!audioUrl) {
+      setCues([]);
+      setIsLoaded(false);
+      setCurrentPhase(null);
+      setPhaseRemaining(0);
+      return;
+    }
+
+    const cueUrl = getCueUrlFromAudioUrl(audioUrl);
+
+    fetch(cueUrl, { cache: 'no-store' })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Cue file not found');
+        }
+        return response.text();
+      })
+      .then(text => {
+        const parsed = parsePhaseCues(text);
+        setCues(parsed);
+        setIsLoaded(true);
+      })
+      .catch(() => {
+        // No cue file - that's OK
+        setCues([]);
+        setIsLoaded(true);
+      });
+  }, [audioUrl]);
+
+  // Update current phase based on playback position
+  useEffect(() => {
+    if (!isActive || cues.length === 0) {
+      if (!isActive) {
+        setCurrentPhase(null);
+        setPhaseRemaining(0);
+      }
+      return;
+    }
+
+    const updatePhase = () => {
+      const elapsed = getCurrentTime();
+      const phase = getCurrentPhase(cues, elapsed);
+      if (phase) {
+        setCurrentPhase(phase.type);
+        setPhaseRemaining(Math.ceil(phase.endTime - elapsed));
+      } else {
+        setCurrentPhase(null);
+        setPhaseRemaining(0);
+      }
+    };
+
+    updatePhase();
+    const interval = setInterval(updatePhase, 100);
+
+    return () => clearInterval(interval);
+  }, [isActive, cues, getCurrentTime]);
+
+  return { currentPhase, phaseRemaining, cues, isLoaded };
 }
