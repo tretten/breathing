@@ -22,6 +22,7 @@ import { TopBar } from '../components/TopBar';
 import type { PresetId } from '../types';
 
 const SINGLE_USER_WAIT_MS = 3000; // 3 seconds wait for single user
+const MAX_SESSION_DURATION_MS = 20 * 60 * 1000; // 20 minutes max session (safety margin for longest audio)
 
 export function WithFriendsRoomPage() {
   const navigate = useNavigate();
@@ -262,11 +263,16 @@ export function WithFriendsRoomPage() {
     return (getServerTime() - startTimestamp) / 1000;
   }, [startTimestamp, getServerTime]);
 
-  // Check if session has expired (audio already finished)
-  const isSessionExpired = roomStatus === 'countdown' &&
+  // Check if session has expired (audio already finished OR session is stale)
+  // Session is stale if it's been running longer than max duration (even if audio not loaded yet)
+  const elapsedMs = startTimestamp ? getServerTime() - startTimestamp : 0;
+  const isSessionStale = roomStatus === 'countdown' &&
+    startTimestamp !== null &&
+    elapsedMs > MAX_SESSION_DURATION_MS;
+  const isSessionExpired = isSessionStale || (roomStatus === 'countdown' &&
     startTimestamp !== null &&
     duration > 0 &&
-    getElapsedSeconds() > duration;
+    getElapsedSeconds() > duration);
 
   // Check if this is a late join (session in progress, not expired)
   const isLateJoin = roomStatus === 'countdown' &&
@@ -282,16 +288,51 @@ export function WithFriendsRoomPage() {
     }
   }, [isSessionExpired]);
 
-  // Auto-end session immediately if no active listeners
+  // Periodically check for stale sessions (runs every 5s when room is in countdown but not playing)
+  // This ensures stale sessions are detected even if audio isn't loaded yet
+  useEffect(() => {
+    if (roomStatus !== 'countdown' || isPlaying || !startTimestamp) {
+      return;
+    }
+
+    const checkStale = () => {
+      const elapsed = getServerTime() - startTimestamp;
+      // If session has been running for more than max duration, reset
+      if (elapsed > MAX_SESSION_DURATION_MS) {
+        resetCustomRoom();
+      }
+    };
+
+    // Check immediately and every 5 seconds
+    checkStale();
+    const interval = setInterval(checkStale, 5000);
+
+    return () => clearInterval(interval);
+  }, [roomStatus, isPlaying, startTimestamp, getServerTime]);
+
+  // Auto-end session if it appears abandoned (no active listeners or solo user in a "started" session)
   useEffect(() => {
     // Only check during active session (countdown started, audio should be playing)
     const isActiveSession = roomStatus === 'countdown' && startTimestamp !== null && getServerTime() > startTimestamp;
 
-    if (isActiveSession && onlineCount === 0) {
-      // No one in room - end session immediately
+    if (!isActiveSession) return;
+
+    // Reset if no one is online
+    if (onlineCount === 0) {
+      resetCustomRoom();
+      return;
+    }
+
+    // If I'm the only one online, the session already started (past startTimestamp),
+    // and I'm NOT currently playing (meaning I just joined), this is a stale session
+    // Give a small grace period (2 seconds) for late joins before assuming it's stale
+    const sessionStartedSecondsAgo = (getServerTime() - startTimestamp) / 1000;
+    if (onlineCount === 1 && !isPlaying && sessionStartedSecondsAgo > 5) {
+      // I'm alone in a session that started over 5 seconds ago and I'm not playing
+      // This means everyone else left - reset the room
       resetCustomRoom();
     }
-  }, [roomStatus, startTimestamp, onlineCount, getServerTime]);
+  }, [roomStatus, startTimestamp, onlineCount, isPlaying, getServerTime]);
 
   // Update late join remaining time
   useEffect(() => {

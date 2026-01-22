@@ -89,7 +89,8 @@ export function usePresence(
   clientId: string,
   options: UsePresenceOptions = {}
 ): UsePresenceReturn {
-  const [onlineCount, setOnlineCount] = useState<number>(0);
+  // Start with 1 to count ourselves before Firebase confirms (prevents showing 0)
+  const [onlineCount, setOnlineCount] = useState<number>(roomId ? 1 : 0);
   const [clients, setClients] = useState<Record<string, ClientPresence>>({});
   const { isReady } = options;
 
@@ -146,25 +147,24 @@ export function usePresence(
     // Listen to online users - filter out stale entries
     const unsubscribe = onValue(onlineRef, (snapshot) => {
       const data = snapshot.val() as Record<string, ClientPresence> | null;
-      if (!data) {
-        setClients({});
-        setOnlineCount(0);
-        return;
-      }
 
       // Filter out stale entries from display
       const now = Date.now();
       const activeClients: Record<string, ClientPresence> = {};
 
-      for (const [id, presence] of Object.entries(data)) {
-        // Always include our own entry, filter stale others
-        if (id === clientId || now - presence.joinedAt <= PRESENCE_MAX_AGE_MS) {
-          activeClients[id] = presence;
+      if (data) {
+        for (const [id, presence] of Object.entries(data)) {
+          // Always include our own entry, filter stale others
+          if (id === clientId || now - presence.joinedAt <= PRESENCE_MAX_AGE_MS) {
+            activeClients[id] = presence;
+          }
         }
       }
 
       setClients(activeClients);
-      setOnlineCount(Object.keys(activeClients).length);
+      // Always count at least ourselves (we're in the process of registering even if not in data yet)
+      const count = Object.keys(activeClients).length;
+      setOnlineCount(count > 0 ? count : 1);
     });
 
     // Cleanup on unmount
