@@ -37,7 +37,7 @@ export function SoloRoomPage() {
     stopPlayback,
     getAudioLevel,
     getCurrentTime
-  } = useAudioPlayback(audioUrl);
+  } = useAudioPlayback(audioUrl, { presetId: selectedPreset, language });
 
   // Phase cues for displaying Breathe/Pause/Hold (keep active during pause)
   const { currentPhase, phaseRemaining } = usePhaseCues(audioUrl, getCurrentTime, isPlaying || isPaused);
@@ -76,15 +76,18 @@ export function SoloRoomPage() {
     }
   }, [isPlaying]);
 
-  // Reset when audio stops (only after it has actually played, not when paused)
+  // When audio finishes playing naturally, navigate back to selection screen
   useEffect(() => {
-    // Only reset if audio actually played and is now stopped (not paused)
+    // Only navigate if audio actually played and is now stopped (not paused)
     if (!isPlaying && !isPaused && status === 'playing' && audioDidPlayRef.current) {
+      // Reset state
       setStatus('idle');
       hasStartedPlayingRef.current = false;
       audioDidPlayRef.current = false;
+      // Navigate back to selection screen
+      navigate('/');
     }
-  }, [isPlaying, isPaused, status]);
+  }, [isPlaying, isPaused, status, navigate]);
 
   // Format remaining time as MM:SS
   const formatRemainingTime = (seconds: number): string => {

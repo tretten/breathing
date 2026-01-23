@@ -268,7 +268,18 @@ export function useCountdown(
 // useAudioPlayback - HTML5 Audio with Web Audio API for visualization
 // ============================================================================
 
-export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackReturn {
+export interface UseAudioPlaybackOptions {
+  presetId?: string | null;
+  language?: 'en' | 'ru' | null;
+}
+
+export function useAudioPlayback(
+  audioUrl: string | null,
+  _options: UseAudioPlaybackOptions = {}
+): UseAudioPlaybackReturn {
+  // Note: options (presetId, language) were used for Media Session which is now disabled
+  // to prevent iOS lock screen controls from interfering with playback
+
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
@@ -279,12 +290,17 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
   // HTML5 Audio element for reliable iOS playback
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
-  // Web Audio API for visualization only
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
-  const connectedRef = useRef<boolean>(false);
+  // Note: We intentionally do NOT use Web Audio API (createMediaElementSource)
+  // because it routes audio exclusively through AudioContext, which iOS suspends
+  // when the screen is locked - causing audio to stop playing.
+  // Instead, we use plain HTML5 Audio which continues playing in background.
+
+  // Note: We also do NOT use Media Session API because iOS shows playback controls
+  // on lock screen that can pause the audio, and resuming doesn't work properly.
+  // Without Media Session, audio plays in background without any controls.
+
+  // For simulated audio level animation
+  const playStartTimeRef = useRef<number>(0);
 
   // Create audio element
   useEffect(() => {
@@ -336,10 +352,6 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.pause();
       audio.src = '';
-
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
     };
   }, []);
 
@@ -355,51 +367,12 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
     audioElementRef.current.load();
   }, [audioUrl]);
 
-  // Setup Web Audio API for visualization (connect on first play)
-  const setupAnalyser = useCallback(() => {
-    if (connectedRef.current || !audioElementRef.current) return;
-
-    try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContextClass();
-      }
-
-      const ctx = audioContextRef.current;
-
-      // Create analyser
-      if (!analyserRef.current) {
-        const analyser = ctx.createAnalyser();
-        analyser.fftSize = 256;
-        analyser.smoothingTimeConstant = 0.8;
-        analyserRef.current = analyser;
-        dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
-      }
-
-      // Connect audio element to analyser (only once)
-      if (!sourceNodeRef.current) {
-        const source = ctx.createMediaElementSource(audioElementRef.current);
-        source.connect(analyserRef.current);
-        analyserRef.current.connect(ctx.destination);
-        sourceNodeRef.current = source;
-        connectedRef.current = true;
-      }
-    } catch (e) {
-      console.warn('Could not setup audio analyser:', e);
-    }
-  }, []);
-
   // Unlock audio (must be called from user gesture)
   const unlockAudio = useCallback(async (): Promise<boolean> => {
     if (!audioElementRef.current) return false;
 
     // Skip if already unlocked
     if (isUnlocked) {
-      // Just setup analyser and resume context
-      setupAnalyser();
-      if (audioContextRef.current?.state === 'suspended') {
-        await audioContextRef.current.resume();
-      }
       return true;
     }
 
@@ -410,14 +383,6 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       audioElementRef.current.pause();
       audioElementRef.current.muted = false;
       // Don't reset currentTime here - let playAt handle position
-
-      // Setup analyser during user gesture
-      setupAnalyser();
-
-      // Resume AudioContext if it exists
-      if (audioContextRef.current?.state === 'suspended') {
-        await audioContextRef.current.resume();
-      }
 
       setIsUnlocked(true);
       return true;
@@ -431,7 +396,7 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       setIsUnlocked(true);
       return true;
     }
-  }, [isUnlocked, setupAnalyser]);
+  }, [isUnlocked]);
 
   // Schedule playback at specific server timestamp
   const schedulePlayback = useCallback((
@@ -477,11 +442,6 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
     if (!audioElementRef.current || !isPaused) return false;
 
     try {
-      // Resume AudioContext if suspended
-      if (audioContextRef.current?.state === 'suspended') {
-        await audioContextRef.current.resume();
-      }
-
       // Ensure audio is not muted
       audioElementRef.current.muted = false;
 
@@ -519,20 +479,15 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
     }
 
     try {
-      // Setup analyser if not done yet
-      setupAnalyser();
-
-      // Resume AudioContext if suspended
-      if (audioContextRef.current?.state === 'suspended') {
-        await audioContextRef.current.resume();
-      }
-
       // Ensure audio is not muted (could be left muted from failed unlock)
       audioElementRef.current.muted = false;
 
       // Reset to beginning and play
       audioElementRef.current.currentTime = 0;
       await audioElementRef.current.play();
+
+      // Track start time for simulated audio level
+      playStartTimeRef.current = Date.now();
 
       setIsPlaying(true);
       setIsPaused(false);
@@ -543,7 +498,7 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       console.error('Failed to play audio:', error);
       return false;
     }
-  }, [isLoaded, isPlaying, setupAnalyser]);
+  }, [isLoaded, isPlaying]);
 
   // Play from specific position (for late join sync)
   // getPositionFn allows recalculating position right before play for better accuracy
@@ -562,14 +517,6 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
     }
 
     try {
-      // Setup analyser if not done yet
-      setupAnalyser();
-
-      // Resume AudioContext if suspended
-      if (audioContextRef.current?.state === 'suspended') {
-        await audioContextRef.current.resume();
-      }
-
       const audio = audioElementRef.current;
 
       // Wait for audio to be ready for seeking (if not already)
@@ -606,6 +553,9 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       audio.currentTime = clampedPosition;
       await audio.play();
 
+      // Track start time for simulated audio level
+      playStartTimeRef.current = Date.now();
+
       setIsPlaying(true);
       setIsPaused(false);
       setIsUnlocked(true);
@@ -615,7 +565,7 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
       console.error('Failed to play audio at position:', error);
       return false;
     }
-  }, [isLoaded, isPlaying, duration, setupAnalyser]);
+  }, [isLoaded, isPlaying, duration]);
 
   // Force sync audio to specific position (for correcting drift)
   const syncTo = useCallback((positionSeconds: number): boolean => {
@@ -633,20 +583,21 @@ export function useAudioPlayback(audioUrl: string | null): UseAudioPlaybackRetur
     return audioElementRef.current?.currentTime || 0;
   }, []);
 
-  // Get current audio level for visualization (0-1)
+  // Get simulated audio level for visualization (0-1)
+  // Note: We use simulation instead of real audio analysis because
+  // connecting Audio to Web Audio API prevents background playback on iOS
   const getAudioLevel = useCallback((): number => {
-    if (!analyserRef.current || !dataArrayRef.current || !isPlaying) {
+    if (!isPlaying) {
       return 0;
     }
 
-    try {
-      analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-      const sum = dataArrayRef.current.reduce((acc, val) => acc + val, 0);
-      const average = sum / dataArrayRef.current.length;
-      return average / 255;
-    } catch {
-      return 0;
-    }
+    // Create a smooth pulsing effect using sine wave
+    const elapsed = (Date.now() - playStartTimeRef.current) / 1000;
+    // Breathing rhythm: ~4-5 seconds per cycle with some variation
+    const baseWave = Math.sin(elapsed * 1.3) * 0.5 + 0.5;
+    const fastWave = Math.sin(elapsed * 3.7) * 0.15;
+    // Combine waves for more organic feel
+    return Math.max(0, Math.min(1, baseWave + fastWave));
   }, [isPlaying]);
 
   return {

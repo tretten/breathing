@@ -73,7 +73,7 @@ export function WithFriendsRoomPage() {
     getCurrentTime,
     stopPlayback,
     getAudioLevel
-  } = useAudioPlayback(audioUrl);
+  } = useAudioPlayback(audioUrl, { presetId: selectedPreset, language });
 
   // Phase cues for displaying Breathe/Pause/Hold
   const { currentPhase, phaseRemaining } = usePhaseCues(audioUrl, getCurrentTime, isPlaying);
@@ -126,8 +126,9 @@ export function WithFriendsRoomPage() {
       singleUserTimerRef.current = null;
     }
 
+    // Don't start new session if we just finished one (prevents loop)
     // Only proceed if room is idle, audio loaded, and user is ready
-    if (roomStatus !== 'idle' || !isLoaded || !isReady) {
+    if (roomStatus !== 'idle' || !isLoaded || !isReady || showSessionEnded) {
       return;
     }
 
@@ -150,7 +151,7 @@ export function WithFriendsRoomPage() {
         singleUserTimerRef.current = null;
       }
     };
-  }, [roomStatus, isLoaded, isReady, onlineCount, allReady, getServerTime]);
+  }, [roomStatus, isLoaded, isReady, onlineCount, allReady, getServerTime, showSessionEnded]);
 
   // Play audio when countdown transitions from >0 to 0
   useEffect(() => {
