@@ -30,6 +30,13 @@ import {
   type PhaseCue,
   type PhaseType
 } from '../utils/phaseCues';
+import {
+  setupMediaSession,
+  setupMediaSessionHandlers,
+  clearMediaSession,
+  getSessionTitle,
+  getArtistName
+} from '../utils/mediaSession';
 
 // ============================================================================
 // useClientId - Generate and persist anonymous client ID
@@ -275,10 +282,10 @@ export interface UseAudioPlaybackOptions {
 
 export function useAudioPlayback(
   audioUrl: string | null,
-  _options: UseAudioPlaybackOptions = {}
+  options: UseAudioPlaybackOptions = {}
 ): UseAudioPlaybackReturn {
-  // Note: options (presetId, language) were used for Media Session which is now disabled
-  // to prevent iOS lock screen controls from interfering with playback
+  const { presetId = null, language: langOption = 'en' } = options;
+  const language = langOption || 'en';
 
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -599,6 +606,37 @@ export function useAudioPlayback(
     // Combine waves for more organic feel
     return Math.max(0, Math.min(1, baseWave + fastWave));
   }, [isPlaying]);
+
+  // Set up Media Session for iOS lock screen
+  // Only set play handler - this hides pause and seek buttons
+  useEffect(() => {
+    if (!isPlaying || !audioElementRef.current) {
+      return;
+    }
+
+    // Set up media session metadata for lock screen
+    setupMediaSession({
+      title: getSessionTitle(presetId, language),
+      artist: getArtistName(language),
+      album: 'Wim Hof Breathing'
+    });
+
+    // Set handlers that ignore user actions - prevents pausing from lock screen
+    const cleanup = setupMediaSessionHandlers({
+      onPlay: () => {
+        // Ignore - audio is already playing
+      },
+      onPause: () => {
+        // Ignore pause button - do nothing, keep playing
+      }
+      // Intentionally NOT setting: onSeekBackward, onSeekForward, onSeekTo
+    });
+
+    return () => {
+      cleanup();
+      clearMediaSession();
+    };
+  }, [isPlaying, presetId, language]);
 
   return {
     isLoaded,
