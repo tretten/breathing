@@ -10,46 +10,57 @@ export interface PhaseCue {
   endTime: number; // cumulative end time in seconds
 }
 
-const PHASE_CODES: Record<string, PhaseType> = {
-  B: "breathe",
-  P: "pause",
-  H: "hold",
-  I: "intro",
-  O: "outro",
-};
+// JSON file format
+interface PhaseEntry {
+  type: PhaseType;
+  duration: number;
+}
+
+interface PhaseCuesJson {
+  url?: string;
+  phases: PhaseEntry[];
+}
+
+export interface ParsedCuesData {
+  cues: PhaseCue[];
+  authorUrl: string | null;
+}
 
 /**
- * Parse cue string format like "B60,P10,H60,B60,H90"
- * Returns array of phase cues with timing information
+ * Parse JSON cues format
+ * Returns array of phase cues with timing information and author URL
  */
-export function parsePhaseCues(cueString: string): PhaseCue[] {
-  const parts = cueString.trim().split(",");
+export function parsePhaseCues(jsonString: string): ParsedCuesData {
   const cues: PhaseCue[] = [];
   let currentTime = 0;
+  let authorUrl: string | null = null;
 
-  for (const part of parts) {
-    const trimmed = part.trim();
-    if (!trimmed) continue;
+  try {
+    const data: PhaseCuesJson = JSON.parse(jsonString);
 
-    const code = trimmed[0].toUpperCase();
-    const duration = parseInt(trimmed.slice(1), 10);
-
-    const phaseType = PHASE_CODES[code];
-    if (!phaseType || isNaN(duration) || duration <= 0) {
-      continue; // Skip invalid entries
+    if (data.url) {
+      authorUrl = data.url;
     }
 
-    cues.push({
-      type: phaseType,
-      duration,
-      startTime: currentTime,
-      endTime: currentTime + duration,
-    });
+    for (const entry of data.phases) {
+      if (!entry.type || !entry.duration || entry.duration <= 0) {
+        continue; // Skip invalid entries
+      }
 
-    currentTime += duration;
+      cues.push({
+        type: entry.type,
+        duration: entry.duration,
+        startTime: currentTime,
+        endTime: currentTime + entry.duration,
+      });
+
+      currentTime += entry.duration;
+    }
+  } catch (e) {
+    console.error("Failed to parse phase cues JSON:", e);
   }
 
-  return cues;
+  return { cues, authorUrl };
 }
 
 /**
@@ -83,8 +94,8 @@ export function getPhaseText(type: PhaseType, language: "en" | "ru"): string {
 
 /**
  * Convert audio URL to cue file URL
- * /audio/ru_4rounds.mp3 -> /audio/ru_4rounds.txt
+ * /audio/ru_4rounds.mp3 -> /audio/ru_4rounds.json
  */
 export function getCueUrlFromAudioUrl(audioUrl: string): string {
-  return audioUrl.replace(/\.(mp3|ogg|wav|m4a)$/i, ".txt");
+  return audioUrl.replace(/\.(mp3|ogg|wav|m4a)$/i, ".json");
 }

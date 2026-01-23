@@ -302,13 +302,6 @@ export function useAudioPlayback(
   // when the screen is locked - causing audio to stop playing.
   // Instead, we use plain HTML5 Audio which continues playing in background.
 
-  // Note: We also do NOT use Media Session API because iOS shows playback controls
-  // on lock screen that can pause the audio, and resuming doesn't work properly.
-  // Without Media Session, audio plays in background without any controls.
-
-  // For simulated audio level animation
-  const playStartTimeRef = useRef<number>(0);
-
   // Create audio element
   useEffect(() => {
     const audio = new Audio();
@@ -493,9 +486,6 @@ export function useAudioPlayback(
       audioElementRef.current.currentTime = 0;
       await audioElementRef.current.play();
 
-      // Track start time for simulated audio level
-      playStartTimeRef.current = Date.now();
-
       setIsPlaying(true);
       setIsPaused(false);
       setIsUnlocked(true);
@@ -560,9 +550,6 @@ export function useAudioPlayback(
       audio.currentTime = clampedPosition;
       await audio.play();
 
-      // Track start time for simulated audio level
-      playStartTimeRef.current = Date.now();
-
       setIsPlaying(true);
       setIsPaused(false);
       setIsUnlocked(true);
@@ -589,23 +576,6 @@ export function useAudioPlayback(
   const getCurrentTime = useCallback((): number => {
     return audioElementRef.current?.currentTime || 0;
   }, []);
-
-  // Get simulated audio level for visualization (0-1)
-  // Note: We use simulation instead of real audio analysis because
-  // connecting Audio to Web Audio API prevents background playback on iOS
-  const getAudioLevel = useCallback((): number => {
-    if (!isPlaying) {
-      return 0;
-    }
-
-    // Create a smooth pulsing effect using sine wave
-    const elapsed = (Date.now() - playStartTimeRef.current) / 1000;
-    // Breathing rhythm: ~4-5 seconds per cycle with some variation
-    const baseWave = Math.sin(elapsed * 1.3) * 0.5 + 0.5;
-    const fastWave = Math.sin(elapsed * 3.7) * 0.15;
-    // Combine waves for more organic feel
-    return Math.max(0, Math.min(1, baseWave + fastWave));
-  }, [isPlaying]);
 
   // Set up Media Session for iOS lock screen
   // Only set play handler - this hides pause and seek buttons
@@ -653,8 +623,7 @@ export function useAudioPlayback(
     getCurrentTime,
     pausePlayback,
     resumePlayback,
-    stopPlayback,
-    getAudioLevel
+    stopPlayback
   };
 }
 
@@ -753,6 +722,7 @@ export interface UsePhaseCuesReturn {
   phaseRemaining: number;
   cues: PhaseCue[];
   isLoaded: boolean;
+  authorUrl: string | null;
 }
 
 export function usePhaseCues(
@@ -761,6 +731,7 @@ export function usePhaseCues(
   isActive: boolean // true when playing OR paused (not stopped)
 ): UsePhaseCuesReturn {
   const [cues, setCues] = useState<PhaseCue[]>([]);
+  const [authorUrl, setAuthorUrl] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<PhaseType | null>(null);
   const [phaseRemaining, setPhaseRemaining] = useState<number>(0);
@@ -769,6 +740,7 @@ export function usePhaseCues(
   useEffect(() => {
     if (!audioUrl) {
       setCues([]);
+      setAuthorUrl(null);
       setIsLoaded(false);
       setCurrentPhase(null);
       setPhaseRemaining(0);
@@ -786,12 +758,14 @@ export function usePhaseCues(
       })
       .then(text => {
         const parsed = parsePhaseCues(text);
-        setCues(parsed);
+        setCues(parsed.cues);
+        setAuthorUrl(parsed.authorUrl);
         setIsLoaded(true);
       })
       .catch(() => {
         // No cue file - that's OK
         setCues([]);
+        setAuthorUrl(null);
         setIsLoaded(true);
       });
   }, [audioUrl]);
@@ -824,5 +798,5 @@ export function usePhaseCues(
     return () => clearInterval(interval);
   }, [isActive, cues, getCurrentTime]);
 
-  return { currentPhase, phaseRemaining, cues, isLoaded };
+  return { currentPhase, phaseRemaining, cues, isLoaded, authorUrl };
 }

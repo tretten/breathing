@@ -57,7 +57,6 @@ export interface UseAudioPlaybackReturn {
   pausePlayback: () => void;
   resumePlayback: () => Promise<boolean>;
   stopPlayback: () => void;
-  getAudioLevel: () => number;
 }
 
 export interface UseScheduledPlaybackOptions {

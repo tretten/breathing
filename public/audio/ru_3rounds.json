@@ -1,0 +1,11 @@
+{
+  "url": "https://google.com",
+  "phases": [
+    { "type": "breathe", "duration": 11 },
+    { "type": "hold", "duration": 60 },
+    { "type": "breathe", "duration": 90 },
+    { "type": "hold", "duration": 90 },
+    { "type": "breathe", "duration": 90 },
+    { "type": "hold", "duration": 120 }
+  ]
+}

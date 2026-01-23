@@ -2,177 +2,218 @@
 /* Breathing Circle - Uses CSS variables for phase colors */
 
 .breathing-container {
-  position: relative;
-  width: 280px;
-  height: 280px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    position: relative;
+    width: 280px;
+    height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-  /* Default colors (breathe phase) */
-  --circle-primary: var(--accent-primary);
-  --circle-secondary: var(--accent-secondary);
-  --circle-glow: var(--accent-glow);
+    /* Default colors (breathe phase) */
+    --circle-primary: var(--accent-primary);
+    --circle-secondary: var(--accent-secondary);
+    --circle-glow: var(--accent-glow);
 }
 
 /* Phase-specific colors */
 .breathing-container.phase-breathe {
-  --circle-primary: rgba(120, 200, 255, 0.95);
-  --circle-secondary: rgba(80, 160, 220, 0.8);
-  --circle-glow: rgba(120, 200, 255, 0.25);
+    --circle-primary: rgba(120, 200, 255, 0.95);
+    --circle-secondary: rgba(80, 160, 220, 0.8);
+    --circle-glow: rgba(120, 200, 255, 0.25);
 }
 
 .breathing-container.phase-hold {
-  --circle-primary: rgba(251, 191, 36, 0.95);
-  --circle-secondary: rgba(245, 158, 11, 0.8);
-  --circle-glow: rgba(251, 191, 36, 0.25);
+    --circle-primary: rgba(251, 191, 36, 0.95);
+    --circle-secondary: rgba(245, 158, 11, 0.8);
+    --circle-glow: rgba(251, 191, 36, 0.25);
 }
 
 .breathing-container.phase-pause {
-  --circle-primary: rgba(160, 160, 170, 0.8);
-  --circle-secondary: rgba(120, 120, 130, 0.6);
-  --circle-glow: rgba(160, 160, 170, 0.15);
+    --circle-primary: rgba(160, 160, 170, 0.8);
+    --circle-secondary: rgba(120, 120, 130, 0.6);
+    --circle-glow: rgba(160, 160, 170, 0.15);
 }
 
 .breathing-container.phase-intro {
-  --circle-primary: rgba(167, 139, 250, 0.9);
-  --circle-secondary: rgba(139, 92, 246, 0.7);
-  --circle-glow: rgba(167, 139, 250, 0.2);
+    --circle-primary: rgba(167, 139, 250, 0.9);
+    --circle-secondary: rgba(139, 92, 246, 0.7);
+    --circle-glow: rgba(167, 139, 250, 0.2);
 }
 
 .breathing-container.phase-outro {
-  --circle-primary: rgba(52, 211, 153, 0.9);
-  --circle-secondary: rgba(16, 185, 129, 0.7);
-  --circle-glow: rgba(52, 211, 153, 0.2);
+    --circle-primary: rgba(52, 211, 153, 0.9);
+    --circle-secondary: rgba(16, 185, 129, 0.7);
+    --circle-glow: rgba(52, 211, 153, 0.2);
 }
 
 .breathing-circle {
-  width: 160px;
-  height: 160px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--circle-primary), var(--circle-secondary));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.7;
-  box-shadow: 0 0 30px var(--circle-glow);
-  transition: opacity 0.5s ease, filter 0.5s ease, box-shadow 0.5s ease, background 0.4s ease;
-  animation: breathe-idle 6s ease-in-out infinite;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: linear-gradient(
+        135deg,
+        var(--circle-primary),
+        var(--circle-secondary)
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    box-shadow: 0 0 30px var(--circle-glow);
+    transition:
+        opacity 0.5s ease,
+        filter 0.5s ease,
+        box-shadow 0.5s ease,
+        background 0.4s ease;
+    animation: breathe-idle 6s ease-in-out infinite;
 }
 
 .breathing-circle.active {
-  opacity: 1;
-  filter: none;
-  animation: breathe-active 4s ease-in-out infinite;
+    opacity: 1;
+    filter: none;
+    animation: breathe-active 4s ease-in-out infinite;
 }
 
 @keyframes breathe-idle {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.6;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 0.8;
-  }
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
 }
 
 @keyframes breathe-active {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 60px var(--accent-glow);
-  }
-  50% {
-    transform: scale(1.2);
-    box-shadow: 0 0 100px var(--accent-glow);
-  }
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 60px var(--circle-glow);
+    }
+    50% {
+        transform: scale(1.2);
+        box-shadow: 0 0 100px var(--circle-glow);
+    }
 }
 
 .breathing-circle.reactive {
-  opacity: 1;
-  filter: none;
-  animation: none;
-  transition: transform 0.05s ease-out, box-shadow 0.1s ease-out;
+    opacity: 1;
+    filter: none;
+    animation: none;
+    /* Fast transitions for responsive audio visualization */
+    transition:
+        transform 0.03s linear,
+        box-shadow 0.06s linear;
+    /* GPU acceleration for smooth 60fps animations */
+    will-change: transform, box-shadow;
+    transform-origin: center center;
+}
+
+/* Inner elements also respond when reactive */
+.breathing-circle.reactive .breathing-inner {
+    transition: transform 0.04s linear;
+    will-change: transform;
+}
+
+.breathing-circle.reactive .breathing-core {
+    transition:
+        transform 0.03s linear,
+        box-shadow 0.05s linear;
+    will-change: transform, box-shadow;
 }
 
 .breathing-inner {
-  width: 80%;
-  height: 80%;
-  border-radius: 50%;
-  background: var(--pico-card-background-color, var(--bg-secondary));
-  border: 1px solid var(--pico-muted-border-color, var(--border-color));
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    width: 80%;
+    height: 80%;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .breathing-core {
-  width: 60%;
-  height: 60%;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--circle-primary), var(--circle-secondary));
-  opacity: 0.9;
-  box-shadow: 0 0 20px var(--circle-glow);
-  transition: background 0.4s ease, box-shadow 0.4s ease;
+    width: 60%;
+    height: 60%;
+    border-radius: 50%;
+    background: linear-gradient(
+        135deg,
+        var(--circle-primary),
+        var(--circle-secondary)
+    );
+    opacity: 0.9;
+    box-shadow: 0 0 20px var(--circle-glow);
+    transition:
+        background 0.4s ease,
+        box-shadow 0.4s ease;
 }
 
 .breathing-rings {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
 }
 
 .ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 1px solid var(--circle-primary);
-  opacity: 0;
-  transition: border-color 0.4s ease;
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid var(--circle-primary);
+    opacity: 0;
+    transition: border-color 0.4s ease;
 }
 
 .ring.active {
-  animation: ring-active 3s ease-out infinite;
+    animation: ring-active 3s ease-out infinite;
 }
 
-.ring-1.active { animation-delay: 0s; }
-.ring-2.active { animation-delay: 1s; }
-.ring-3.active { animation-delay: 2s; }
+.ring-1.active {
+    animation-delay: 0s;
+}
+.ring-2.active {
+    animation-delay: 1s;
+}
+.ring-3.active {
+    animation-delay: 2s;
+}
 
 @keyframes ring-active {
-  0% {
-    transform: scale(0.5);
-    opacity: 0.5;
-  }
-  100% {
-    transform: scale(1.6);
-    opacity: 0;
-  }
+    0% {
+        transform: scale(0.5);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(1.6);
+        opacity: 0;
+    }
 }
 
 /* Mobile */
 @media (max-width: 640px) {
-  .breathing-container {
-    width: 140px;
-    height: 140px;
-    flex-shrink: 0;
-  }
+    .breathing-container {
+        width: 140px;
+        height: 140px;
+        flex-shrink: 0;
+    }
 
-  .breathing-circle {
-    width: 80px;
-    height: 80px;
-  }
+    .breathing-circle {
+        width: 80px;
+        height: 80px;
+    }
 }
 
 /* Extra small screens */
 @media (max-width: 380px) {
-  .breathing-container {
-    width: 120px;
-    height: 120px;
-  }
+    .breathing-container {
+        width: 120px;
+        height: 120px;
+    }
 
-  .breathing-circle {
-    width: 70px;
-    height: 70px;
-  }
+    .breathing-circle {
+        width: 70px;
+        height: 70px;
+    }
 }
