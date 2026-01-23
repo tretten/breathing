@@ -18,6 +18,25 @@ export interface RoomConfig {
 export interface ClientPresence {
   joinedAt: number;
   isReady?: boolean;
+  voiceName?: string;
+  isVoiceEnabled?: boolean;
+  isMuted?: boolean;
+}
+
+export interface VoiceChatParticipant {
+  clientId: string;
+  name: string;
+  isVoiceEnabled: boolean;
+  isMuted: boolean;
+  isSpeaking: boolean;
+  isReady: boolean;
+}
+
+export interface VoiceSignaling {
+  peerId: string;
+  offer?: RTCSessionDescriptionInit;
+  answer?: RTCSessionDescriptionInit;
+  iceCandidates?: RTCIceCandidateInit[];
 }
 
 export interface AutoRoomState {

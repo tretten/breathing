@@ -1694,3 +1694,217 @@ h4 {
     font-family: var(--font-mono, monospace);
     letter-spacing: 0.02em;
 }
+
+/* ============================================
+   VOICE CHAT
+   ============================================ */
+
+/* Mic Button */
+.mic-button {
+    background: transparent;
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+}
+
+.mic-button:hover:not(:disabled) {
+    background: var(--bg-hover);
+    border-color: var(--border-hover);
+    color: var(--text-primary);
+}
+
+.mic-button.disabled {
+    opacity: 0.5;
+    color: var(--text-tertiary);
+}
+
+.mic-button.active {
+    background: var(--success);
+    border-color: var(--success);
+    color: var(--bg-primary);
+}
+
+.mic-button.active:hover:not(:disabled) {
+    background: #2bb87a;
+    border-color: #2bb87a;
+}
+
+.mic-button.muted {
+    background: transparent;
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.mic-button.muted:hover:not(:disabled) {
+    background: rgba(248, 113, 113, 0.1);
+}
+
+.mic-button.speaking {
+    background: var(--success);
+    border-color: var(--success);
+    color: var(--bg-primary);
+    animation: speaking-pulse 1s ease-in-out infinite;
+}
+
+@keyframes speaking-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(52, 211, 153, 0);
+    }
+}
+
+.mic-button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Participant List */
+.participant-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    justify-content: center;
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-card);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 400px;
+}
+
+.participant-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    background: var(--bg-hover);
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+.participant-item.current-user {
+    background: var(--accent-subtle);
+    color: var(--accent-primary);
+}
+
+.participant-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+/* Status Dots */
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-dot-offline {
+    background: var(--text-quaternary);
+}
+
+.status-dot-online {
+    background: var(--text-tertiary);
+}
+
+.status-dot-voice {
+    background: var(--success);
+}
+
+.status-dot-ready {
+    background: var(--accent-primary);
+}
+
+.status-dot-speaking {
+    background: var(--success);
+    animation: speaking-dot-pulse 1s ease-in-out infinite;
+}
+
+@keyframes speaking-dot-pulse {
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.3);
+        opacity: 0.7;
+    }
+}
+
+.status-dot-muted {
+    background: var(--danger);
+}
+
+/* Room Full Message */
+.room-full-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    background: var(--bg-card);
+    border: 1px solid var(--warning);
+    border-radius: var(--radius-lg);
+    text-align: center;
+}
+
+.room-full-message h3 {
+    font-size: var(--text-lg);
+    font-weight: 500;
+    color: var(--warning);
+}
+
+.room-full-message p {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.room-full-buttons {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+}
+
+/* Voice Controls Container */
+.voice-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+/* Voice Error Message */
+.voice-error {
+    font-size: var(--text-xs);
+    color: var(--danger);
+    text-align: center;
+    padding: var(--space-2);
+}
+
+@media (max-width: 640px) {
+    .participant-list {
+        padding: var(--space-2) var(--space-3);
+        gap: var(--space-1);
+    }
+
+    .participant-item {
+        padding: var(--space-1) var(--space-2);
+        font-size: 0.75rem;
+    }
+
+    .participant-name {
+        max-width: 80px;
+    }
+
+    .status-dot {
+        width: 6px;
+        height: 6px;
+    }
+}

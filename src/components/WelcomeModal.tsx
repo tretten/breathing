@@ -13,19 +13,18 @@ export function WelcomeModal({ onComplete }: WelcomeModalProps) {
   const [selectedLang, setSelectedLang] = useState<Language | null>(null);
 
   const handleContinue = () => {
-    if (selectedLang) {
-      onComplete(selectedLang);
-    }
+    if (!selectedLang) return;
+    onComplete(selectedLang);
   };
 
   const texts = {
     title: 'Wim Hof',
     subtitle: 'Breathe together · Дышим вместе',
     selectLabel: 'Select language · Выберите язык',
-    continueEn: 'Enable Sound',
-    continueRu: 'Включить звук',
-    hintEn: 'Sound required for guidance',
-    hintRu: 'Звук нужен для практики'
+    continueEn: 'Continue',
+    continueRu: 'Продолжить',
+    hintEn: 'Guided breathing sessions',
+    hintRu: 'Дыхательные практики с инструктором'
   };
 
   return (

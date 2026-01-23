@@ -30,6 +30,10 @@ import {
   type PhaseCue,
   type PhaseType
 } from '../utils/phaseCues';
+import { getOrCreateVoiceName } from '../utils/randomNames';
+
+// Re-export useVoiceChat
+export { useVoiceChat } from './useVoiceChat';
 import {
   setupMediaSession,
   setupMediaSessionHandlers,
@@ -123,8 +127,8 @@ export function usePresence(
             .filter(([id, presence]) => {
               // Don't remove our own entry
               if (id === clientId) return false;
-              // Remove if joinedAt is too old
-              return now - presence.joinedAt > PRESENCE_MAX_AGE_MS;
+              // Remove if joinedAt is too old OR if missing voiceName (invalid entry)
+              return now - presence.joinedAt > PRESENCE_MAX_AGE_MS || !presence.voiceName;
             })
             .map(([id]) => id);
 
@@ -137,10 +141,11 @@ export function usePresence(
         console.warn('Failed to cleanup stale presence entries:', e);
       }
 
-      // Register presence with initial data
+      // Register presence with initial data (including voice name)
       const presenceData: ClientPresence = {
         joinedAt: Date.now(),
-        isReady: false
+        isReady: false,
+        voiceName: getOrCreateVoiceName(),
       };
 
       set(myRef, presenceData);
@@ -161,8 +166,9 @@ export function usePresence(
 
       if (data) {
         for (const [id, presence] of Object.entries(data)) {
-          // Always include our own entry, filter stale others
-          if (id === clientId || now - presence.joinedAt <= PRESENCE_MAX_AGE_MS) {
+          // Always include our own entry, filter stale others and entries without voiceName
+          const isValid = presence.voiceName && (id === clientId || now - presence.joinedAt <= PRESENCE_MAX_AGE_MS);
+          if (isValid) {
             activeClients[id] = presence;
           }
         }

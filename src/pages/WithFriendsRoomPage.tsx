@@ -9,6 +9,7 @@ import {
   useRoomState,
   useAudioPlayback,
   usePhaseCues,
+  useVoiceChat,
   updateRoomPreset,
   startCustomRoomCountdown,
   resetCustomRoom,
@@ -19,6 +20,8 @@ import { PhaseOverlay } from "../components/PhaseOverlay";
 import { PresetSelector } from "../components/PresetSelector";
 import { CountdownOverlay } from "../components/CountdownOverlay";
 import { TopBar } from "../components/TopBar";
+import { VoiceChatButton } from "../components/VoiceChatButton";
+import { ParticipantList } from "../components/ParticipantList";
 import type { PresetId } from "../types";
 
 const SINGLE_USER_WAIT_MS = 3000; // 3 seconds wait for single user
@@ -52,6 +55,25 @@ export function WithFriendsRoomPage() {
   // Track presence with ready status
   const { onlineCount, clients } = usePresence("with_friends", clientId, {
     isReady,
+  });
+
+  // Voice chat
+  const {
+    isVoiceEnabled,
+    isMuted,
+    isSpeaking,
+    participants,
+    isRoomFull,
+    error: voiceError,
+    enableVoice,
+    disableVoice,
+    toggleMute,
+    muteAll,
+    unmuteAll,
+  } = useVoiceChat({
+    roomId: "with_friends",
+    clientId,
+    clients,
   });
 
   // Room's preset (what others selected)
@@ -199,8 +221,12 @@ export function WithFriendsRoomPage() {
       resetCustomRoom();
       setIsReady(false);
       hasStartedPlayingRef.current = false;
+      // Auto-unmute after session ends
+      if (isVoiceEnabled) {
+        unmuteAll();
+      }
     }
-  }, [isPlaying]);
+  }, [isPlaying, isVoiceEnabled, unmuteAll]);
 
   // Auto-exit after 10 seconds if session ended and user hasn't interacted
   useEffect(() => {
@@ -280,9 +306,13 @@ export function WithFriendsRoomPage() {
     // Unlock audio context on user gesture when becoming ready
     if (!isReady) {
       await unlockAudio();
+      // Auto-mute when clicking Ready
+      if (isVoiceEnabled) {
+        muteAll();
+      }
     }
     setIsReady((prev) => !prev);
-  }, [roomStatus, isReady, unlockAudio]);
+  }, [roomStatus, isReady, unlockAudio, isVoiceEnabled, muteAll]);
 
   const handleExit = useCallback(async () => {
     exitedManuallyRef.current = true;
@@ -290,19 +320,35 @@ export function WithFriendsRoomPage() {
     setIsReady(false);
     setShowSessionEnded(false);
 
+    // Disable voice chat on exit
+    if (isVoiceEnabled) {
+      disableVoice();
+    }
+
     // If we're the last participant, end the session
     if (onlineCount <= 1) {
       resetCustomRoom();
     }
 
     navigate("/");
-  }, [stopPlayback, navigate, onlineCount]);
+  }, [stopPlayback, navigate, onlineCount, isVoiceEnabled, disableVoice]);
 
   const handleSupportAuthor = useCallback(() => {
     if (authorUrl) {
       window.open(authorUrl, "_blank", "noopener,noreferrer");
     }
   }, [authorUrl]);
+
+  // Handle voice button click
+  const handleVoiceToggle = useCallback(async () => {
+    if (!isVoiceEnabled) {
+      await enableVoice();
+    } else if (isMuted) {
+      toggleMute();
+    } else {
+      toggleMute();
+    }
+  }, [isVoiceEnabled, isMuted, enableVoice, toggleMute]);
 
   // Calculate elapsed time since session started
   const getElapsedSeconds = useCallback(() => {
@@ -448,6 +494,10 @@ export function WithFriendsRoomPage() {
           sessionInProgress: "In progress",
           online: "online",
           supportAuthor: "Support Author",
+          roomFull: "Room is full",
+          roomFullDesc: "Maximum 8 participants with voice chat",
+          continueWithoutVoice: "Continue without voice",
+          goBack: "Go back",
         }
       : {
           appTitle: "Вим Хоф",
@@ -466,6 +516,10 @@ export function WithFriendsRoomPage() {
           sessionInProgress: "Идёт сеанс",
           online: "онлайн",
           supportAuthor: "Поддержать автора",
+          roomFull: "Комната заполнена",
+          roomFullDesc: "Максимум 8 участников с голосовым чатом",
+          continueWithoutVoice: "Продолжить без голоса",
+          goBack: "Назад",
         };
 
   return (
@@ -491,6 +545,15 @@ export function WithFriendsRoomPage() {
           )}
 
           <div className="room-info">
+            {/* Participant list - always show */}
+            <ParticipantList
+              participants={participants}
+              currentClientId={clientId}
+            />
+
+            {/* Voice error message */}
+            {voiceError && <p className="voice-error">{voiceError}</p>}
+
             {/* Idle state - show only when not playing and not showing session ended */}
             {roomStatus === "idle" && !isPlaying && !showSessionEnded && (
               <>
@@ -518,19 +581,28 @@ export function WithFriendsRoomPage() {
                   </span>
                 </div>
 
-                <button
-                  className={`ready-button ${isReady ? "ready" : ""}`}
-                  onClick={handleToggleReady}
-                  disabled={!canPressReady}
-                >
-                  {!hasSelectedPreset
-                    ? texts.selectPreset
-                    : !isLoaded
-                      ? texts.loading
-                      : isReady
-                        ? texts.notReady
-                        : texts.ready}
-                </button>
+                <div className="voice-controls">
+                  <VoiceChatButton
+                    isVoiceEnabled={isVoiceEnabled}
+                    isMuted={isMuted}
+                    isSpeaking={isSpeaking}
+                    disabled={isRoomFull && !isVoiceEnabled}
+                    onToggle={handleVoiceToggle}
+                  />
+                  <button
+                    className={`ready-button ${isReady ? "ready" : ""}`}
+                    onClick={handleToggleReady}
+                    disabled={!canPressReady}
+                  >
+                    {!hasSelectedPreset
+                      ? texts.selectPreset
+                      : !isLoaded
+                        ? texts.loading
+                        : isReady
+                          ? texts.notReady
+                          : texts.ready}
+                  </button>
+                </div>
 
                 {isReady && onlineCount > 1 && !allReady && (
                   <p className="waiting-message">{texts.waiting}</p>
@@ -544,9 +616,19 @@ export function WithFriendsRoomPage() {
               !isLateJoin &&
               !showSessionEnded && (
                 <div className="countdown-message">
-                  <button className="exit-button" onClick={handleExit}>
-                    {texts.exit}
-                  </button>
+                  <div className="voice-controls">
+                    {isVoiceEnabled && (
+                      <VoiceChatButton
+                        isVoiceEnabled={isVoiceEnabled}
+                        isMuted={isMuted}
+                        isSpeaking={isSpeaking}
+                        onToggle={toggleMute}
+                      />
+                    )}
+                    <button className="exit-button" onClick={handleExit}>
+                      {texts.exit}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -597,9 +679,19 @@ export function WithFriendsRoomPage() {
                     </span>
                   </div>
                 </div>
-                <button className="exit-button" onClick={handleExit}>
-                  {texts.exit}
-                </button>
+                <div className="voice-controls">
+                  {isVoiceEnabled && (
+                    <VoiceChatButton
+                      isVoiceEnabled={isVoiceEnabled}
+                      isMuted={isMuted}
+                      isSpeaking={isSpeaking}
+                      onToggle={toggleMute}
+                    />
+                  )}
+                  <button className="exit-button" onClick={handleExit}>
+                    {texts.exit}
+                  </button>
+                </div>
               </div>
             )}
 
