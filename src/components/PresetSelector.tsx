@@ -1,45 +1,58 @@
 // src/components/PresetSelector.tsx
-import { useAppContext } from '../context/AppContext';
-import { PRESET_OPTIONS } from '../utils/constants';
-import type { PresetId } from '../types';
+import { useAppContext } from "../context/AppContext";
+import type { PresetId } from "../types";
 
 interface PresetSelectorProps {
   selected: PresetId | null;
-  preselected?: PresetId | null;
   onChange: (preset: PresetId) => void;
   disabled: boolean;
 }
 
-export function PresetSelector({ selected, preselected, onChange, disabled }: PresetSelectorProps) {
+interface PresetInfo {
+  id: PresetId;
+  lang: "EN" | "RU";
+  title: string;
+  titleRu: string;
+}
+
+const PRESETS: PresetInfo[] = [
+  { id: "en_3rounds", lang: "EN", title: "3 rounds", titleRu: "3 раунда" },
+  { id: "en_4rounds", lang: "EN", title: "4 rounds", titleRu: "4 раунда" },
+  { id: "ru_3rounds", lang: "RU", title: "3 rounds", titleRu: "3 раунда" },
+  { id: "ru_4rounds", lang: "RU", title: "4 rounds", titleRu: "4 раунда" },
+];
+
+export function PresetSelector({
+  selected,
+  onChange,
+  disabled,
+}: PresetSelectorProps) {
   const { language } = useAppContext();
 
-  const label = language === 'en' ? 'Preset:' : 'Пресет:';
-
-  const groupLabel = language === 'en' ? 'Presets' : 'Пресеты';
-
-  const getClassName = (presetId: PresetId) => {
-    if (selected === presetId) return 'preset-option selected';
-    if (!selected && preselected === presetId) return 'preset-option preselected';
-    return 'preset-option';
-  };
-
   return (
-    <div className="preset-selector">
-      <span id="preset-label">{label}</span>
-      <div className="preset-options" role="group" aria-labelledby="preset-label" aria-label={groupLabel}>
-        {PRESET_OPTIONS.map((preset) => (
+    <div
+      className="preset-grid"
+      role="group"
+      aria-label={language === "en" ? "Select preset" : "Выберите пресет"}
+    >
+      {PRESETS.map((preset) => {
+        const isSelected = selected === preset.id;
+        const displayTitle = language === "ru" ? preset.titleRu : preset.title;
+
+        return (
           <button
             key={preset.id}
-            className={getClassName(preset.id)}
+            className={`preset-card ${isSelected ? "selected" : ""}`}
             onClick={() => onChange(preset.id)}
             disabled={disabled}
             type="button"
-            aria-pressed={selected === preset.id}
+            aria-pressed={isSelected}
           >
-            {preset.label}
+            <span className="preset-lang">{preset.lang}</span>
+            <span className="preset-title">{displayTitle}</span>
           </button>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }

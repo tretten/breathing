@@ -24,14 +24,14 @@ const DEFAULT_ARTWORK_SVG = `
 const DEFAULT_ARTWORK_DATA_URL = `data:image/svg+xml,${encodeURIComponent(DEFAULT_ARTWORK_SVG)}`;
 
 const DEFAULT_ARTWORK: MediaImage[] = [
-  { src: DEFAULT_ARTWORK_DATA_URL, sizes: '512x512', type: 'image/svg+xml' }
+  { src: DEFAULT_ARTWORK_DATA_URL, sizes: "512x512", type: "image/svg+xml" },
 ];
 
 /**
  * Check if Media Session API is supported
  */
 export function isMediaSessionSupported(): boolean {
-  return 'mediaSession' in navigator;
+  return "mediaSession" in navigator;
 }
 
 /**
@@ -44,11 +44,11 @@ export function setupMediaSession(config: MediaSessionConfig): void {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: config.title,
       artist: config.artist,
-      album: config.album || 'Wim Hof Breathing',
-      artwork: config.artwork || DEFAULT_ARTWORK
+      album: config.album || "Wim Hof Breathing",
+      artwork: config.artwork || DEFAULT_ARTWORK,
     });
   } catch (e) {
-    console.warn('Failed to set media session metadata:', e);
+    console.warn("Failed to set media session metadata:", e);
   }
 }
 
@@ -65,13 +65,15 @@ export function setupMediaSessionHandlers(handlers: {
 }): () => void {
   if (!isMediaSessionSupported()) return () => {};
 
-  const actionHandlers: Array<[MediaSessionAction, MediaSessionActionHandler | null]> = [
-    ['play', handlers.onPlay || null],
-    ['pause', handlers.onPause || null],
-    ['stop', handlers.onStop || null],
-    ['seekbackward', handlers.onSeekBackward || null],
-    ['seekforward', handlers.onSeekForward || null],
-    ['seekto', handlers.onSeekTo || null]
+  const actionHandlers: Array<
+    [MediaSessionAction, MediaSessionActionHandler | null]
+  > = [
+    ["play", handlers.onPlay || null],
+    ["pause", handlers.onPause || null],
+    ["stop", handlers.onStop || null],
+    ["seekbackward", handlers.onSeekBackward || null],
+    ["seekforward", handlers.onSeekForward || null],
+    ["seekto", handlers.onSeekTo || null],
   ];
 
   // Set up handlers
@@ -98,13 +100,15 @@ export function setupMediaSessionHandlers(handlers: {
 /**
  * Update Media Session playback state
  */
-export function updateMediaSessionPlaybackState(state: MediaSessionPlaybackState): void {
+export function updateMediaSessionPlaybackState(
+  state: MediaSessionPlaybackState,
+): void {
   if (!isMediaSessionSupported()) return;
 
   try {
     navigator.mediaSession.playbackState = state;
   } catch (e) {
-    console.warn('Failed to update media session playback state:', e);
+    console.warn("Failed to update media session playback state:", e);
   }
 }
 
@@ -114,7 +118,7 @@ export function updateMediaSessionPlaybackState(state: MediaSessionPlaybackState
 export function updateMediaSessionPositionState(
   duration: number,
   position: number,
-  playbackRate: number = 1
+  playbackRate: number = 1,
 ): void {
   if (!isMediaSessionSupported()) return;
   if (!navigator.mediaSession.setPositionState) return;
@@ -125,11 +129,11 @@ export function updateMediaSessionPositionState(
       navigator.mediaSession.setPositionState({
         duration,
         position,
-        playbackRate
+        playbackRate,
       });
     }
   } catch (e) {
-    console.warn('Failed to update media session position state:', e);
+    console.warn("Failed to update media session position state:", e);
   }
 }
 
@@ -141,27 +145,30 @@ export function clearMediaSession(): void {
 
   try {
     navigator.mediaSession.metadata = null;
-    navigator.mediaSession.playbackState = 'none';
+    navigator.mediaSession.playbackState = "none";
     if (navigator.mediaSession.setPositionState) {
       navigator.mediaSession.setPositionState();
     }
   } catch (e) {
-    console.warn('Failed to clear media session:', e);
+    console.warn("Failed to clear media session:", e);
   }
 }
 
 /**
  * Get localized session title based on preset
  */
-export function getSessionTitle(presetId: string | null, language: 'en' | 'ru'): string {
+export function getSessionTitle(
+  presetId: string | null,
+  language: "en" | "ru",
+): string {
   if (!presetId) {
-    return language === 'ru' ? 'Дыхание по Виму Хофу' : 'Wim Hof Breathing';
+    return language === "ru" ? "Дыхание по Виму Хофу" : "Wim Hof Breathing";
   }
 
   const roundMatch = presetId.match(/(\d+)rounds/);
-  const rounds = roundMatch ? roundMatch[1] : '4';
+  const rounds = roundMatch ? roundMatch[1] : "4";
 
-  if (language === 'ru') {
+  if (language === "ru") {
     return `Дыхание • ${rounds} раунда`;
   }
   return `Breathing • ${rounds} rounds`;
@@ -170,6 +177,6 @@ export function getSessionTitle(presetId: string | null, language: 'en' | 'ru'):
 /**
  * Get localized artist name
  */
-export function getArtistName(language: 'en' | 'ru'): string {
-  return language === 'ru' ? 'Вим Хоф' : 'Wim Hof';
+export function getArtistName(language: "en" | "ru"): string {
+  return language === "ru" ? "Breathing Room" : "Breathing Room";
 }

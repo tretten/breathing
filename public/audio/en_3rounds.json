@@ -1,4 +1,6 @@
 {
+  "title": "3 Rounds Stan",
+  "titleRu": "3 Раунда Стас",
   "url": "https://google.com",
   "phases": [
     { "type": "intro", "duration": 10 },

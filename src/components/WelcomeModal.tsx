@@ -1,9 +1,10 @@
 // src/components/WelcomeModal.tsx
-import { useState } from 'react';
-import { TopBar } from './TopBar';
-import { BreathingIcon, LangRuIcon, LangEnIcon } from './Icons';
+import { useState } from "react";
+import { TopBar } from "./TopBar";
+import { PageFooter } from "./PageFooter";
+import { BreathingIcon, LangRuIcon, LangEnIcon } from "./Icons";
 
-type Language = 'ru' | 'en';
+type Language = "ru" | "en";
 
 interface WelcomeModalProps {
   onComplete: (language: Language) => void;
@@ -18,13 +19,11 @@ export function WelcomeModal({ onComplete }: WelcomeModalProps) {
   };
 
   const texts = {
-    title: 'Wim Hof',
-    subtitle: 'Breathe together · Дышим вместе',
-    selectLabel: 'Select language · Выберите язык',
-    continueEn: 'Continue',
-    continueRu: 'Продолжить',
-    hintEn: 'Guided breathing sessions',
-    hintRu: 'Дыхательные практики с инструктором'
+    title: "Breathing Room",
+    subtitle: "Дышим вместе",
+    selectLabel: "Select language · Выберите язык",
+    continueEn: "Continue",
+    continueRu: "Продолжить",
   };
 
   return (
@@ -41,40 +40,38 @@ export function WelcomeModal({ onComplete }: WelcomeModalProps) {
 
           <div className="language-selection-page">
             <p className="selection-label">{texts.selectLabel}</p>
-            <div className="language-options-page">
+            <div className="card-grid--row">
               <button
                 type="button"
-                className={`language-option-page ${selectedLang === 'ru' ? 'selected' : ''}`}
-                onClick={() => setSelectedLang('ru')}
-                aria-pressed={selectedLang === 'ru'}
+                className={`card ${selectedLang === "en" ? "selected" : ""}`}
+                onClick={() => setSelectedLang("en")}
+                aria-pressed={selectedLang === "en"}
               >
-                <LangRuIcon className="lang-icon" size={32} />
-                <span className="lang-name">Русский</span>
+                <LangEnIcon className="card__icon" size={28} />
+                <span className="card__title">English</span>
               </button>
               <button
                 type="button"
-                className={`language-option-page ${selectedLang === 'en' ? 'selected' : ''}`}
-                onClick={() => setSelectedLang('en')}
-                aria-pressed={selectedLang === 'en'}
+                className={`card ${selectedLang === "ru" ? "selected" : ""}`}
+                onClick={() => setSelectedLang("ru")}
+                aria-pressed={selectedLang === "ru"}
               >
-                <LangEnIcon className="lang-icon" size={32} />
-                <span className="lang-name">English</span>
+                <LangRuIcon className="card__icon" size={28} />
+                <span className="card__title">Русский</span>
               </button>
             </div>
           </div>
 
           <button
             type="button"
-            className="start-now-button"
+            className="btn btn--primary btn--lg"
             onClick={handleContinue}
             disabled={!selectedLang}
           >
-            {selectedLang === 'en' ? texts.continueEn : texts.continueRu}
+            {selectedLang === "ru" ? texts.continueRu : texts.continueEn}
           </button>
 
-          <p className="welcome-hint">
-            {selectedLang === 'en' ? texts.hintEn : texts.hintRu}
-          </p>
+          <PageFooter />
         </div>
       </main>
     </div>

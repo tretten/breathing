@@ -3,10 +3,13 @@
 // Type Definitions
 // ============================================================================
 
-export type RoomType = 'solo' | 'with_friends';
+export type RoomType = 'solo' | 'together';
 export type RoomStatus = 'idle' | 'countdown' | 'playing' | 'completed';
 export type PresetId = 'ru_4rounds' | 'en_4rounds' | 'ru_3rounds' | 'en_3rounds';
-export type RoomId = 'solo' | 'with_friends';
+export type RoomId = 'solo';
+
+// All available presets for Together rooms
+export const PRESET_IDS: PresetId[] = ['en_3rounds', 'en_4rounds', 'ru_3rounds', 'ru_4rounds'];
 
 export interface RoomConfig {
   lang?: 'ru' | 'en';
@@ -43,9 +46,8 @@ export interface AutoRoomState {
   online: Record<string, ClientPresence>;
 }
 
-export interface CustomRoomState {
+export interface TogetherRoomState {
   online: Record<string, ClientPresence>;
-  selectedPreset: PresetId | null;
   status: RoomStatus;
   startTimestamp: number | null;
 }

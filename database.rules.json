@@ -1,18 +1,36 @@
 {
   "rules": {
     "rooms": {
-      "with_friends": {
-        ".read": true,
-        ".write": true
+      "together": {
+        "$presetId": {
+          ".read": true,
+          "online": {
+            "$clientId": {
+              ".write": true
+            }
+          },
+          "status": {
+            ".write": true
+          },
+          "startTimestamp": {
+            ".write": true
+          },
+          "voiceSignaling": {
+            "$signalingId": {
+              ".write": true,
+              "iceCandidates": {
+                ".write": true
+              }
+            }
+          }
+        }
       }
     },
     "presence": {
       ".read": true,
-      ".write": true
-    },
-    "$other": {
-      ".read": false,
-      ".write": false
+      "$clientId": {
+        ".write": true
+      }
     }
   }
 }

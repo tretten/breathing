@@ -1,57 +1,38 @@
 // src/pages/RoomListPage.tsx
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAppContext } from '../context/AppContext';
-import { useRoomState, useServerTime, resetCustomRoom } from '../hooks';
-import { TopBar } from '../components/TopBar';
-import { BreathingIcon, MeditationIcon, FriendsIcon } from '../components/Icons';
-import type { RoomId } from '../types';
+import { useNavigate } from "react-router-dom";
+import { useAppContext } from "../context/AppContext";
+import { useTotalTogetherCount } from "../hooks";
+import { TopBar } from "../components/TopBar";
+import { PageFooter } from "../components/PageFooter";
+import {
+  BreathingIcon,
+  MeditationIcon,
+  FriendsIcon,
+} from "../components/Icons";
 
 export function RoomListPage() {
   const navigate = useNavigate();
   const { language } = useAppContext();
-  const roomState = useRoomState('with_friends');
-  const { getServerTime } = useServerTime();
+  const totalTogetherCount = useTotalTogetherCount();
 
-  const handleEnterRoom = (roomId: RoomId) => {
-    navigate(`/room/${roomId}`);
-  };
-
-  // Check if there's an active session in "with_friends" room
-  const onlineCount = roomState?.online ? Object.keys(roomState.online).length : 0;
-  const isSessionStarted = roomState?.status === 'countdown' &&
-    roomState?.startTimestamp !== null &&
-    getServerTime() > roomState.startTimestamp;
-
-  // Auto-reset abandoned sessions (session started but no participants)
-  useEffect(() => {
-    if (isSessionStarted && onlineCount === 0) {
-      resetCustomRoom();
-    }
-  }, [isSessionStarted, onlineCount]);
-
-  // Only show as active if there are participants
-  const isSessionActive = isSessionStarted && onlineCount > 0;
-
-  const texts = language === 'en' ? {
-    title: 'Wim Hof',
-    subtitle: 'Breathe together',
-    solo: 'Solo',
-    soloDesc: 'Practice alone',
-    withFriends: 'Together',
-    withFriendsDesc: 'Breathe with friends',
-    enter: 'Enter',
-    sessionActive: 'Live'
-  } : {
-    title: 'Вим Хоф',
-    subtitle: 'Дышим вместе',
-    solo: 'Соло',
-    soloDesc: 'Практика соло',
-    withFriends: 'Вместе',
-    withFriendsDesc: 'Дышать с друзьями',
-    enter: 'Войти',
-    sessionActive: 'Live'
-  };
+  const texts =
+    language === "en"
+      ? {
+          title: "Breathing Room",
+          subtitle: "Breathe together",
+          solo: "Solo",
+          soloDesc: "Practice alone",
+          withFriends: "Together",
+          withFriendsDesc: "Breathe with friends",
+        }
+      : {
+          title: "Breathing Room",
+          subtitle: "Дышим вместе",
+          solo: "Соло",
+          soloDesc: "Практика соло",
+          withFriends: "Вместе",
+          withFriendsDesc: "Дышать с друзьями",
+        };
 
   return (
     <div className="page-container">
@@ -65,28 +46,27 @@ export function RoomListPage() {
             <p className="subtitle">{texts.subtitle}</p>
           </header>
 
-          <div className="room-options">
-            <button
-              className="room-option"
-              onClick={() => handleEnterRoom('solo')}
-            >
-              <MeditationIcon className="room-icon" />
-              <span className="room-name">{texts.solo}</span>
-              <span className="room-desc">{texts.soloDesc}</span>
+          <div className="card-grid--row">
+            <button className="card card--lg" onClick={() => navigate("/room")}>
+              <FriendsIcon className="card__icon" />
+              <span className="card__title">{texts.withFriends}</span>
+              <span className="card__subtitle">{texts.withFriendsDesc}</span>
+              {totalTogetherCount > 0 && (
+                <span className="card__badge">{totalTogetherCount}</span>
+              )}
             </button>
 
             <button
-              className={`room-option ${isSessionActive ? 'session-active' : ''}`}
-              onClick={() => handleEnterRoom('with_friends')}
+              className="card card--lg"
+              onClick={() => navigate("/solo/")}
             >
-              <FriendsIcon className="room-icon" />
-              <span className="room-name">{texts.withFriends}</span>
-              <span className="room-desc">{texts.withFriendsDesc}</span>
-              {isSessionActive && (
-                <span className="session-badge">{texts.sessionActive}</span>
-              )}
+              <MeditationIcon className="card__icon" />
+              <span className="card__title">{texts.solo}</span>
+              <span className="card__subtitle">{texts.soloDesc}</span>
             </button>
           </div>
+
+          <PageFooter />
         </div>
       </main>
     </div>

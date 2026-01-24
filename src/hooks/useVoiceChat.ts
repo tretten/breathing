@@ -3,7 +3,7 @@
 // WebRTC Voice Chat Hook with Firebase Signaling
 // ============================================================================
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   ref,
   onValue,
@@ -13,14 +13,16 @@ import {
   onDisconnect,
   get,
   push,
-} from 'firebase/database';
-import { db } from '../firebase/config';
-import { getOrCreateVoiceName } from '../utils/randomNames';
-import type { VoiceChatParticipant, ClientPresence } from '../types';
-
-const MAX_PARTICIPANTS = 8;
-const VOICE_ACTIVITY_THRESHOLD = 0.01;
-const VOICE_ACTIVITY_CHECK_INTERVAL = 100;
+} from "firebase/database";
+import { db } from "../firebase/config";
+import { getOrCreateVoiceName } from "../utils/randomNames";
+import {
+  MAX_VOICE_PARTICIPANTS,
+  VOICE_ACTIVITY_THRESHOLD,
+  VOICE_ACTIVITY_CHECK_INTERVAL_MS,
+  RTC_CONFIG,
+} from "../utils/constants";
+import type { VoiceChatParticipant, ClientPresence } from "../types";
 
 interface PeerConnection {
   connection: RTCPeerConnection;
@@ -49,13 +51,6 @@ interface UseVoiceChatReturn {
   unmuteAll: () => void;
 }
 
-const rtcConfig: RTCConfiguration = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-  ],
-};
-
 export function useVoiceChat({
   roomId,
   clientId,
@@ -72,7 +67,9 @@ export function useVoiceChat({
   const peerConnectionsRef = useRef<Map<string, PeerConnection>>(new Map());
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const voiceActivityIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const voiceActivityIntervalRef = useRef<ReturnType<
+    typeof setInterval
+  > | null>(null);
 
   // Audio elements for remote streams
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
@@ -94,7 +91,7 @@ export function useVoiceChat({
     }));
 
   const voiceEnabledCount = participants.filter((p) => p.isVoiceEnabled).length;
-  const isRoomFull = voiceEnabledCount >= MAX_PARTICIPANTS;
+  const isRoomFull = voiceEnabledCount >= MAX_VOICE_PARTICIPANTS;
 
   // Update presence with voice info
   const updateVoicePresence = useCallback(
@@ -103,7 +100,7 @@ export function useVoiceChat({
       const presenceRef = ref(db, `rooms/${roomId}/online/${clientId}`);
       await update(presenceRef, voiceData);
     },
-    [roomId, clientId]
+    [roomId, clientId],
   );
 
   // Create peer connection for a remote peer
@@ -113,8 +110,7 @@ export function useVoiceChat({
         return peerConnectionsRef.current.get(remoteClientId)!.connection;
       }
 
-
-      const pc = new RTCPeerConnection(rtcConfig);
+      const pc = new RTCPeerConnection(RTC_CONFIG);
       peerConnectionsRef.current.set(remoteClientId, {
         connection: pc,
         remoteStream: null,
@@ -138,14 +134,14 @@ export function useVoiceChat({
         // Create audio element for playback
         let audioElement = audioElementsRef.current.get(remoteClientId);
         if (!audioElement) {
-          audioElement = document.createElement('audio');
+          audioElement = document.createElement("audio");
           // iOS requirements
           (audioElement as any).playsInline = true;
           (audioElement as any).webkitPlaysInline = true;
           audioElement.autoplay = true;
           audioElement.volume = 1.0;
           // Append to DOM (required for some browsers)
-          audioElement.style.display = 'none';
+          audioElement.style.display = "none";
           document.body.appendChild(audioElement);
           audioElementsRef.current.set(remoteClientId, audioElement);
         }
@@ -154,7 +150,7 @@ export function useVoiceChat({
 
         // Explicitly play (needed for some browsers)
         audioElement.play().catch((e) => {
-          console.error('[VoiceChat] Failed to play audio:', e);
+          console.error("[VoiceChat] Failed to play audio:", e);
         });
       };
 
@@ -163,21 +159,24 @@ export function useVoiceChat({
         if (event.candidate) {
           const candidatesRef = ref(
             db,
-            `rooms/${roomId}/voiceSignaling/${clientId}_${remoteClientId}/iceCandidates`
+            `rooms/${roomId}/voiceSignaling/${clientId}_${remoteClientId}/iceCandidates`,
           );
           await push(candidatesRef, event.candidate.toJSON());
         }
       };
 
       pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+        if (
+          pc.connectionState === "failed" ||
+          pc.connectionState === "disconnected"
+        ) {
           closePeerConnection(remoteClientId);
         }
       };
 
       pc.oniceconnectionstatechange = () => {
-        if (pc.iceConnectionState === 'failed') {
-          console.error('[VoiceChat] ICE connection failed');
+        if (pc.iceConnectionState === "failed") {
+          console.error("[VoiceChat] ICE connection failed");
         }
       };
 
@@ -188,7 +187,7 @@ export function useVoiceChat({
 
         const signalingRef = ref(
           db,
-          `rooms/${roomId}/voiceSignaling/${clientId}_${remoteClientId}`
+          `rooms/${roomId}/voiceSignaling/${clientId}_${remoteClientId}`,
         );
         await set(signalingRef, {
           from: clientId,
@@ -199,7 +198,7 @@ export function useVoiceChat({
 
       return pc;
     },
-    [roomId, clientId]
+    [roomId, clientId],
   );
 
   // Close peer connection
@@ -232,7 +231,7 @@ export function useVoiceChat({
       analyserRef.current.fftSize = 256;
 
       const source = audioContextRef.current.createMediaStreamSource(
-        localStreamRef.current
+        localStreamRef.current,
       );
       source.connect(analyserRef.current);
 
@@ -246,9 +245,9 @@ export function useVoiceChat({
         const normalized = average / 255;
 
         setIsSpeaking(normalized > VOICE_ACTIVITY_THRESHOLD && !isMuted);
-      }, VOICE_ACTIVITY_CHECK_INTERVAL);
+      }, VOICE_ACTIVITY_CHECK_INTERVAL_MS);
     } catch (e) {
-      console.warn('Voice activity detection not available:', e);
+      console.warn("Voice activity detection not available:", e);
     }
   }, [isMuted]);
 
@@ -271,7 +270,7 @@ export function useVoiceChat({
   // Enable voice chat
   const enableVoice = useCallback(async (): Promise<boolean> => {
     if (isRoomFull && !isVoiceEnabled) {
-      setError('Room is full (8/8)');
+      setError("Room is full (8/8)");
       return false;
     }
 
@@ -286,7 +285,7 @@ export function useVoiceChat({
       });
 
       // Ensure audio track is enabled
-      stream.getAudioTracks().forEach(track => {
+      stream.getAudioTracks().forEach((track) => {
         track.enabled = true;
       });
 
@@ -306,13 +305,19 @@ export function useVoiceChat({
 
       return true;
     } catch (e) {
-      console.error('[VoiceChat] Failed to enable voice:', e);
+      console.error("[VoiceChat] Failed to enable voice:", e);
       const message =
-        e instanceof Error ? e.message : 'Failed to access microphone';
+        e instanceof Error ? e.message : "Failed to access microphone";
       setError(message);
       return false;
     }
-  }, [isRoomFull, isVoiceEnabled, voiceName, updateVoicePresence, startVoiceActivityDetection]);
+  }, [
+    isRoomFull,
+    isVoiceEnabled,
+    voiceName,
+    updateVoicePresence,
+    startVoiceActivityDetection,
+  ]);
 
   // Disable voice chat
   const disableVoice = useCallback(() => {
@@ -360,7 +365,13 @@ export function useVoiceChat({
         }
       });
     }
-  }, [roomId, clientId, closePeerConnection, stopVoiceActivityDetection, updateVoicePresence]);
+  }, [
+    roomId,
+    clientId,
+    closePeerConnection,
+    stopVoiceActivityDetection,
+    updateVoicePresence,
+  ]);
 
   // Toggle mute
   const toggleMute = useCallback(() => {
@@ -430,7 +441,9 @@ export function useVoiceChat({
           try {
             const pc = await createPeerConnection(remoteClientId, false);
 
-            await pc.setRemoteDescription(new RTCSessionDescription(signaling.offer));
+            await pc.setRemoteDescription(
+              new RTCSessionDescription(signaling.offer),
+            );
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
 
@@ -439,7 +452,7 @@ export function useVoiceChat({
               answer: pc.localDescription?.toJSON(),
             });
           } catch (e) {
-            console.error('[VoiceChat] Error handling offer:', e);
+            console.error("[VoiceChat] Error handling offer:", e);
           }
         }
 
@@ -451,12 +464,14 @@ export function useVoiceChat({
           if (processedAnswersRef.current.has(answerKey)) continue;
 
           const pc = peerConnectionsRef.current.get(signaling.to)?.connection;
-          if (pc && pc.signalingState !== 'stable') {
+          if (pc && pc.signalingState !== "stable") {
             processedAnswersRef.current.add(answerKey);
             try {
-              await pc.setRemoteDescription(new RTCSessionDescription(signaling.answer));
+              await pc.setRemoteDescription(
+                new RTCSessionDescription(signaling.answer),
+              );
             } catch (e) {
-              console.error('[VoiceChat] Error handling answer:', e);
+              console.error("[VoiceChat] Error handling answer:", e);
             }
           }
         }
@@ -481,8 +496,12 @@ export function useVoiceChat({
 
       for (const [key, signaling] of Object.entries(data) as [string, any][]) {
         // Key format: client_XXXX_client_YYYY (fromId_toId where each id is client_XXX)
-        const parts = key.split('_');
-        if (parts.length !== 4 || parts[0] !== 'client' || parts[2] !== 'client') {
+        const parts = key.split("_");
+        if (
+          parts.length !== 4 ||
+          parts[0] !== "client" ||
+          parts[2] !== "client"
+        ) {
           continue;
         }
         const fromId = `${parts[0]}_${parts[1]}`;
@@ -502,7 +521,9 @@ export function useVoiceChat({
 
         const pc = peerConnectionsRef.current.get(remoteClientId)!.connection;
 
-        for (const [candidateKey, candidate] of Object.entries(signaling.iceCandidates) as [string, RTCIceCandidateInit][]) {
+        for (const [candidateKey, candidate] of Object.entries(
+          signaling.iceCandidates,
+        ) as [string, RTCIceCandidateInit][]) {
           const candidateId = `${key}_${candidateKey}`;
 
           if (processedCandidatesRef.current.has(candidateId)) continue;
@@ -513,7 +534,7 @@ export function useVoiceChat({
               await pc.addIceCandidate(new RTCIceCandidate(candidate));
             }
           } catch (e) {
-            console.warn('[VoiceChat] Failed to add ICE candidate:', e);
+            console.warn("[VoiceChat] Failed to add ICE candidate:", e);
           }
         }
       }
@@ -528,7 +549,7 @@ export function useVoiceChat({
 
     // Find other voice-enabled clients
     const otherVoiceClients = Object.entries(clients).filter(
-      ([id, presence]) => id !== clientId && presence.isVoiceEnabled
+      ([id, presence]) => id !== clientId && presence.isVoiceEnabled,
     );
 
     // Connect to peers we haven't connected to yet
@@ -549,7 +570,14 @@ export function useVoiceChat({
         closePeerConnection(peerId);
       }
     });
-  }, [isVoiceEnabled, roomId, clientId, clients, createPeerConnection, closePeerConnection]);
+  }, [
+    isVoiceEnabled,
+    roomId,
+    clientId,
+    clients,
+    createPeerConnection,
+    closePeerConnection,
+  ]);
 
   // Cleanup on unmount
   useEffect(() => {

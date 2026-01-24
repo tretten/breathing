@@ -3,21 +3,22 @@
 // Utility Functions
 // ============================================================================
 
-import { SLOT_INTERVAL_MS, SESSION_WINDOW_MS } from './constants';
+import { SLOT_INTERVAL_MS, SESSION_WINDOW_MS } from "./constants";
 
 /**
  * Calculate the next session slot timestamp
  * Sessions start at every :00 and :30 minute mark
  */
 export function getNextSlotTimestamp(serverTime: number): number {
-  const currentSlot = Math.floor(serverTime / SLOT_INTERVAL_MS) * SLOT_INTERVAL_MS;
+  const currentSlot =
+    Math.floor(serverTime / SLOT_INTERVAL_MS) * SLOT_INTERVAL_MS;
   const timeInSlot = serverTime - currentSlot;
 
   // If we're within the session window, consider it the current session
   if (timeInSlot < SESSION_WINDOW_MS) {
     return currentSlot;
   }
-  
+
   return currentSlot + SLOT_INTERVAL_MS;
 }
 
@@ -25,77 +26,85 @@ export function getNextSlotTimestamp(serverTime: number): number {
  * Format milliseconds as MM:SS string
  */
 export function formatTimeRemaining(ms: number): string {
-  if (ms <= 0) return '00:00';
-  
+  if (ms <= 0) return "00:00";
+
   const totalSeconds = Math.floor(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
 /**
  * Format milliseconds as human-readable string
  */
-export function formatTimeReadable(ms: number): string {
-  if (ms <= 0) return 'сейчас';
-  
+export function formatTimeReadable(
+  ms: number,
+  language: "en" | "ru" = "en",
+): string {
+  if (ms <= 0) return language === "ru" ? "сейчас" : "now";
+
   const totalSeconds = Math.floor(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  
+
+  if (language === "ru") {
+    if (minutes === 0) {
+      return `${seconds} сек`;
+    }
+    if (seconds === 0) {
+      return `${minutes} мин`;
+    }
+    return `${minutes} мин ${seconds} сек`;
+  }
+
   if (minutes === 0) {
-    return `${seconds} сек`;
+    return `${seconds}s`;
   }
-  
   if (seconds === 0) {
-    return `${minutes} мин`;
+    return `${minutes}m`;
   }
-  
-  return `${minutes} мин ${seconds} сек`;
+  return `${minutes}m ${seconds}s`;
 }
 
 /**
- * Generate a unique client ID
+ * Format seconds as M:SS or MM:SS string
  */
-export function generateClientId(): string {
-  // Try to get from localStorage first
-  const stored = localStorage.getItem('wim_hof_client_id');
-  if (stored) return stored;
-  
-  // Generate new ID
-  const id = 'client_' + crypto.randomUUID().replace(/-/g, '').slice(0, 12);
-  localStorage.setItem('wim_hof_client_id', id);
-  return id;
+export function formatSeconds(seconds: number): string {
+  if (seconds <= 0) return "0:00";
+
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 /**
  * Check if all clients in a room are ready
  */
 export function areAllClientsReady(
-  clients: Record<string, { isReady?: boolean }>
+  clients: Record<string, { isReady?: boolean }>,
 ): boolean {
   const clientList = Object.values(clients);
-  
+
   if (clientList.length === 0) {
     return false;
   }
-  
-  return clientList.every(client => client.isReady === true);
+
+  return clientList.every((client) => client.isReady === true);
 }
 
 /**
  * Count ready clients
  */
 export function countReadyClients(
-  clients: Record<string, { isReady?: boolean }>
+  clients: Record<string, { isReady?: boolean }>,
 ): { ready: number; total: number } {
   const clientList = Object.values(clients);
-  const ready = clientList.filter(c => c.isReady === true).length;
-  
+  const ready = clientList.filter((c) => c.isReady === true).length;
+
   return {
     ready,
-    total: clientList.length
+    total: clientList.length,
   };
 }
 
@@ -104,15 +113,15 @@ export function countReadyClients(
  */
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
-  wait: number
+  wait: number,
 ): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  
+
   return (...args: Parameters<T>) => {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
-    
+
     timeoutId = setTimeout(() => {
       func(...args);
     }, wait);
@@ -124,10 +133,10 @@ export function debounce<T extends (...args: any[]) => any>(
  */
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
-  limit: number
+  limit: number,
 ): (...args: Parameters<T>) => void {
   let inThrottle = false;
-  
+
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
       func(...args);
@@ -151,19 +160,38 @@ export function isWebAudioSupported(): boolean {
  */
 export function getSessionStatusMessage(
   isPlaying: boolean,
-  remainingMs: number
+  remainingMs: number,
+  language: "en" | "ru" = "ru",
 ): string {
+  if (language === "en") {
+    if (isPlaying) {
+      return "In progress";
+    }
+    if (remainingMs <= 0) {
+      return "Starting...";
+    }
+    if (remainingMs < 60000) {
+      return "Starting soon";
+    }
+    return "Waiting";
+  }
+
+  // Russian
   if (isPlaying) {
-    return 'Сессия идёт';
+    return "Сессия идёт";
   }
-  
   if (remainingMs <= 0) {
-    return 'Запуск...';
+    return "Запуск...";
   }
-  
   if (remainingMs < 60000) {
-    return 'Скоро начнётся';
+    return "Скоро начнётся";
   }
-  
-  return 'Ожидание';
+  return "Ожидание";
+}
+
+/**
+ * Clamp a number between min and max values
+ */
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }

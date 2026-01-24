@@ -8,6 +8,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 
     /* Default colors (breathe phase) */
     --circle-primary: var(--accent-primary);
@@ -191,29 +192,113 @@
     }
 }
 
+/* ============================================
+   OVERLAY CONTENT (text on top of circle)
+   ============================================ */
+
+.circle-overlay-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    pointer-events: none;
+    gap: var(--space-2, 0.5rem);
+}
+
+.overlay-phase {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1, 4px);
+}
+
+.overlay-phase-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+    opacity: 0.9;
+}
+
+.overlay-phase-time {
+    font-family: var(--font-sans, system-ui);
+    font-size: 2.5rem;
+    font-weight: 300;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    color: var(--text-primary);
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    min-height: 2.5rem;
+}
+
+/* Phase-specific text colors */
+.phase-breathe .overlay-phase-label,
+.phase-breathe .overlay-phase-time {
+    color: rgba(120, 200, 255, 1);
+}
+
+.phase-hold .overlay-phase-label,
+.phase-hold .overlay-phase-time {
+    color: rgba(251, 191, 36, 1);
+}
+
+.phase-pause .overlay-phase-label,
+.phase-pause .overlay-phase-time {
+    color: rgba(200, 200, 210, 0.9);
+}
+
+.phase-intro .overlay-phase-label,
+.phase-intro .overlay-phase-time {
+    color: rgba(167, 139, 250, 1);
+}
+
+.phase-outro .overlay-phase-label,
+.phase-outro .overlay-phase-time {
+    color: rgba(52, 211, 153, 1);
+}
+
 /* Mobile */
 @media (max-width: 640px) {
     .breathing-container {
-        width: 140px;
-        height: 140px;
+        width: 200px;
+        height: 200px;
         flex-shrink: 0;
     }
 
     .breathing-circle {
-        width: 80px;
-        height: 80px;
+        width: 120px;
+        height: 120px;
+    }
+
+    .overlay-phase-label {
+        font-size: 0.6875rem;
+    }
+
+    .overlay-phase-time {
+        font-size: 2rem;
+        min-height: 2rem;
     }
 }
 
 /* Extra small screens */
 @media (max-width: 380px) {
     .breathing-container {
-        width: 120px;
-        height: 120px;
+        width: 160px;
+        height: 160px;
     }
 
     .breathing-circle {
-        width: 70px;
-        height: 70px;
+        width: 100px;
+        height: 100px;
+    }
+
+    .overlay-phase-time {
+        font-size: 1.75rem;
+        min-height: 1.75rem;
     }
 }

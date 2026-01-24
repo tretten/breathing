@@ -4,10 +4,12 @@
 // ============================================================================
 
 import type { VoiceChatParticipant } from '../types';
+import { getNameFromIndices, type NameIndices } from '../utils/randomNames';
 
 interface ParticipantListProps {
   participants: VoiceChatParticipant[];
   currentClientId: string;
+  language: 'en' | 'ru';
 }
 
 type StatusType = 'offline' | 'online' | 'voice' | 'ready' | 'speaking' | 'muted';
@@ -39,23 +41,53 @@ function StatusDot({ status }: { status: StatusType }) {
   );
 }
 
+// Parse name indices from stored string (JSON or legacy plain text)
+function parseDisplayName(storedName: string, language: 'en' | 'ru'): string {
+  if (!storedName) return '...';
+
+  // Try to parse as JSON indices
+  try {
+    // Handle both proper JSON and potentially malformed strings
+    if (storedName.startsWith('{') && storedName.includes('adj')) {
+      const indices = JSON.parse(storedName) as NameIndices;
+      if (typeof indices.adj === 'number' && typeof indices.noun === 'number') {
+        return getNameFromIndices(indices, language);
+      }
+    }
+  } catch {
+    // Parsing failed - check if it looks like truncated/malformed JSON
+    if (storedName.startsWith('{')) {
+      // It's malformed JSON, return fallback
+      return language === 'en' ? 'Anonymous' : 'Аноним';
+    }
+  }
+
+  // Legacy format - plain text name, return as-is
+  return storedName;
+}
+
 export function ParticipantList({
   participants,
   currentClientId,
+  language,
 }: ParticipantListProps) {
   // Sort participants: current user first, then by name
   const sortedParticipants = [...participants].sort((a, b) => {
     if (a.clientId === currentClientId) return -1;
     if (b.clientId === currentClientId) return 1;
-    return a.name.localeCompare(b.name);
+    const nameA = parseDisplayName(a.name, language);
+    const nameB = parseDisplayName(b.name, language);
+    return nameA.localeCompare(nameB);
   });
+
+  const youLabel = language === 'en' ? 'you' : 'ты';
 
   if (sortedParticipants.length === 0) {
     return (
       <div className="participant-list" role="list" aria-label="Participants">
         <div className="participant-item">
           <StatusDot status="online" />
-          <span className="participant-name">Loading...</span>
+          <span className="participant-name">...</span>
         </div>
       </div>
     );
@@ -66,18 +98,21 @@ export function ParticipantList({
       {sortedParticipants.map((participant) => {
         const isCurrentUser = participant.clientId === currentClientId;
         const status = getParticipantStatus(participant);
+        const isReady = participant.isReady;
+        const displayName = parseDisplayName(participant.name, language);
 
         return (
           <div
             key={participant.clientId}
-            className={`participant-item ${isCurrentUser ? 'current-user' : ''}`}
+            className={`participant-item ${isCurrentUser ? 'current-user' : ''} ${isReady ? 'is-ready' : 'not-ready'}`}
             role="listitem"
           >
             <StatusDot status={status} />
             <span className="participant-name">
-              {participant.name}
-              {isCurrentUser && ' (you)'}
+              {displayName}
+              {isCurrentUser && ` (${youLabel})`}
             </span>
+            {isReady && <span className="ready-check">✓</span>}
           </div>
         );
       })}

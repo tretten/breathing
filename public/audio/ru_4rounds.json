@@ -1,4 +1,6 @@
 {
+  "title": "4 Rounds",
+  "titleRu": "4 Раунда",
   "url": "https://google.com",
   "phases": [
     { "type": "breathe", "duration": 90 },

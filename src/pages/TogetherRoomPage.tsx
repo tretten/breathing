@@ -1,47 +1,57 @@
-// src/pages/WithFriendsRoomPage.tsx
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+// src/pages/TogetherRoomPage.tsx
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import {
   useClientId,
   useServerTime,
   usePresence,
-  useRoomState,
+  useTogetherRoomState,
   useAudioPlayback,
   usePhaseCues,
   useVoiceChat,
-  updateRoomPreset,
-  startCustomRoomCountdown,
-  resetCustomRoom,
+  startTogetherCountdown,
+  resetTogetherRoom,
 } from "../hooks";
-import { AUDIO_URLS } from "../utils/constants";
+import {
+  AUDIO_URLS,
+  SINGLE_USER_WAIT_MS,
+  MAX_SESSION_DURATION_MS,
+  AUTO_EXIT_DELAY_MS,
+  LATE_JOIN_WINDOW_MS,
+  AUDIO_SYNC_INTERVAL_MS,
+  AUDIO_SYNC_THRESHOLD_S,
+} from "../utils/constants";
 import { BreathingCircle } from "../components/BreathingCircle";
-import { PhaseOverlay } from "../components/PhaseOverlay";
-import { PresetSelector } from "../components/PresetSelector";
 import { CountdownOverlay } from "../components/CountdownOverlay";
 import { TopBar } from "../components/TopBar";
 import { VoiceChatButton } from "../components/VoiceChatButton";
 import { ParticipantList } from "../components/ParticipantList";
-import type { PresetId } from "../types";
+import { getCueUrlFromAudioUrl } from "../utils/phaseCues";
+import { PRESET_IDS, type PresetId } from "../types";
 
-const SINGLE_USER_WAIT_MS = 3000; // 3 seconds wait for single user
-const MAX_SESSION_DURATION_MS = 20 * 60 * 1000; // 20 minutes max session (safety margin for longest audio)
-const AUTO_EXIT_DELAY = 10000; // 10 seconds before auto-exit after session ends
-
-export function WithFriendsRoomPage() {
+export function TogetherRoomPage() {
   const navigate = useNavigate();
+  const { presetId: presetIdParam } = useParams<{ presetId: string }>();
   const { language } = useAppContext();
+
+  // Validate presetId - check if it's a valid preset
+  const validPresetId = PRESET_IDS.includes(presetIdParam as PresetId)
+    ? (presetIdParam as PresetId)
+    : null;
+  const audioUrl = validPresetId ? AUDIO_URLS[validPresetId] : null;
 
   // Firebase hooks
   const clientId = useClientId();
   const { getServerTime } = useServerTime();
-  const roomState = useRoomState("with_friends");
+  const roomState = useTogetherRoomState(validPresetId);
+
+  // Room path for Firebase
+  const roomPath = validPresetId ? `together/${validPresetId}` : null;
 
   // Local ready state (sent to Firebase)
   const [isReady, setIsReady] = useState(false);
-
-  // Local preset selection (for immediate audio loading)
-  const [localPreset, setLocalPreset] = useState<PresetId | null>(null);
+  const [presetTitle, setPresetTitle] = useState<string>("");
 
   // Single user waiting timer ref
   const singleUserTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -53,7 +63,7 @@ export function WithFriendsRoomPage() {
   const prevCountdownRef = useRef<number | null>(null);
 
   // Track presence with ready status
-  const { onlineCount, clients } = usePresence("with_friends", clientId, {
+  const { onlineCount, clients } = usePresence(roomPath, clientId, {
     isReady,
   });
 
@@ -71,20 +81,10 @@ export function WithFriendsRoomPage() {
     muteAll,
     unmuteAll,
   } = useVoiceChat({
-    roomId: "with_friends",
+    roomId: roomPath || "",
     clientId,
     clients,
   });
-
-  // Room's preset (what others selected)
-  const roomPreset = roomState?.selectedPreset || null;
-
-  // Use local preset for audio loading (immediate), fall back to room state
-  const selectedPreset = localPreset || roomPreset;
-  const audioUrl = selectedPreset ? AUDIO_URLS[selectedPreset] : null;
-
-  // Track if user has selected a preset
-  const hasSelectedPreset = localPreset !== null;
 
   const {
     isLoaded,
@@ -97,14 +97,37 @@ export function WithFriendsRoomPage() {
     syncTo,
     getCurrentTime,
     stopPlayback,
-  } = useAudioPlayback(audioUrl, { presetId: selectedPreset, language });
+  } = useAudioPlayback(audioUrl, { presetId: validPresetId, language });
 
   // Phase cues for displaying Breathe/Pause/Hold
+  // Phase cues for displaying Breathe/Pause/Hold (keep active during pause)
   const { currentPhase, phaseRemaining, authorUrl } = usePhaseCues(
     audioUrl,
     getCurrentTime,
     isPlaying,
   );
+
+  // Fetch preset title from JSON cue file
+  useEffect(() => {
+    if (!audioUrl) return;
+
+    const fetchTitle = async () => {
+      const jsonUrl = getCueUrlFromAudioUrl(audioUrl);
+      try {
+        const response = await fetch(jsonUrl);
+        const data = await response.json();
+        setPresetTitle(
+          language === "ru"
+            ? data.titleRu || data.title || ""
+            : data.title || "",
+        );
+      } catch {
+        setPresetTitle("");
+      }
+    };
+
+    fetchTitle();
+  }, [audioUrl, language]);
 
   // Calculate ready count
   const readyCount = Object.values(clients).filter((c) => c.isReady).length;
@@ -125,6 +148,13 @@ export function WithFriendsRoomPage() {
 
   // Late join remaining time (updates every second)
   const [lateJoinRemaining, setLateJoinRemaining] = useState(0);
+
+  // Redirect if invalid preset
+  useEffect(() => {
+    if (!validPresetId) {
+      navigate("/room");
+    }
+  }, [validPresetId, navigate]);
 
   useEffect(() => {
     if (roomStatus !== "countdown" || !startTimestamp) {
@@ -156,20 +186,26 @@ export function WithFriendsRoomPage() {
 
     // Don't start new session if we just finished one (prevents loop)
     // Only proceed if room is idle, audio loaded, and user is ready
-    if (roomStatus !== "idle" || !isLoaded || !isReady || showSessionEnded) {
+    if (
+      roomStatus !== "idle" ||
+      !isLoaded ||
+      !isReady ||
+      showSessionEnded ||
+      !validPresetId
+    ) {
       return;
     }
 
     // If more than one user online and all ready, start immediately
     if (onlineCount > 1 && allReady) {
-      startCustomRoomCountdown(getServerTime);
+      startTogetherCountdown(validPresetId, getServerTime);
       return;
     }
 
     // If single user and ready, wait 3 seconds silently then start
     if (onlineCount === 1 && isReady) {
       singleUserTimerRef.current = setTimeout(() => {
-        startCustomRoomCountdown(getServerTime);
+        startTogetherCountdown(validPresetId, getServerTime);
       }, SINGLE_USER_WAIT_MS);
     }
 
@@ -187,6 +223,7 @@ export function WithFriendsRoomPage() {
     allReady,
     getServerTime,
     showSessionEnded,
+    validPresetId,
   ]);
 
   // Play audio when countdown transitions from >0 to 0
@@ -218,7 +255,9 @@ export function WithFriendsRoomPage() {
     } else if (hasStartedPlayingRef.current && !exitedManuallyRef.current) {
       // Audio finished playing naturally - show session ended screen
       setShowSessionEnded(true);
-      resetCustomRoom();
+      if (validPresetId) {
+        resetTogetherRoom(validPresetId);
+      }
       setIsReady(false);
       hasStartedPlayingRef.current = false;
       // Auto-unmute after session ends
@@ -226,15 +265,15 @@ export function WithFriendsRoomPage() {
         unmuteAll();
       }
     }
-  }, [isPlaying, isVoiceEnabled, unmuteAll]);
+  }, [isPlaying, isVoiceEnabled, unmuteAll, validPresetId]);
 
-  // Auto-exit after 10 seconds if session ended and user hasn't interacted
+  // Auto-exit after session ended and user hasn't interacted
   useEffect(() => {
     if (!showSessionEnded) return;
 
     const timer = setTimeout(() => {
-      navigate("/");
-    }, AUTO_EXIT_DELAY);
+      navigate("/room");
+    }, AUTO_EXIT_DELAY_MS);
 
     return () => clearTimeout(timer);
   }, [showSessionEnded, navigate]);
@@ -250,16 +289,13 @@ export function WithFriendsRoomPage() {
   useEffect(() => {
     if (!isPlaying || !startTimestamp) return;
 
-    const SYNC_THRESHOLD = 0.5; // Sync if drift > 0.5 seconds
-    const SYNC_INTERVAL = 1000; // Check every second
-
     const syncAudio = () => {
       const expectedPosition = (getServerTime() - startTimestamp) / 1000;
       const actualPosition = getCurrentTime();
       const drift = Math.abs(expectedPosition - actualPosition);
 
       if (
-        drift > SYNC_THRESHOLD &&
+        drift > AUDIO_SYNC_THRESHOLD_S &&
         expectedPosition > 0 &&
         expectedPosition < duration
       ) {
@@ -267,7 +303,7 @@ export function WithFriendsRoomPage() {
       }
     };
 
-    const interval = setInterval(syncAudio, SYNC_INTERVAL);
+    const interval = setInterval(syncAudio, AUDIO_SYNC_INTERVAL_MS);
     // Also sync immediately
     syncAudio();
 
@@ -289,17 +325,8 @@ export function WithFriendsRoomPage() {
   };
 
   const handleBack = useCallback(() => {
-    navigate("/");
+    navigate("/room");
   }, [navigate]);
-
-  const handlePresetChange = useCallback(
-    async (preset: PresetId) => {
-      if (roomStatus !== "idle") return;
-      setLocalPreset(preset);
-      await updateRoomPreset(preset);
-    },
-    [roomStatus],
-  );
 
   const handleToggleReady = useCallback(async () => {
     if (roomStatus !== "idle") return;
@@ -326,12 +353,19 @@ export function WithFriendsRoomPage() {
     }
 
     // If we're the last participant, end the session
-    if (onlineCount <= 1) {
-      resetCustomRoom();
+    if (onlineCount <= 1 && validPresetId) {
+      resetTogetherRoom(validPresetId);
     }
 
-    navigate("/");
-  }, [stopPlayback, navigate, onlineCount, isVoiceEnabled, disableVoice]);
+    navigate("/room");
+  }, [
+    stopPlayback,
+    navigate,
+    onlineCount,
+    isVoiceEnabled,
+    disableVoice,
+    validPresetId,
+  ]);
 
   const handleSupportAuthor = useCallback(() => {
     if (authorUrl) {
@@ -356,8 +390,7 @@ export function WithFriendsRoomPage() {
     return (getServerTime() - startTimestamp) / 1000;
   }, [startTimestamp, getServerTime]);
 
-  // Check if session has expired (audio already finished OR session is stale)
-  // Session is stale if it's been running longer than max duration (even if audio not loaded yet)
+  // Check if session has expired
   const elapsedMs = startTimestamp ? getServerTime() - startTimestamp : 0;
   const isSessionStale =
     roomStatus === "countdown" &&
@@ -370,69 +403,83 @@ export function WithFriendsRoomPage() {
       duration > 0 &&
       getElapsedSeconds() > duration);
 
-  // Check if this is a late join (session in progress, not expired)
+  // Check if this is a late join (session in progress, within 18s window, not expired)
+  const sessionElapsedMs = startTimestamp
+    ? getServerTime() - startTimestamp
+    : 0;
   const isLateJoin =
     roomStatus === "countdown" &&
     startTimestamp !== null &&
-    getServerTime() > startTimestamp &&
+    sessionElapsedMs > 0 &&
+    sessionElapsedMs <= LATE_JOIN_WINDOW_MS &&
+    !isPlaying &&
+    !isSessionExpired;
+
+  // Too late to join - session started more than 18 seconds ago
+  const isTooLateToJoin =
+    roomStatus === "countdown" &&
+    startTimestamp !== null &&
+    sessionElapsedMs > LATE_JOIN_WINDOW_MS &&
     !isPlaying &&
     !isSessionExpired;
 
   // Auto-reset expired sessions
   useEffect(() => {
-    if (isSessionExpired) {
-      resetCustomRoom();
+    if (isSessionExpired && validPresetId) {
+      resetTogetherRoom(validPresetId);
     }
-  }, [isSessionExpired]);
+  }, [isSessionExpired, validPresetId]);
 
-  // Periodically check for stale sessions (runs every 5s when room is in countdown but not playing)
-  // This ensures stale sessions are detected even if audio isn't loaded yet
+  // Periodically check for stale sessions
   useEffect(() => {
-    if (roomStatus !== "countdown" || isPlaying || !startTimestamp) {
+    if (
+      roomStatus !== "countdown" ||
+      isPlaying ||
+      !startTimestamp ||
+      !validPresetId
+    ) {
       return;
     }
 
     const checkStale = () => {
       const elapsed = getServerTime() - startTimestamp;
-      // If session has been running for more than max duration, reset
       if (elapsed > MAX_SESSION_DURATION_MS) {
-        resetCustomRoom();
+        resetTogetherRoom(validPresetId);
       }
     };
 
-    // Check immediately and every 5 seconds
     checkStale();
     const interval = setInterval(checkStale, 5000);
 
     return () => clearInterval(interval);
-  }, [roomStatus, isPlaying, startTimestamp, getServerTime]);
+  }, [roomStatus, isPlaying, startTimestamp, getServerTime, validPresetId]);
 
-  // Auto-end session if it appears abandoned (no active listeners or solo user in a "started" session)
+  // Auto-end session if it appears abandoned
   useEffect(() => {
-    // Only check during active session (countdown started, audio should be playing)
     const isActiveSession =
       roomStatus === "countdown" &&
       startTimestamp !== null &&
       getServerTime() > startTimestamp;
 
-    if (!isActiveSession) return;
+    if (!isActiveSession || !validPresetId) return;
 
-    // Reset if no one is online
     if (onlineCount === 0) {
-      resetCustomRoom();
+      resetTogetherRoom(validPresetId);
       return;
     }
 
-    // If I'm the only one online, the session already started (past startTimestamp),
-    // and I'm NOT currently playing (meaning I just joined), this is a stale session
-    // Give a small grace period (2 seconds) for late joins before assuming it's stale
     const sessionStartedSecondsAgo = (getServerTime() - startTimestamp) / 1000;
     if (onlineCount === 1 && !isPlaying && sessionStartedSecondsAgo > 5) {
-      // I'm alone in a session that started over 5 seconds ago and I'm not playing
-      // This means everyone else left - reset the room
-      resetCustomRoom();
+      resetTogetherRoom(validPresetId);
     }
-  }, [roomStatus, startTimestamp, onlineCount, isPlaying, getServerTime]);
+  }, [
+    roomStatus,
+    startTimestamp,
+    onlineCount,
+    isPlaying,
+    getServerTime,
+    validPresetId,
+  ]);
 
   // Update late join remaining time
   useEffect(() => {
@@ -456,71 +503,68 @@ export function WithFriendsRoomPage() {
   const handleJoinSession = useCallback(async () => {
     if (!startTimestamp || !isLoaded || !duration) return;
 
-    // First unlock audio with user gesture
     await unlockAudio();
 
-    // Calculate initial elapsed time
     const elapsedMs = getServerTime() - startTimestamp;
     const elapsedSeconds = elapsedMs / 1000;
 
-    // If session is still within audio duration, sync to position
     if (elapsedSeconds >= 0 && elapsedSeconds < duration) {
-      // Pass function to recalculate exact position right before play
       const getExactPosition = () => (getServerTime() - startTimestamp) / 1000;
       await playAt(elapsedSeconds, getExactPosition);
     }
   }, [startTimestamp, isLoaded, duration, unlockAudio, getServerTime, playAt]);
 
-  const canChangePreset = roomStatus === "idle" && !isReady;
-  const canPressReady = hasSelectedPreset && isLoaded;
-
   // Text based on language
   const texts =
     language === "en"
       ? {
-          appTitle: "Wim Hof",
           title: "Together",
-          inRoom: "in the room",
-          selectPreset: "Choose",
           ready: "I'm Ready",
           notReady: "Cancel",
           waiting: "Waiting...",
-          readyCount: "ready",
           loading: "Wait...",
+          readyLabel: "ready",
           sessionEnd: "Remaining",
           exit: "Exit",
           join: "Join",
           sessionEnded: "Session is over, enjoy!",
           sessionInProgress: "In progress",
-          online: "online",
+          tooLate: "Session already started",
           supportAuthor: "Support Author",
-          roomFull: "Room is full",
-          roomFullDesc: "Maximum 8 participants with voice chat",
-          continueWithoutVoice: "Continue without voice",
-          goBack: "Go back",
         }
       : {
-          appTitle: "Вим Хоф",
           title: "Вместе",
-          inRoom: "в комнате",
-          selectPreset: "Выбор",
           ready: "Я Готов",
           notReady: "Отмена",
           waiting: "Ожидание...",
-          readyCount: "готовы",
           loading: "Ждите",
+          readyLabel: "готовы",
           sessionEnd: "Осталось",
           exit: "Выйти",
           join: "Войти",
           sessionEnded: "Сессия завершена!",
           sessionInProgress: "Идёт сеанс",
-          online: "онлайн",
+          tooLate: "Сессия уже началась",
           supportAuthor: "Поддержать автора",
-          roomFull: "Комната заполнена",
-          roomFullDesc: "Максимум 8 участников с голосовым чатом",
-          continueWithoutVoice: "Продолжить без голоса",
-          goBack: "Назад",
         };
+
+  // Format subtitle: "3 Раунда Стас: готовы 2/3" or just preset title during playback
+  const subtitleText = useMemo(() => {
+    if (!presetTitle) return "...";
+    if (isPlaying || showSessionEnded) return presetTitle;
+    return `${presetTitle}: ${texts.readyLabel} ${readyCount}/${onlineCount}`;
+  }, [
+    presetTitle,
+    isPlaying,
+    showSessionEnded,
+    texts.readyLabel,
+    readyCount,
+    onlineCount,
+  ]);
+
+  if (!validPresetId) {
+    return null;
+  }
 
   return (
     <div className="page-container">
@@ -533,54 +577,55 @@ export function WithFriendsRoomPage() {
       <main className="page-content">
         <div className="content-centered">
           <header className="page-header">
-            <p className="page-subtitle">{texts.appTitle}</p>
             <h1>{texts.title}</h1>
-            <p className="room-online-count">
-              {onlineCount} {texts.inRoom}
-            </p>
-          </header>
-
-          {(roomStatus !== "idle" || isPlaying) && (
-            <BreathingCircle isActive={isPlaying} phase={currentPhase} />
-          )}
-
-          <div className="room-info">
-            {/* Participant list - always show */}
+            <p className="subtitle">{subtitleText}</p>
+            {/* Participant list - moved to header, above the circle */}
             <ParticipantList
               participants={participants}
               currentClientId={clientId}
+              language={language || "en"}
             />
+          </header>
 
+          <BreathingCircle isActive={isPlaying} phase={currentPhase}>
+            {/* Phase info - displayed as overlay on the circle (no total timer) */}
+            {isPlaying && !showSessionEnded && (
+              <div className="circle-overlay-content">
+                <div className="overlay-phase">
+                  <span className="overlay-phase-label">
+                    {currentPhase
+                      ? language === "ru"
+                        ? {
+                            breathe: "Дыши",
+                            hold: "Держи",
+                            pause: "Пауза",
+                            intro: "Начало",
+                            outro: "Конец",
+                          }[currentPhase]
+                        : {
+                            breathe: "Breathe",
+                            hold: "Hold",
+                            pause: "Pause",
+                            intro: "Intro",
+                            outro: "Outro",
+                          }[currentPhase]
+                      : ""}
+                  </span>
+                  <span className="overlay-phase-time">
+                    {phaseRemaining > 0 ? phaseRemaining : ""}
+                  </span>
+                </div>
+              </div>
+            )}
+          </BreathingCircle>
+
+          <div className="room-info">
             {/* Voice error message */}
             {voiceError && <p className="voice-error">{voiceError}</p>}
 
             {/* Idle state - show only when not playing and not showing session ended */}
             {roomStatus === "idle" && !isPlaying && !showSessionEnded && (
               <>
-                <PresetSelector
-                  selected={localPreset}
-                  preselected={roomPreset}
-                  onChange={handlePresetChange}
-                  disabled={!canChangePreset}
-                />
-
-                <div className="ready-status">
-                  <div className="ready-bar">
-                    <div
-                      className="ready-fill"
-                      style={{
-                        width:
-                          onlineCount > 0
-                            ? `${(readyCount / onlineCount) * 100}%`
-                            : "0%",
-                      }}
-                    />
-                  </div>
-                  <span>
-                    {readyCount} / {onlineCount} {texts.readyCount}
-                  </span>
-                </div>
-
                 <div className="voice-controls">
                   <VoiceChatButton
                     isVoiceEnabled={isVoiceEnabled}
@@ -590,17 +635,15 @@ export function WithFriendsRoomPage() {
                     onToggle={handleVoiceToggle}
                   />
                   <button
-                    className={`ready-button ${isReady ? "ready" : ""}`}
+                    className={`btn btn--primary btn--lg ${isReady ? "active" : ""}`}
                     onClick={handleToggleReady}
-                    disabled={!canPressReady}
+                    disabled={!isLoaded}
                   >
-                    {!hasSelectedPreset
-                      ? texts.selectPreset
-                      : !isLoaded
-                        ? texts.loading
-                        : isReady
-                          ? texts.notReady
-                          : texts.ready}
+                    {!isLoaded
+                      ? texts.loading
+                      : isReady
+                        ? texts.notReady
+                        : texts.ready}
                   </button>
                 </div>
 
@@ -614,6 +657,7 @@ export function WithFriendsRoomPage() {
             {roomStatus === "countdown" &&
               !isPlaying &&
               !isLateJoin &&
+              !isTooLateToJoin &&
               !showSessionEnded && (
                 <div className="countdown-message">
                   <div className="voice-controls">
@@ -625,7 +669,7 @@ export function WithFriendsRoomPage() {
                         onToggle={toggleMute}
                       />
                     )}
-                    <button className="exit-button" onClick={handleExit}>
+                    <button className="btn btn--secondary" onClick={handleExit}>
                       {texts.exit}
                     </button>
                   </div>
@@ -649,7 +693,7 @@ export function WithFriendsRoomPage() {
                   </div>
                 )}
                 <button
-                  className="join-button"
+                  className="btn btn--primary btn--lg"
                   onClick={handleJoinSession}
                   disabled={!isLoaded}
                 >
@@ -658,39 +702,41 @@ export function WithFriendsRoomPage() {
               </div>
             )}
 
+            {/* Too late to join - session started more than 18 seconds ago */}
+            {isTooLateToJoin && !showSessionEnded && (
+              <div className="too-late-message">
+                <p className="session-status">{texts.tooLate}</p>
+                <button className="btn btn--secondary" onClick={handleExit}>
+                  {texts.exit}
+                </button>
+              </div>
+            )}
+
             {/* Playing state - audio is playing */}
             {isPlaying && !showSessionEnded && (
-              <div className="playing-message">
-                <div className="timers-section">
-                  <PhaseOverlay
-                    phase={currentPhase}
-                    remaining={phaseRemaining}
-                  />
-                  <div
-                    className="total-timer"
-                    aria-live="polite"
-                    aria-atomic="true"
-                  >
-                    <span className="total-timer-label">
-                      {texts.sessionEnd}
-                    </span>
-                    <span className="total-timer-value">
-                      {formatRemainingTime(remainingTime)}
-                    </span>
-                  </div>
-                </div>
+              <div className="playing-controls">
                 <div className="voice-controls">
-                  {isVoiceEnabled && (
-                    <VoiceChatButton
-                      isVoiceEnabled={isVoiceEnabled}
-                      isMuted={isMuted}
-                      isSpeaking={isSpeaking}
-                      onToggle={toggleMute}
-                    />
-                  )}
-                  <button className="exit-button" onClick={handleExit}>
+                  <VoiceChatButton
+                    isVoiceEnabled={isVoiceEnabled}
+                    isMuted={isMuted}
+                    isSpeaking={isSpeaking}
+                    disabled={isRoomFull && !isVoiceEnabled}
+                    onToggle={handleVoiceToggle}
+                  />
+                  <button
+                    className="btn btn--primary btn--lg"
+                    onClick={handleExit}
+                  >
                     {texts.exit}
                   </button>
+                </div>
+                <div className="remaining-time">
+                  <span className="remaining-time-label">
+                    {texts.sessionEnd}
+                  </span>
+                  <span className="remaining-time-value">
+                    {formatRemainingTime(remainingTime)}
+                  </span>
                 </div>
               </div>
             )}
@@ -708,13 +754,13 @@ export function WithFriendsRoomPage() {
                 <div className="session-ended-buttons">
                   {authorUrl && (
                     <button
-                      className="support-author-button"
+                      className="btn btn--accent"
                       onClick={handleSupportAuthor}
                     >
                       {texts.supportAuthor}
                     </button>
                   )}
-                  <button className="exit-button" onClick={handleExit}>
+                  <button className="btn btn--secondary" onClick={handleExit}>
                     {texts.exit}
                   </button>
                 </div>

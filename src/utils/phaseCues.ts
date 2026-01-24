@@ -17,6 +17,8 @@ interface PhaseEntry {
 }
 
 interface PhaseCuesJson {
+  title?: string;
+  titleRu?: string;
   url?: string;
   phases: PhaseEntry[];
 }
@@ -24,6 +26,8 @@ interface PhaseCuesJson {
 export interface ParsedCuesData {
   cues: PhaseCue[];
   authorUrl: string | null;
+  title: string | null;
+  titleRu: string | null;
 }
 
 /**
@@ -34,12 +38,20 @@ export function parsePhaseCues(jsonString: string): ParsedCuesData {
   const cues: PhaseCue[] = [];
   let currentTime = 0;
   let authorUrl: string | null = null;
+  let title: string | null = null;
+  let titleRu: string | null = null;
 
   try {
     const data: PhaseCuesJson = JSON.parse(jsonString);
 
     if (data.url) {
       authorUrl = data.url;
+    }
+    if (data.title) {
+      title = data.title;
+    }
+    if (data.titleRu) {
+      titleRu = data.titleRu;
     }
 
     for (const entry of data.phases) {
@@ -60,7 +72,7 @@ export function parsePhaseCues(jsonString: string): ParsedCuesData {
     console.error("Failed to parse phase cues JSON:", e);
   }
 
-  return { cues, authorUrl };
+  return { cues, authorUrl, title, titleRu };
 }
 
 /**

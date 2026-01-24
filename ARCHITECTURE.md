@@ -1,35 +1,114 @@
-# Wim Hof Breathing — Архитектура приложения
+# Wim Hof Breathing — Architecture Documentation
 
-## Обзор
+## Overview
 
-Синхронное веб-приложение для совместного дыхания по методу Вима Хофа. Только фронтенд (SPA на React), синхронизация через Firebase Realtime Database, аудио через Web Audio API.
+A synchronized web application for group breathing exercises using the Wim Hof method. Built as a single-page application (SPA) with React, using Firebase Realtime Database for synchronization and Web Audio API for audio playback.
 
 ---
 
-## 1. Структура данных Firebase
+## Technology Stack
+
+- **Frontend**: React 18 + TypeScript + Vite
+- **State Management**: React Context + Custom Hooks
+- **Backend**: Firebase Realtime Database (serverless)
+- **Audio**: HTML5 Audio with Media Session API for iOS lock screen support
+- **Voice Chat**: WebRTC with Firebase signaling
+- **Styling**: CSS with CSS Variables (dark/light themes)
+
+---
+
+## Project Structure
+
+```
+src/
+├── components/          # Reusable UI components
+│   ├── BreathingCircle  # Animated breathing visualization
+│   ├── CountdownOverlay # 3-2-1 countdown display
+│   ├── GlobalOnlineIndicator # Total users online
+│   ├── Icons            # SVG icon components
+│   ├── LanguageSwitcher # EN/RU language toggle
+│   ├── ParticipantList  # Voice chat participants
+│   ├── PhaseOverlay     # Breathe/Hold/Pause display
+│   ├── PresetSelector   # Audio preset selection
+│   ├── ThemeToggle      # Dark/light mode
+│   ├── TopBar           # Navigation header
+│   ├── VoiceChatButton  # Mic toggle button
+│   └── WelcomeModal     # Initial setup screen
+│
+├── context/
+│   └── AppContext       # Global app state (language, audio unlock)
+│
+├── firebase/
+│   └── config           # Firebase initialization
+│
+├── hooks/               # Custom React hooks (modular)
+│   ├── useAudioPlayback # HTML5 Audio with iOS support
+│   ├── useClientId      # Persistent anonymous ID
+│   ├── useCountdown     # Timer utilities
+│   ├── usePhaseCues     # Breathing phase tracking
+│   ├── usePresence      # Firebase presence management
+│   ├── useServerTime    # Server time synchronization
+│   ├── useTogetherRoom  # Together room state & actions
+│   ├── useVoiceChat     # WebRTC voice chat
+│   └── index            # Re-exports all hooks
+│
+├── pages/               # Route components
+│   ├── RoomListPage     # Home screen with room selection
+│   ├── SoloRoomPage     # Solo practice mode
+│   ├── TogetherLobbyPage# Preset selection for Together
+│   └── TogetherRoomPage # Synchronized group sessions
+│
+├── styles/
+│   ├── global.css       # Design tokens, layouts, components
+│   └── breathing-circle.css # Circle animation styles
+│
+├── types/
+│   └── index            # TypeScript type definitions
+│
+├── utils/
+│   ├── constants        # All magic numbers & config values
+│   ├── helpers          # Utility functions
+│   ├── mediaSession     # iOS lock screen integration
+│   ├── phaseCues        # Phase cue parsing
+│   └── randomNames      # Voice chat name generator
+│
+├── App.tsx              # Root component with routing
+└── main.tsx             # Entry point
+
+public/
+└── audio/               # Audio files (mp3 + json cues)
+    ├── ru_4rounds.mp3
+    ├── ru_4rounds.json
+    ├── en_4rounds.mp3
+    ├── en_4rounds.json
+    └── ...
+```
+
+---
+
+## Firebase Data Structure
 
 ```json
 {
+  "presence": {
+    "<clientId>": {
+      "online": true,
+      "lastSeen": 1234567890123
+    }
+  },
   "rooms": {
-    "ru_4rounds": {
-      "online": {
-        "<clientId>": {
-          "joinedAt": 1234567890123
-        }
-      }
-    },
-    "en_4rounds": { "online": {} },
-    "ru_3rounds": { "online": {} },
-    "en_3rounds": { "online": {} },
-    
-    "custom_ready": {
-      "selectedPreset": "ru_4rounds",
-      "status": "idle",
-      "startTimestamp": null,
-      "online": {
-        "<clientId>": {
-          "isReady": false,
-          "joinedAt": 1234567890123
+    "together": {
+      "<presetId>": {
+        "status": "idle | countdown | playing",
+        "startTimestamp": 1234567890123,
+        "online": {
+          "<clientId>": {
+            "joinedAt": 1234567890123,
+            "isReady": false,
+            "voiceName": "{\"adj\":5,\"noun\":12}",
+            "isVoiceEnabled": false,
+            "isMuted": false
+          }
         }
       }
     }
@@ -37,28 +116,23 @@
 }
 ```
 
-### Почему такая структура?
+### Design Decisions
 
-1. **Минимум записей** — для автокомнат храним только presence, `nextStartTimestamp` вычисляется на клиенте по серверному времени.
-
-2. **`online` как дочерний узел** — позволяет использовать `.info/connected` и `onDisconnect()` для автоочистки.
-
-3. **Статусы `custom_ready`**:
-   - `idle` — ожидание, можно менять пресет
-   - `countdown` — все готовы, идёт обратный отсчёт 3 сек
-   - `playing` — воспроизводится аудио
-   - `completed` → автоматически сбрасывается в `idle`
-
-4. **Нет `lastSeen`** — полагаемся на `onDisconnect().remove()`, не делаем heartbeat-записи.
+1. **No server-side scheduling** — Session timing is calculated client-side using Firebase server time offset
+2. **Presence via `onDisconnect()`** — Automatic cleanup when users disconnect
+3. **Heartbeat for stale detection** — Clients update `joinedAt` every minute; entries older than 5 minutes are cleaned up
+4. **Atomic updates** — Room status changes use Firebase transactions where needed
 
 ---
 
-## 2. Синхронизация времени
+## Key Patterns
 
-### Server Time Offset
+### 1. Server Time Synchronization
+
+All clients sync to Firebase server time to ensure coordinated session starts:
 
 ```typescript
-// Firebase предоставляет смещение локального времени от серверного
+// useServerTime hook
 const offsetRef = ref(db, '.info/serverTimeOffset');
 onValue(offsetRef, (snap) => {
   const offset = snap.val() || 0;
@@ -66,418 +140,167 @@ onValue(offsetRef, (snap) => {
 });
 ```
 
-### Вычисление следующего слота (каждые 30 минут)
+### 2. Audio Playback (iOS Compatible)
+
+Uses HTML5 Audio instead of Web Audio API to support background playback:
 
 ```typescript
-function getNextSlotTimestamp(serverTime: number): number {
-  const SLOT_INTERVAL = 30 * 60 * 1000; // 30 минут
-  const currentSlot = Math.floor(serverTime / SLOT_INTERVAL) * SLOT_INTERVAL;
-  const nextSlot = currentSlot + SLOT_INTERVAL;
-  
-  // Если мы в первые 5 секунд слота — это текущая сессия
-  if (serverTime - currentSlot < 5000) {
-    return currentSlot;
-  }
-  return nextSlot;
-}
+// HTML5 Audio continues playing when iOS screen locks
+const audio = new Audio();
+audio.playsInline = true;
+audio.src = audioUrl;
+
+// Media Session for lock screen controls
+navigator.mediaSession.metadata = new MediaMetadata({...});
 ```
 
----
+### 3. Presence Management
 
-## 3. Web Audio API — синхронный старт
-
-### Принцип
-
-Web Audio API позволяет запланировать воспроизведение на точное время относительно `audioContext.currentTime`:
+Robust presence with automatic cleanup:
 
 ```typescript
-// delay в секундах от текущего момента audioContext
-source.start(audioContext.currentTime + delaySeconds);
+// Register presence
+set(myRef, { joinedAt: Date.now(), voiceName: ... });
+
+// Auto-remove on disconnect
+onDisconnect(myRef).remove();
+
+// Periodic heartbeat keeps presence fresh
+setInterval(() => update(myRef, { joinedAt: Date.now() }), 60000);
 ```
 
-### Алгоритм
+### 4. Voice Chat (WebRTC)
 
-1. Загружаем аудиофайл → декодируем в `AudioBuffer`
-2. Вычисляем `delayMs = startTimestamp - serverTime`
-3. Конвертируем в секунды: `delaySeconds = delayMs / 1000`
-4. Планируем: `source.start(audioContext.currentTime + delaySeconds)`
-
-### Важно: Autoplay Policy
-
-Браузеры блокируют воспроизведение аудио без пользовательского взаимодействия. Решение:
+Peer-to-peer audio using Firebase for signaling:
 
 ```typescript
-// При первом клике/тапе
-async function unlockAudio() {
-  if (audioContext.state === 'suspended') {
-    await audioContext.resume();
-  }
-}
+// Signaling path: rooms/{roomId}/voiceSignaling/{fromId}_{toId}
+// Contains: offer, answer, iceCandidates
 
-// Привязываем к кнопке "Войти в комнату" или отдельной кнопке "Включить звук"
-```
-
----
-
-## 4. Архитектура компонентов React
-
-```
-App
-├── RoomList                    # Главная страница со списком комнат
-├── AutoRoom                    # Страница автокомнаты (/room/:roomId)
-│   ├── useServerTime()         # Хук: серверное время + offset
-│   ├── usePresence()           # Хук: presence + onlineCount
-│   ├── useAudioPlayback()      # Хук: загрузка + планирование аудио
-│   ├── OnlineCounter           # Компонент: "N человек онлайн"
-│   ├── CountdownTimer          # Компонент: таймер до старта
-│   └── SessionStatus           # Компонент: "Сессия идёт" / "Перерыв"
-│
-└── CustomReadyRoom             # Страница custom_ready
-    ├── useServerTime()
-    ├── usePresence()           # + isReady для каждого клиента
-    ├── useAudioPlayback()
-    ├── PresetSelector          # Выбор пресета (4 варианта)
-    ├── ReadyButton             # Кнопка Ready
-    ├── ReadyStatus             # "3/5 готовы"
-    └── CountdownOverlay        # 3-2-1 визуальный countdown
-```
-
----
-
-## 5. Ключевые хуки
-
-### `useServerTime()`
-
-```typescript
-function useServerTime() {
-  const [offset, setOffset] = useState(0);
-  
-  useEffect(() => {
-    const offsetRef = ref(db, '.info/serverTimeOffset');
-    return onValue(offsetRef, (snap) => setOffset(snap.val() || 0));
-  }, []);
-  
-  const getServerTime = useCallback(() => Date.now() + offset, [offset]);
-  
-  return { getServerTime, offset };
-}
-```
-
-### `usePresence(roomId, clientId)`
-
-```typescript
-function usePresence(roomId: string, clientId: string) {
-  const [onlineCount, setOnlineCount] = useState(0);
-  const [clients, setClients] = useState<Record<string, ClientData>>({});
-  
-  useEffect(() => {
-    const myRef = ref(db, `rooms/${roomId}/online/${clientId}`);
-    const onlineRef = ref(db, `rooms/${roomId}/online`);
-    
-    // Записываем себя
-    set(myRef, { joinedAt: serverTimestamp() });
-    
-    // Удаляем при отключении
-    onDisconnect(myRef).remove();
-    
-    // Слушаем изменения
-    const unsubscribe = onValue(onlineRef, (snap) => {
-      const data = snap.val() || {};
-      setClients(data);
-      setOnlineCount(Object.keys(data).length);
-    });
-    
-    return () => {
-      unsubscribe();
-      remove(myRef);
-    };
-  }, [roomId, clientId]);
-  
-  return { onlineCount, clients };
-}
-```
-
-### `useAudioPlayback({ audioUrl, getServerTime })`
-
-```typescript
-function useAudioPlayback({ audioUrl, getServerTime }) {
-  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  
-  // Загрузка аудио
-  useEffect(() => {
-    async function loadAudio() {
-      const ctx = new AudioContext();
-      audioContextRef.current = ctx;
-      
-      const response = await fetch(audioUrl);
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = await ctx.decodeAudioData(arrayBuffer);
-      setAudioBuffer(buffer);
-    }
-    loadAudio();
-  }, [audioUrl]);
-  
-  // Планирование воспроизведения
-  const schedulePlayback = useCallback((startTimestamp: number) => {
-    if (!audioBuffer || !audioContextRef.current) return;
-    
-    const ctx = audioContextRef.current;
-    const serverTime = getServerTime();
-    const delayMs = startTimestamp - serverTime;
-    
-    if (delayMs < 0) return; // Уже прошло
-    
-    const source = ctx.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(ctx.destination);
-    
-    const delaySeconds = delayMs / 1000;
-    source.start(ctx.currentTime + delaySeconds);
-    
-    // Отслеживаем состояние
-    setTimeout(() => setIsPlaying(true), delayMs);
-    source.onended = () => setIsPlaying(false);
-  }, [audioBuffer, getServerTime]);
-  
-  // Разблокировка AudioContext
-  const unlockAudio = useCallback(async () => {
-    if (audioContextRef.current?.state === 'suspended') {
-      await audioContextRef.current.resume();
-    }
-  }, []);
-  
-  return { audioBuffer, isPlaying, schedulePlayback, unlockAudio };
-}
-```
-
----
-
-## 6. Логика custom_ready
-
-### Проверка "все готовы"
-
-```typescript
-function checkAllReady(clients: Record<string, { isReady: boolean }>) {
-  const clientList = Object.values(clients);
-  if (clientList.length === 0) return false;
-  return clientList.every(c => c.isReady);
-}
-```
-
-### Запуск сессии (выполняется любым клиентом, кто первый увидел)
-
-```typescript
-async function startCountdown(roomId: string, getServerTime: () => number) {
-  const roomRef = ref(db, `rooms/${roomId}`);
-  
-  // Транзакция для атомарного обновления
-  await runTransaction(roomRef, (current) => {
-    if (current?.status !== 'idle') return; // Уже запущено
-    
-    return {
-      ...current,
-      status: 'countdown',
-      startTimestamp: getServerTime() + 3000 // +3 секунды
-    };
-  });
-}
-```
-
-### Сброс после завершения
-
-```typescript
-async function resetRoom(roomId: string) {
-  const roomRef = ref(db, `rooms/${roomId}`);
-  const onlineRef = ref(db, `rooms/${roomId}/online`);
-  
-  // Сбрасываем статус комнаты
-  await update(roomRef, {
-    status: 'idle',
-    startTimestamp: null
-  });
-  
-  // Сбрасываем isReady у всех клиентов
-  const snapshot = await get(onlineRef);
-  const clients = snapshot.val() || {};
-  
-  const updates: Record<string, boolean> = {};
-  Object.keys(clients).forEach(clientId => {
-    updates[`${clientId}/isReady`] = false;
-  });
-  
-  await update(onlineRef, updates);
-}
-```
-
----
-
-## 7. Обход Autoplay-ограничений
-
-### Стратегия 1: Кнопка входа в комнату
-
-На главной странице пользователь кликает "Войти в комнату". Этот клик используем для `audioContext.resume()`.
-
-```tsx
-function RoomCard({ room, onEnter }) {
-  const handleClick = async () => {
-    await unlockAudio(); // Вызываем до навигации
-    onEnter(room.id);
-  };
-  
-  return <button onClick={handleClick}>Войти</button>;
-}
-```
-
-### Стратегия 2: Модальное окно при входе
-
-Если пользователь зашёл по прямой ссылке, показываем модалку:
-
-```tsx
-function AudioUnlockModal({ onUnlock }) {
-  return (
-    <div className="modal">
-      <p>Нажмите, чтобы включить звук</p>
-      <button onClick={onUnlock}>Включить звук</button>
-    </div>
-  );
-}
-```
-
-### Стратегия 3: Повторная попытка при планировании
-
-```typescript
-const schedulePlayback = async (startTimestamp: number) => {
-  const ctx = audioContextRef.current;
-  
-  // Пробуем resume перед каждым планированием
-  if (ctx.state === 'suspended') {
-    try {
-      await ctx.resume();
-    } catch (e) {
-      console.warn('AudioContext still suspended, need user interaction');
-      return false;
-    }
-  }
-  
-  // ... планируем воспроизведение
-  return true;
+// ICE servers for NAT traversal
+const rtcConfig = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+  ],
 };
 ```
 
 ---
 
-## 8. Оптимизация для бесплатного Firebase
+## Constants & Configuration
 
-### Минимизация записей
+All magic numbers are centralized in `src/utils/constants.ts`:
 
-1. **Нет heartbeat** — только `onDisconnect().remove()`
-2. **Нет lastSeen** — экономим на обновлениях
-3. **Транзакции** — используем `runTransaction()` для атомарных операций
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `SLOT_INTERVAL_MS` | 30 min | Auto-session interval |
+| `COUNTDOWN_DURATION_MS` | 3s | Pre-session countdown |
+| `SINGLE_USER_WAIT_MS` | 3s | Solo user start delay |
+| `MAX_SESSION_DURATION_MS` | 20 min | Stale session threshold |
+| `AUTO_EXIT_DELAY_MS` | 10s | Post-session auto-redirect |
+| `LATE_JOIN_WINDOW_MS` | 18s | Late join cutoff |
+| `PRESENCE_MAX_AGE_MS` | 5 min | Stale presence threshold |
+| `MAX_VOICE_PARTICIPANTS` | 8 | Voice chat limit |
 
-### Минимизация чтений
+---
 
-1. **Подписка на узел, не на детей** — `onValue(roomRef)` вместо множества слушателей
-2. **Отписка при unmount** — всегда возвращаем cleanup из useEffect
+## Room Types
 
-### Структура для shallow reads
+### Solo Room (`/solo/`)
+- Local-only, no Firebase sync
+- User selects preset and starts immediately
+- Supports pause/resume
+
+### Together Room (`/room/:presetId`)
+- Firebase-synchronized sessions
+- Ready-up system: all users click "Ready" to start
+- Single user: 3-second delay then auto-start
+- Late join: users can join within 36 seconds of session start
+- Voice chat support (up to 8 participants)
+
+---
+
+## Session Flow (Together Room)
 
 ```
-rooms/
-  ru_4rounds/
-    online/          ← подписываемся только сюда
-  custom_ready/
-    status           ← shallow read
-    selectedPreset   ← shallow read  
-    startTimestamp   ← shallow read
-    online/          ← отдельная подписка
+1. User enters room → registers presence
+2. User clicks "Ready" → isReady = true
+3. All ready (or single user + 3s delay) → status = 'countdown', startTimestamp set
+4. Countdown 3-2-1 displayed
+5. startTimestamp reached → audio plays, status effectively 'playing'
+6. Audio ends → show "session ended", reset room after 10s
 ```
 
 ---
 
-## 9. Файловая структура проекта
+## Error Handling
 
-```
-src/
-├── firebase/
-│   └── config.ts           # Инициализация Firebase
-├── hooks/
-│   ├── useServerTime.ts
-│   ├── usePresence.ts
-│   ├── useAudioPlayback.ts
-│   └── useClientId.ts
-├── components/
-│   ├── RoomList.tsx
-│   ├── AutoRoom.tsx
-│   ├── CustomReadyRoom.tsx
-│   ├── CountdownTimer.tsx
-│   ├── OnlineCounter.tsx
-│   ├── PresetSelector.tsx
-│   └── ReadyButton.tsx
-├── utils/
-│   ├── timeSlots.ts        # Вычисление слотов
-│   └── audioUrls.ts        # Маппинг пресетов на URL
-├── types/
-│   └── index.ts            # TypeScript типы
-├── App.tsx
-└── main.tsx
+- **Stale sessions**: Auto-reset if session duration exceeds 20 minutes
+- **Abandoned sessions**: Reset if room has 0 users or 1 user not playing after 5s
+- **Audio errors**: Graceful fallback, error logged to console
+- **Voice chat errors**: Display error message, allow retry
 
-public/
-└── audio/
-    ├── ru_4rounds.mp3
-    ├── en_4rounds.mp3
-    ├── ru_3rounds.mp3
-    └── en_3rounds.mp3
+---
+
+## Mobile Considerations
+
+### iOS
+- Audio unlock via muted play/pause on first user gesture
+- Media Session API for lock screen metadata
+- `playsInline` attribute for audio elements
+- PWA manifest for home screen add
+
+### Android
+- Standard Web Audio support
+- Media Session for notification controls
+
+---
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start dev server (port 3000)
+npm run dev
+
+# Type check and build
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
 ---
 
-## 10. Конфигурация Firebase
-
-### firebase/config.ts
-
-```typescript
-import { initializeApp } from 'firebase/app';
-import { getDatabase } from 'firebase/database';
-
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-
-const app = initializeApp(firebaseConfig);
-export const db = getDatabase(app);
-```
-
-### Правила безопасности (database.rules.json)
+## Firebase Security Rules
 
 ```json
 {
   "rules": {
-    "rooms": {
-      "$roomId": {
+    "presence": {
+      "$clientId": {
         ".read": true,
-        "online": {
-          "$clientId": {
-            ".write": true
+        ".write": true
+      }
+    },
+    "rooms": {
+      "$roomType": {
+        "$roomId": {
+          ".read": true,
+          "online": {
+            "$clientId": {
+              ".write": true
+            }
+          },
+          "status": { ".write": true },
+          "startTimestamp": { ".write": true },
+          "voiceSignaling": {
+            "$signalingId": {
+              ".write": true
+            }
           }
-        },
-        "selectedPreset": {
-          ".write": true,
-          ".validate": "newData.isString() && newData.val().matches(/^(ru|en)_(3|4)rounds$/)"
-        },
-        "status": {
-          ".write": true,
-          ".validate": "newData.isString()"
-        },
-        "startTimestamp": {
-          ".write": true
         }
       }
     }
@@ -487,10 +310,10 @@ export const db = getDatabase(app);
 
 ---
 
-## Следующие шаги
+## Future Considerations
 
-1. Создать проект Firebase и получить конфиг
-2. Загрузить аудиофайлы в /public/audio/
-3. Запустить приложение: `npm run dev`
-4. Протестировать в двух вкладках браузера
-5. Добавить стилизацию и анимации
+1. **Authentication** — Optional sign-in for persistent identity
+2. **Session history** — Track completed sessions
+3. **Custom audio upload** — User-provided breathing guides
+4. **Advanced sync** — Handle clock drift during long sessions
+5. **Analytics** — Usage patterns and session completion rates

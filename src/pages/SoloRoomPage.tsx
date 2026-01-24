@@ -3,17 +3,22 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { useAudioPlayback, usePhaseCues } from "../hooks";
-import { AUDIO_URLS } from "../utils/constants";
+import {
+  AUDIO_URLS,
+  AUTO_EXIT_DELAY_MS,
+  COUNTDOWN_DURATION_MS,
+} from "../utils/constants";
+import { formatSeconds } from "../utils/helpers";
+import { getCueUrlFromAudioUrl } from "../utils/phaseCues";
 import { BreathingCircle } from "../components/BreathingCircle";
-import { PhaseOverlay } from "../components/PhaseOverlay";
 import { PresetSelector } from "../components/PresetSelector";
 import { CountdownOverlay } from "../components/CountdownOverlay";
 import { TopBar } from "../components/TopBar";
+import { PageFooter } from "../components/PageFooter";
+import { MeditationIcon } from "../components/Icons";
 import type { PresetId } from "../types";
 
 type RoomStatus = "idle" | "countdown" | "playing";
-
-const AUTO_EXIT_DELAY = 10000; // 10 seconds
 
 export function SoloRoomPage() {
   const navigate = useNavigate();
@@ -23,6 +28,7 @@ export function SoloRoomPage() {
   const [status, setStatus] = useState<RoomStatus>("idle");
   const [countdownSeconds, setCountdownSeconds] = useState(0);
   const [showSessionEnded, setShowSessionEnded] = useState(false);
+  const [presetTitle, setPresetTitle] = useState<string>("");
   const hasStartedPlayingRef = useRef(false);
   const audioDidPlayRef = useRef(false);
 
@@ -47,6 +53,31 @@ export function SoloRoomPage() {
     getCurrentTime,
     isPlaying || isPaused,
   );
+
+  // Fetch preset title from JSON cue file
+  useEffect(() => {
+    if (!audioUrl) {
+      setPresetTitle("");
+      return;
+    }
+
+    const fetchTitle = async () => {
+      const jsonUrl = getCueUrlFromAudioUrl(audioUrl);
+      try {
+        const response = await fetch(jsonUrl);
+        const data = await response.json();
+        setPresetTitle(
+          language === "ru"
+            ? data.titleRu || data.title || ""
+            : data.title || "",
+        );
+      } catch {
+        setPresetTitle("");
+      }
+    };
+
+    fetchTitle();
+  }, [audioUrl, language]);
 
   // Run countdown timer
   useEffect(() => {
@@ -102,23 +133,16 @@ export function SoloRoomPage() {
     }
   }, [isPlaying, isPaused, status]);
 
-  // Auto-exit after 10 seconds if session ended and user hasn't interacted
+  // Auto-exit after session ended and user hasn't interacted
   useEffect(() => {
     if (!showSessionEnded) return;
 
     const timer = setTimeout(() => {
       navigate("/");
-    }, AUTO_EXIT_DELAY);
+    }, AUTO_EXIT_DELAY_MS);
 
     return () => clearTimeout(timer);
   }, [showSessionEnded, navigate]);
-
-  // Format remaining time as MM:SS
-  const formatRemainingTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
 
   const handleBack = useCallback(() => {
     navigate("/");
@@ -136,7 +160,7 @@ export function SoloRoomPage() {
   }, [authorUrl]);
 
   const handlePresetChange = useCallback(
-    (preset: PresetId) => {
+    async (preset: PresetId) => {
       if (status !== "idle" || showSessionEnded) return;
       setSelectedPreset(preset);
       hasStartedPlayingRef.current = false;
@@ -145,32 +169,33 @@ export function SoloRoomPage() {
     [status, showSessionEnded],
   );
 
-  const handleStart = useCallback(async () => {
-    if (status !== "idle" || !isLoaded || showSessionEnded) return;
-    await unlockAudio();
-    setStatus("countdown");
-    setCountdownSeconds(3);
-  }, [status, isLoaded, unlockAudio, showSessionEnded]);
+  // Auto-start when audio is loaded after preset selection
+  useEffect(() => {
+    if (status !== "idle" || !selectedPreset || !isLoaded || showSessionEnded)
+      return;
+
+    const startSession = async () => {
+      await unlockAudio();
+      setStatus("countdown");
+      setCountdownSeconds(COUNTDOWN_DURATION_MS / 1000);
+    };
+
+    startSession();
+  }, [status, selectedPreset, isLoaded, showSessionEnded, unlockAudio]);
 
   const handleStop = useCallback(() => {
     stopPlayback();
-    setStatus("idle");
-    setCountdownSeconds(0);
-    hasStartedPlayingRef.current = false;
-    audioDidPlayRef.current = false;
-  }, [stopPlayback]);
+    navigate("/");
+  }, [stopPlayback, navigate]);
 
   const canChangePreset = status === "idle" && !showSessionEnded;
-  const canStart = selectedPreset !== null && isLoaded && !showSessionEnded;
 
   // Text based on language
   const texts =
     language === "en"
       ? {
-          appTitle: "Wim Hof",
           title: "Solo",
-          selectPreset: "Choose",
-          start: "Start",
+          subtitle: "Choose a preset",
           loading: "Wait...",
           sessionEnd: "Remaining",
           stop: "Stop",
@@ -182,10 +207,8 @@ export function SoloRoomPage() {
           sessionEnded: "Done",
         }
       : {
-          appTitle: "Вим Хоф",
           title: "Соло",
-          selectPreset: "Выбор",
-          start: "Старт",
+          subtitle: "Выбери пресет",
           loading: "Ждите",
           sessionEnd: "Осталось",
           stop: "Стоп",
@@ -208,15 +231,48 @@ export function SoloRoomPage() {
       <main className="page-content">
         <div className="content-centered">
           <header className="page-header">
-            <p className="page-subtitle">{texts.appTitle}</p>
+            {status === "idle" && !showSessionEnded && (
+              <MeditationIcon className="page-icon" />
+            )}
             <h1>{texts.title}</h1>
+            <p className="subtitle">{presetTitle || texts.subtitle}</p>
           </header>
 
           {(status !== "idle" || showSessionEnded) && (
             <BreathingCircle
               isActive={isPlaying || isPaused}
               phase={currentPhase}
-            />
+            >
+              {/* Phase info - displayed as overlay on the circle (no total timer) */}
+              {(isPlaying || isPaused) && (
+                <div className="circle-overlay-content">
+                  <div className="overlay-phase">
+                    <span className="overlay-phase-label">
+                      {currentPhase
+                        ? language === "ru"
+                          ? {
+                              breathe: "Дыши",
+                              hold: "Держи",
+                              pause: "Пауза",
+                              intro: "Начало",
+                              outro: "Конец",
+                            }[currentPhase]
+                          : {
+                              breathe: "Breathe",
+                              hold: "Hold",
+                              pause: "Pause",
+                              intro: "Intro",
+                              outro: "Outro",
+                            }[currentPhase]
+                        : ""}
+                    </span>
+                    <span className="overlay-phase-time">
+                      {phaseRemaining > 0 ? phaseRemaining : ""}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </BreathingCircle>
           )}
 
           <div className="room-info">
@@ -228,52 +284,26 @@ export function SoloRoomPage() {
                   disabled={!canChangePreset}
                 />
 
-                <button
-                  className="start-now-button"
-                  onClick={handleStart}
-                  disabled={!canStart}
-                >
-                  {!selectedPreset
-                    ? texts.selectPreset
-                    : !isLoaded
-                      ? texts.loading
-                      : texts.start}
-                </button>
+                {selectedPreset && !isLoaded && (
+                  <p className="waiting-message">{texts.loading}</p>
+                )}
               </>
             )}
 
             {status === "countdown" && (
               <div className="countdown-message">
-                <button className="stop-button" onClick={handleStop}>
+                <button className="btn btn--danger" onClick={handleStop}>
                   {texts.stop}
                 </button>
               </div>
             )}
 
             {(isPlaying || isPaused) && (
-              <div className="playing-message">
-                <div className="timers-section">
-                  <PhaseOverlay
-                    phase={currentPhase}
-                    remaining={phaseRemaining}
-                  />
-                  <div
-                    className="total-timer"
-                    aria-live="polite"
-                    aria-atomic="true"
-                  >
-                    <span className="total-timer-label">
-                      {isPaused ? texts.paused : texts.sessionEnd}
-                    </span>
-                    <span className="total-timer-value">
-                      {formatRemainingTime(remainingTime)}
-                    </span>
-                  </div>
-                </div>
+              <div className="playing-controls">
                 <div className="control-buttons">
                   {isPlaying && (
                     <button
-                      className="pause-button icon-button-circle"
+                      className="btn btn--icon btn--primary"
                       onClick={pausePlayback}
                       aria-label={texts.pause}
                       title={texts.pause}
@@ -292,7 +322,7 @@ export function SoloRoomPage() {
                   )}
                   {isPaused && (
                     <button
-                      className="resume-button icon-button-circle"
+                      className="btn btn--icon btn--accent"
                       onClick={resumePlayback}
                       aria-label={texts.resume}
                       title={texts.resume}
@@ -308,9 +338,17 @@ export function SoloRoomPage() {
                       </svg>
                     </button>
                   )}
-                  <button className="stop-button" onClick={handleStop}>
+                  <button className="btn btn--danger" onClick={handleStop}>
                     {texts.stop}
                   </button>
+                </div>
+                <div className="remaining-time">
+                  <span className="remaining-time-label">
+                    {isPaused ? texts.paused : texts.sessionEnd}
+                  </span>
+                  <span className="remaining-time-value">
+                    {formatSeconds(remainingTime)}
+                  </span>
                 </div>
               </div>
             )}
@@ -327,19 +365,21 @@ export function SoloRoomPage() {
                 <div className="session-ended-buttons">
                   {authorUrl && (
                     <button
-                      className="support-author-button"
+                      className="btn btn--accent"
                       onClick={handleSupportAuthor}
                     >
                       {texts.supportAuthor}
                     </button>
                   )}
-                  <button className="exit-button" onClick={handleExit}>
+                  <button className="btn btn--secondary" onClick={handleExit}>
                     {texts.exit}
                   </button>
                 </div>
               </div>
             )}
           </div>
+
+          {status === "idle" && !showSessionEnded && <PageFooter />}
         </div>
       </main>
     </div>
