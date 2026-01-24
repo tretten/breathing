@@ -1,7 +1,8 @@
 {
-  "title": "4 Rounds",
-  "titleRu": "4 Раунда",
-  "url": "https://google.com",
+  "lang": "EN • 20 min",
+  "title": "Vim 4 Rounds",
+  "titleRu": "Вим 4 Раунда",
+  "url": "https://www.youtube.com/@wimhof1",
   "phases": [
     { "type": "breathe", "duration": 90 },
     { "type": "hold", "duration": 60 },

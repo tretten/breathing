@@ -1,7 +1,8 @@
 {
-  "title": "3 Rounds",
-  "titleRu": "3 Раунда",
-  "url": "https://google.com",
+  "lang": "RU • 15 min",
+  "title": "Stan 3 Rounds",
+  "titleRu": "Стас 3 Раунда",
+  "url": "https://www.youtube.com/watch?v=xOX7vYpXJbE",
   "phases": [
     { "type": "breathe", "duration": 11 },
     { "type": "hold", "duration": 60 },

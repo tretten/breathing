@@ -1,7 +1,8 @@
 {
-  "title": "3 Rounds Stan",
-  "titleRu": "3 Раунда Стас",
-  "url": "https://google.com",
+  "lang": "EN • 15 min",
+  "title": "Vim 3 Rounds",
+  "titleRu": "Вим 3 Раунда",
+  "url": "https://www.youtube.com/@wimhof1m",
   "phases": [
     { "type": "intro", "duration": 10 },
     { "type": "breathe", "duration": 15 },

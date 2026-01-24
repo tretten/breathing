@@ -18,6 +18,7 @@ import { getCueUrlFromAudioUrl } from "../utils/phaseCues";
 
 interface PresetInfo {
   presetId: PresetId;
+  lang: string;
   title: string;
   titleRu: string;
   onlineCount: number;
@@ -44,6 +45,7 @@ export function TogetherLobbyPage() {
           const data = await response.json();
           infos.push({
             presetId,
+            lang: data.lang || (presetId.startsWith("en_") ? "EN" : "RU"),
             title: data.title || presetId,
             titleRu: data.titleRu || data.title || presetId,
             onlineCount: 0,
@@ -52,6 +54,7 @@ export function TogetherLobbyPage() {
         } catch {
           infos.push({
             presetId,
+            lang: presetId.startsWith("en_") ? "EN" : "RU",
             title: presetId,
             titleRu: presetId,
             onlineCount: 0,
@@ -124,8 +127,8 @@ export function TogetherLobbyPage() {
         };
 
   // Group presets by language (en first, then ru)
-  const enPresets = presets.filter((p) => p.presetId.startsWith("en_"));
-  const ruPresets = presets.filter((p) => p.presetId.startsWith("ru_"));
+  const enPresets = presets.filter((p) => p.lang === "EN");
+  const ruPresets = presets.filter((p) => p.lang !== "EN");
   const sortedPresets = [...enPresets, ...ruPresets];
 
   return (
@@ -147,9 +150,6 @@ export function TogetherLobbyPage() {
               {sortedPresets.map((preset) => {
                 const displayTitle =
                   language === "ru" ? preset.titleRu : preset.title;
-                const langLabel = preset.presetId.startsWith("en_")
-                  ? "EN"
-                  : "RU";
                 const hasActivity = preset.onlineCount > 0 || preset.isLive;
 
                 return (
@@ -158,7 +158,7 @@ export function TogetherLobbyPage() {
                     className={`preset-card ${preset.isLive ? "is-live" : ""}`}
                     onClick={() => handleSelectPreset(preset.presetId)}
                   >
-                    <span className="preset-lang">{langLabel}</span>
+                    <span className="preset-lang">{preset.lang}</span>
                     <span className="preset-title">{displayTitle}</span>
                     {hasActivity && (
                       <span

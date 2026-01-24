@@ -810,7 +810,7 @@ h4 {
 /* Size variants */
 .btn--lg {
     min-width: 200px;
-    min-height: 56px;
+    min-height: 52px;
     padding: var(--space-4) var(--space-8);
 }
 
@@ -883,10 +883,10 @@ h4 {
 
 /* Icon circle button */
 .btn--icon {
-    width: 56px;
-    height: 56px;
-    min-width: 56px;
-    min-height: 56px;
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    min-height: 52px;
     padding: 0;
     border-radius: 50%;
 }
@@ -897,10 +897,10 @@ h4 {
 
 /* Icon Circle Buttons */
 .icon-button-circle {
-    width: 56px;
-    height: 56px;
-    min-width: 56px;
-    min-height: 56px;
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    min-height: 52px;
     padding: 0;
     display: flex;
     align-items: center;
@@ -1567,7 +1567,7 @@ h4 {
     justify-content: center;
     padding: var(--space-3) var(--space-3);
     background: var(--bg-card);
-    border-radius: 400px;
+    border-radius: var(--radius-xl);
     width: 100%;
     max-width: 400px;
     margin-top: var(--space-3);
