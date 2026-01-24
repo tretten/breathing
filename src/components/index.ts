@@ -8,7 +8,6 @@ export { BreathingCircle } from "./BreathingCircle";
 export { CountdownOverlay } from "./CountdownOverlay";
 export { PresetSelector } from "./PresetSelector";
 export { TopBar } from "./TopBar";
-export { WelcomeModal } from "./WelcomeModal";
 
 // Participant and voice components
 export { ParticipantList } from "./ParticipantList";

@@ -1,7 +1,6 @@
 // src/App.tsx
 import { Routes, Route } from "react-router-dom";
-import { AppProvider, useAppContext } from "./context/AppContext";
-import { WelcomeModal } from "./components/WelcomeModal";
+import { AppProvider } from "./context/AppContext";
 import { RoomListPage } from "./pages/RoomListPage";
 import { SoloRoomPage } from "./pages/SoloRoomPage";
 import { TogetherLobbyPage } from "./pages/TogetherLobbyPage";
@@ -20,29 +19,17 @@ const buildVersion = (() => {
   return `${month}${day}.${hours}${minutes}`;
 })();
 
-function AppContent() {
-  const { isSetupComplete, completeSetup } = useAppContext();
-
-  if (!isSetupComplete) {
-    return <WelcomeModal onComplete={completeSetup} />;
-  }
-
-  return (
-    <Routes>
-      <Route path="/" element={<RoomListPage />} />
-      <Route path="/solo/" element={<SoloRoomPage />} />
-      <Route path="/room" element={<TogetherLobbyPage />} />
-      <Route path="/room/:presetId" element={<TogetherRoomPage />} />
-      <Route path="/about" element={<AboutPage />} />
-    </Routes>
-  );
-}
-
 function App() {
   return (
     <AppProvider>
       <div className="app">
-        <AppContent />
+        <Routes>
+          <Route path="/" element={<RoomListPage />} />
+          <Route path="/solo/" element={<SoloRoomPage />} />
+          <Route path="/room" element={<TogetherLobbyPage />} />
+          <Route path="/room/:presetId" element={<TogetherRoomPage />} />
+          <Route path="/about" element={<AboutPage />} />
+        </Routes>
         <div className="build-version">{buildVersion}</div>
       </div>
     </AppProvider>

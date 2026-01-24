@@ -8,34 +8,39 @@ import {
   useRef,
   ReactNode,
 } from "react";
-import {
-  STORAGE_KEY_LANGUAGE,
-  STORAGE_KEY_SETUP_COMPLETE,
-} from "../utils/storageKeys";
+import { STORAGE_KEY_LANGUAGE } from "../utils/storageKeys";
 
 export type Language = "ru" | "en";
 
 interface AppContextType {
-  language: Language | null;
-  isSetupComplete: boolean;
+  language: Language;
   isAudioUnlocked: boolean;
   setLanguage: (lang: Language) => void;
-  completeSetup: (lang: Language) => Promise<void>;
+  unlockAudio: () => Promise<void>;
   audioContextRef: React.RefObject<AudioContext | null>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
 
-export function AppProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language | null>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY_LANGUAGE);
-    return (stored as Language) || null;
-  });
-  const [isSetupComplete, setIsSetupComplete] = useState(() => {
-    return localStorage.getItem(STORAGE_KEY_SETUP_COMPLETE) === "true";
-  });
-  const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
+// Auto-detect language from browser
+function detectLanguage(): Language {
+  const browserLang = navigator.language || (navigator as any).userLanguage || "en";
+  return browserLang.toLowerCase().startsWith("ru") ? "ru" : "en";
+}
 
+export function AppProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguage] = useState<Language>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY_LANGUAGE);
+    if (stored === "ru" || stored === "en") {
+      return stored;
+    }
+    // Auto-detect and save
+    const detected = detectLanguage();
+    localStorage.setItem(STORAGE_KEY_LANGUAGE, detected);
+    return detected;
+  });
+
+  const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
 
   // Initialize AudioContext on mount
@@ -56,31 +61,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY_LANGUAGE, lang);
   }, []);
 
-  const completeSetup = useCallback(async (lang: Language) => {
-    // Unlock audio context (requires user gesture)
+  const unlockAudio = useCallback(async () => {
     if (
       audioContextRef.current &&
       audioContextRef.current.state === "suspended"
     ) {
       await audioContextRef.current.resume();
     }
-
     setIsAudioUnlocked(true);
-    setLanguage(lang);
-    setIsSetupComplete(true);
-
-    localStorage.setItem(STORAGE_KEY_LANGUAGE, lang);
-    localStorage.setItem(STORAGE_KEY_SETUP_COMPLETE, "true");
   }, []);
 
   return (
     <AppContext.Provider
       value={{
         language,
-        isSetupComplete,
         isAudioUnlocked,
         setLanguage: handleSetLanguage,
-        completeSetup,
+        unlockAudio,
         audioContextRef,
       }}
     >

@@ -102,7 +102,6 @@ export const AUDIO_URLS: Record<PresetId, string> = {
 export {
   STORAGE_KEY_CLIENT_ID,
   STORAGE_KEY_LANGUAGE,
-  STORAGE_KEY_SETUP_COMPLETE,
   STORAGE_KEY_VOICE_NAME,
   STORAGE_KEY_THEME,
 } from "./storageKeys";
