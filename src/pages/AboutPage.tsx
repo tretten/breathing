@@ -2,7 +2,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { TopBar } from "../components/TopBar";
-import { PageFooter } from "../components/PageFooter";
 import { BreathingIcon } from "../components/Icons";
 
 export function AboutPage() {
@@ -144,8 +143,6 @@ export function AboutPage() {
                 дыхательных практик. Аудио-инструкции принадлежат их авторам.
               </p>
             </footer>
-
-            <PageFooter />
           </article>
         </main>
       </div>
@@ -282,8 +279,6 @@ export function AboutPage() {
               Audio instructions belong to their respective authors.
             </p>
           </footer>
-
-          <PageFooter />
         </article>
       </main>
     </div>

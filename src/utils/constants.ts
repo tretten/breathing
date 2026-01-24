@@ -25,7 +25,7 @@ export const SINGLE_USER_WAIT_MS = 3000; // 3 seconds
 export const MAX_SESSION_DURATION_MS = 20 * 60 * 1000; // 20 minutes
 
 /** Auto-exit delay after session ends */
-export const AUTO_EXIT_DELAY_MS = 10000; // 10 seconds
+export const AUTO_EXIT_DELAY_MS = 27000; // 27 seconds
 
 /** Window for late joining a session */
 export const LATE_JOIN_WINDOW_MS = 36000; // 36 seconds

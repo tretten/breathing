@@ -11,6 +11,7 @@
     /* Typography Scale */
     --font-sans:
         "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --text-2xs: 0.75rem; /* 12px - labels, badges */
     --text-xs: 0.875rem; /* 14px */
     --text-sm: 1rem; /* 16px */
     --text-base: 1.125rem; /* 18px */
@@ -20,7 +21,6 @@
     --text-2xl: 2.5rem; /* 40px */
     --text-3xl: 3rem; /* 48px */
     --text-4xl: 4rem; /* 64px */
-    --text-timer: 2.75rem; /* 44px */
 
     /* Spacing Scale (4px base) */
     --space-1: 0.25rem; /* 4px */
@@ -177,6 +177,29 @@ h3 {
 h4 {
     font-size: var(--text-lg);
     font-weight: 500;
+}
+
+/* Text utilities - unified label/value patterns */
+.text-label {
+    font-size: var(--text-2xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+}
+
+.text-value {
+    font-family: var(--font-sans);
+    font-size: var(--text-xl);
+    font-weight: 300;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.text-value--sm {
+    font-size: var(--text-md);
+    font-weight: 500;
+    color: var(--text-secondary);
 }
 
 /* ============================================
@@ -396,9 +419,9 @@ h4 {
 }
 
 .page-subtitle {
-    font-size: 0.75rem;
+    font-size: var(--text-2xs);
     font-weight: 600;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--text-tertiary);
     margin-bottom: var(--space-1);
@@ -461,10 +484,6 @@ h4 {
         width: 48px;
         height: 48px;
         margin-bottom: var(--space-4);
-    }
-
-    .page-subtitle {
-        font-size: var(--text-xs);
     }
 
     .page-header h1 {
@@ -586,7 +605,7 @@ h4 {
     background: var(--bg-hover);
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-full);
-    font-size: 0.6875rem;
+    font-size: var(--text-2xs);
     font-weight: 500;
     color: var(--text-secondary);
 }
@@ -625,7 +644,7 @@ h4 {
 .preset-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-3);
+    gap: var(--space-4);
     width: 100%;
     max-width: 400px;
 }
@@ -669,7 +688,7 @@ h4 {
 }
 
 .preset-lang {
-    font-size: 0.75rem;
+    font-size: var(--text-2xs);
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -693,7 +712,7 @@ h4 {
     background: var(--bg-hover);
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-full);
-    font-size: 0.625rem;
+    font-size: var(--text-2xs);
     font-weight: 500;
     color: var(--text-secondary);
     margin-top: var(--space-1);
@@ -725,7 +744,7 @@ h4 {
 }
 
 .language-selection-page .selection-label {
-    font-size: 0.75rem;
+    font-size: var(--text-2xs);
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -910,16 +929,16 @@ h4 {
 }
 
 .remaining-time-label {
-    font-size: var(--text-sm);
-    font-weight: 500;
-    letter-spacing: 0.06em;
+    font-size: var(--text-2xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--text-tertiary);
 }
 
 .remaining-time-value {
     font-family: var(--font-sans);
-    font-size: var(--text-md);
+    font-size: var(--text-sm);
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     color: var(--text-secondary);
@@ -937,51 +956,6 @@ h4 {
     .playing-controls {
         gap: var(--space-3);
     }
-
-    .remaining-time-label {
-        font-size: var(--text-xs);
-    }
-
-    .remaining-time-value {
-        font-size: var(--text-sm);
-    }
-}
-
-/* ============================================
-   SESSION TIMER
-   ============================================ */
-
-.session-timer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    width: 100%;
-    min-height: 100px;
-    padding: var(--space-5) var(--space-6);
-    background: var(--bg-card);
-    border: 1px solid var(--border-secondary);
-    border-radius: var(--radius-lg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-}
-
-.timer-label {
-    font-size: var(--text-xs);
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--text-tertiary);
-}
-
-.timer-value {
-    font-family: var(--font-sans);
-    font-size: var(--text-timer);
-    font-weight: 300;
-    letter-spacing: -0.02em;
-    color: var(--text-primary);
-    font-variant-numeric: tabular-nums;
 }
 
 /* ============================================
@@ -1123,7 +1097,6 @@ h4 {
 @media (max-width: 768px) {
     :root {
         --text-3xl: 2.25rem;
-        --text-timer: 2.5rem;
     }
 
     .top-bar {
@@ -1151,8 +1124,7 @@ h4 {
     :root {
         --text-3xl: 2rem;
         --text-2xl: 1.75rem;
-        --text-xl: 1.35rem;
-        --text-timer: 2rem;
+        --text-xl: 1.5rem;
     }
 
     html,
@@ -1200,10 +1172,6 @@ h4 {
         margin-bottom: var(--space-4);
     }
 
-    .page-subtitle {
-        font-size: var(--text-xs);
-    }
-
     /* Cards */
     .card {
         padding: var(--space-4) var(--space-3);
@@ -1227,7 +1195,7 @@ h4 {
 
     /* Presets */
     .preset-grid {
-        gap: var(--space-2);
+        gap: var(--space-3);
         max-width: 320px;
     }
 
@@ -1236,7 +1204,7 @@ h4 {
     }
 
     .preset-lang {
-        font-size: 0.6875rem;
+        font-size: var(--text-2xs);
     }
 
     .preset-title {
@@ -1254,20 +1222,6 @@ h4 {
         gap: var(--space-4);
     }
 
-    /* Timer */
-    .session-timer {
-        min-height: 88px;
-        padding: var(--space-4) var(--space-5);
-    }
-
-    .timer-label {
-        font-size: var(--text-xs);
-    }
-
-    .timer-value {
-        font-size: var(--text-timer);
-    }
-
     /* Countdown */
     .countdown-number {
         font-size: 10rem;
@@ -1282,7 +1236,7 @@ h4 {
     :root {
         --text-3xl: 1.75rem;
         --text-2xl: 1.5rem;
-        --text-timer: 1.75rem;
+        --text-xl: 1.35rem;
     }
 
     .page-icon {
@@ -1306,7 +1260,7 @@ h4 {
 @media (max-width: 320px) {
     :root {
         --text-3xl: 1.5rem;
-        --text-timer: 1.5rem;
+        --text-xl: 1.25rem;
     }
 
     .page-content {
@@ -1343,11 +1297,11 @@ h4 {
 
 @supports (font-size: clamp(1rem, 2vw, 1.5rem)) {
     .page-header h1 {
-        font-size: clamp(2rem, 6vw, 3rem);
+        font-size: clamp(1.75rem, 5vw, 2.5rem);
     }
 
-    .timer-value {
-        font-size: clamp(1.5rem, 5vw, 2.75rem);
+    .text-value {
+        font-size: clamp(1.25rem, 4vw, 2rem);
     }
 
     .countdown-number {
@@ -1531,8 +1485,8 @@ h4 {
     position: fixed;
     bottom: var(--space-2);
     right: var(--space-3);
-    font-size: 0.625rem; /* 10px */
-    color: var(--text-quaternary);
+    font-size: var(--text-2xs);
+    color: var(--text-muted);
     opacity: 0.5;
     pointer-events: none;
     user-select: none;
@@ -1611,10 +1565,9 @@ h4 {
     flex-wrap: wrap;
     gap: var(--space-2);
     justify-content: center;
-    padding: var(--space-3) var(--space-4);
+    padding: var(--space-3) var(--space-3);
     background: var(--bg-card);
-    border: 1px solid var(--border-secondary);
-    border-radius: var(--radius-lg);
+    border-radius: 400px;
     width: 100%;
     max-width: 400px;
     margin-top: var(--space-3);
@@ -1729,13 +1682,13 @@ h4 {
 
 @media (max-width: 640px) {
     .participant-list {
-        padding: var(--space-2) var(--space-3);
+        padding: var(--space-2) var(--space-2);
         gap: var(--space-1);
     }
 
     .participant-item {
         padding: var(--space-1) var(--space-2);
-        font-size: 0.8125rem;
+        font-size: var(--text-2xs);
     }
 
     .status-dot {

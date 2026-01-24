@@ -300,6 +300,14 @@ export function SoloRoomPage() {
 
             {(isPlaying || isPaused) && (
               <div className="playing-controls">
+                <div className="remaining-time">
+                  <span className="remaining-time-label">
+                    {isPaused ? texts.paused : texts.sessionEnd}
+                  </span>
+                  <span className="remaining-time-value">
+                    {formatSeconds(remainingTime)}
+                  </span>
+                </div>
                 <div className="control-buttons">
                   {isPlaying && (
                     <button
@@ -341,14 +349,6 @@ export function SoloRoomPage() {
                   <button className="btn btn--danger" onClick={handleStop}>
                     {texts.stop}
                   </button>
-                </div>
-                <div className="remaining-time">
-                  <span className="remaining-time-label">
-                    {isPaused ? texts.paused : texts.sessionEnd}
-                  </span>
-                  <span className="remaining-time-value">
-                    {formatSeconds(remainingTime)}
-                  </span>
                 </div>
               </div>
             )}

@@ -146,9 +146,6 @@ export function TogetherRoomPage() {
   // Show "session ended" message state
   const [showSessionEnded, setShowSessionEnded] = useState(false);
 
-  // Late join remaining time (updates every second)
-  const [lateJoinRemaining, setLateJoinRemaining] = useState(0);
-
   // Redirect if invalid preset
   useEffect(() => {
     if (!validPresetId) {
@@ -481,24 +478,6 @@ export function TogetherRoomPage() {
     validPresetId,
   ]);
 
-  // Update late join remaining time
-  useEffect(() => {
-    if (!isLateJoin || !startTimestamp || !duration) {
-      return;
-    }
-
-    const updateRemaining = () => {
-      const elapsed = getElapsedSeconds();
-      const remaining = Math.max(0, duration - elapsed);
-      setLateJoinRemaining(remaining);
-    };
-
-    updateRemaining();
-    const interval = setInterval(updateRemaining, 1000);
-
-    return () => clearInterval(interval);
-  }, [isLateJoin, startTimestamp, duration, getElapsedSeconds]);
-
   // Handle joining an active session (late join)
   const handleJoinSession = useCallback(async () => {
     if (!startTimestamp || !isLoaded || !duration) return;
@@ -525,8 +504,8 @@ export function TogetherRoomPage() {
           loading: "Wait...",
           readyLabel: "ready",
           sessionEnd: "Remaining",
-          exit: "Exit",
-          join: "Join",
+          exit: "Back",
+          join: "Join the session",
           sessionEnded: "Session is over, enjoy!",
           sessionInProgress: "In progress",
           tooLate: "Session already started",
@@ -540,8 +519,8 @@ export function TogetherRoomPage() {
           loading: "Ждите",
           readyLabel: "готовы",
           sessionEnd: "Осталось",
-          exit: "Выйти",
-          join: "Войти",
+          exit: "Назад",
+          join: "Присоединиться",
           sessionEnded: "Сессия завершена!",
           sessionInProgress: "Идёт сеанс",
           tooLate: "Сессия уже началась",
@@ -588,7 +567,7 @@ export function TogetherRoomPage() {
           </header>
 
           <BreathingCircle isActive={isPlaying} phase={currentPhase}>
-            {/* Phase info - displayed as overlay on the circle (no total timer) */}
+            {/* Phase info - displayed as overlay on the circle during playback */}
             {isPlaying && !showSessionEnded && (
               <div className="circle-overlay-content">
                 <div className="overlay-phase">
@@ -613,6 +592,19 @@ export function TogetherRoomPage() {
                   </span>
                   <span className="overlay-phase-time">
                     {phaseRemaining > 0 ? phaseRemaining : ""}
+                  </span>
+                </div>
+              </div>
+            )}
+            {/* Late join / Too late status - displayed inside circle */}
+            {(isLateJoin || isTooLateToJoin) && !isPlaying && !showSessionEnded && (
+              <div className="circle-overlay-content">
+                <div className="overlay-phase">
+                  <span className="overlay-phase-label">
+                    {isLateJoin ? texts.sessionInProgress : texts.tooLate}
+                  </span>
+                  <span className="overlay-phase-time">
+                    {formatRemainingTime(remainingTime)}
                   </span>
                 </div>
               </div>
@@ -679,19 +671,6 @@ export function TogetherRoomPage() {
             {/* Late join state - session in progress, user can join */}
             {isLateJoin && !isPlaying && !showSessionEnded && (
               <div className="late-join-message">
-                <p className="session-status">{texts.sessionInProgress}</p>
-                {lateJoinRemaining > 0 && (
-                  <div
-                    className="session-timer"
-                    aria-live="polite"
-                    aria-atomic="true"
-                  >
-                    <span className="timer-label">{texts.sessionEnd}</span>
-                    <span className="timer-value">
-                      {formatRemainingTime(lateJoinRemaining)}
-                    </span>
-                  </div>
-                )}
                 <button
                   className="btn btn--primary btn--lg"
                   onClick={handleJoinSession}
@@ -705,7 +684,6 @@ export function TogetherRoomPage() {
             {/* Too late to join - session started more than 18 seconds ago */}
             {isTooLateToJoin && !showSessionEnded && (
               <div className="too-late-message">
-                <p className="session-status">{texts.tooLate}</p>
                 <button className="btn btn--secondary" onClick={handleExit}>
                   {texts.exit}
                 </button>
@@ -715,6 +693,14 @@ export function TogetherRoomPage() {
             {/* Playing state - audio is playing */}
             {isPlaying && !showSessionEnded && (
               <div className="playing-controls">
+                <div className="remaining-time">
+                  <span className="remaining-time-label">
+                    {texts.sessionEnd}
+                  </span>
+                  <span className="remaining-time-value">
+                    {formatRemainingTime(remainingTime)}
+                  </span>
+                </div>
                 <div className="voice-controls">
                   <VoiceChatButton
                     isVoiceEnabled={isVoiceEnabled}
@@ -729,14 +715,6 @@ export function TogetherRoomPage() {
                   >
                     {texts.exit}
                   </button>
-                </div>
-                <div className="remaining-time">
-                  <span className="remaining-time-label">
-                    {texts.sessionEnd}
-                  </span>
-                  <span className="remaining-time-value">
-                    {formatRemainingTime(remainingTime)}
-                  </span>
                 </div>
               </div>
             )}

@@ -216,24 +216,22 @@
 }
 
 .overlay-phase-label {
-    font-size: 0.75rem;
+    font-size: var(--text-2xs, 0.75rem);
     font-weight: 600;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--text-primary);
     text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
-    opacity: 0.9;
 }
 
 .overlay-phase-time {
     font-family: var(--font-sans, system-ui);
-    font-size: 2.5rem;
+    font-size: var(--text-xl, 2rem);
     font-weight: 300;
     font-variant-numeric: tabular-nums;
     line-height: 1;
     color: var(--text-primary);
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
-    min-height: 2.5rem;
 }
 
 /* Phase-specific text colors */
@@ -274,15 +272,6 @@
         width: 120px;
         height: 120px;
     }
-
-    .overlay-phase-label {
-        font-size: 0.6875rem;
-    }
-
-    .overlay-phase-time {
-        font-size: 2rem;
-        min-height: 2rem;
-    }
 }
 
 /* Extra small screens */
@@ -295,10 +284,5 @@
     .breathing-circle {
         width: 100px;
         height: 100px;
-    }
-
-    .overlay-phase-time {
-        font-size: 1.75rem;
-        min-height: 1.75rem;
     }
 }

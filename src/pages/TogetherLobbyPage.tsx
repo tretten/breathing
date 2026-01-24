@@ -114,12 +114,12 @@ export function TogetherLobbyPage() {
     language === "en"
       ? {
           title: "Together",
-          subtitle: "Choose number of rounds",
+          subtitle: "Choose preset",
           live: "Live",
         }
       : {
           title: "Вместе",
-          subtitle: "Выбери количество раундов",
+          subtitle: "Выбери пресет",
           live: "Live",
         };
 
