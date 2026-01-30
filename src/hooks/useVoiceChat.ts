@@ -37,6 +37,7 @@ interface UseVoiceChatOptions {
 
 interface UseVoiceChatReturn {
   isVoiceEnabled: boolean;
+  isPaused: boolean;
   isMuted: boolean;
   isSpeaking: boolean;
   voiceName: string;
@@ -46,6 +47,8 @@ interface UseVoiceChatReturn {
   error: string | null;
   enableVoice: () => Promise<boolean>;
   disableVoice: () => void;
+  pauseVoice: () => void;
+  resumeVoice: () => void;
   toggleMute: () => void;
   muteAll: () => void;
   unmuteAll: () => void;
@@ -57,10 +60,14 @@ export function useVoiceChat({
   clients,
 }: UseVoiceChatOptions): UseVoiceChatReturn {
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [voiceName] = useState(() => getOrCreateVoiceName());
+
+  // Store muted state before pause to restore after resume
+  const mutedBeforePauseRef = useRef(false);
 
   // Refs for WebRTC
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -77,6 +84,7 @@ export function useVoiceChat({
   // Track processed signaling messages to avoid duplicates
   const processedOffersRef = useRef<Set<string>>(new Set());
   const processedAnswersRef = useRef<Set<string>>(new Set());
+  const processedCandidatesRef = useRef<Set<string>>(new Set());
 
   // Cache for clientId → voiceName to persist names during brief disconnections
   const namesCacheRef = useRef<Map<string, string>>(new Map());
@@ -434,9 +442,64 @@ export function useVoiceChat({
     }
   }, [isVoiceEnabled, updateVoicePresence]);
 
-  // Listen for signaling messages
+  // Pause voice chat (disconnect peers but keep stream ready)
+  // Used during audio playback to prevent iOS audio ducking
+  const pauseVoice = useCallback(() => {
+    if (!isVoiceEnabled || isPaused) return;
+
+    // Remember mute state before pausing
+    mutedBeforePauseRef.current = isMuted;
+
+    // Close all peer connections (stops WebRTC audio transmission)
+    peerConnectionsRef.current.forEach((_, peerId) => {
+      closePeerConnection(peerId);
+    });
+
+    // Clear processed signaling tracking
+    processedOffersRef.current.clear();
+    processedAnswersRef.current.clear();
+    processedCandidatesRef.current.clear();
+
+    // Keep local stream but disable track (saves battery)
+    if (localStreamRef.current) {
+      localStreamRef.current.getAudioTracks().forEach((track) => {
+        track.enabled = false;
+      });
+    }
+
+    setIsPaused(true);
+    setIsSpeaking(false);
+
+    // Update Firebase - mark as paused (not transmitting)
+    updateVoicePresence({ isMuted: true });
+  }, [isVoiceEnabled, isPaused, isMuted, closePeerConnection, updateVoicePresence]);
+
+  // Resume voice chat (reconnect to peers)
+  const resumeVoice = useCallback(() => {
+    if (!isVoiceEnabled || !isPaused) return;
+
+    // Restore audio track state from before pause
+    const wasMutedBeforePause = mutedBeforePauseRef.current;
+
+    if (localStreamRef.current) {
+      localStreamRef.current.getAudioTracks().forEach((track) => {
+        track.enabled = !wasMutedBeforePause;
+      });
+    }
+
+    setIsMuted(wasMutedBeforePause);
+    setIsPaused(false);
+
+    // Update Firebase with restored mute state
+    updateVoicePresence({ isMuted: wasMutedBeforePause });
+
+    // Peer connections will be re-established by the existing effect
+    // that monitors clients with isVoiceEnabled
+  }, [isVoiceEnabled, isPaused, updateVoicePresence]);
+
+  // Listen for signaling messages (skip when paused)
   useEffect(() => {
-    if (!roomId || !clientId || !isVoiceEnabled) return;
+    if (!roomId || !clientId || !isVoiceEnabled || isPaused) return;
 
     const signalingRef = ref(db, `rooms/${roomId}/voiceSignaling`);
 
@@ -497,14 +560,11 @@ export function useVoiceChat({
     });
 
     return () => unsubscribe();
-  }, [roomId, clientId, isVoiceEnabled, createPeerConnection]);
+  }, [roomId, clientId, isVoiceEnabled, isPaused, createPeerConnection]);
 
-  // Track processed ICE candidates to avoid duplicates
-  const processedCandidatesRef = useRef<Set<string>>(new Set());
-
-  // Listen for ICE candidates
+  // Listen for ICE candidates (skip when paused)
   useEffect(() => {
-    if (!roomId || !clientId || !isVoiceEnabled) return;
+    if (!roomId || !clientId || !isVoiceEnabled || isPaused) return;
 
     const signalingRef = ref(db, `rooms/${roomId}/voiceSignaling`);
 
@@ -559,11 +619,11 @@ export function useVoiceChat({
     });
 
     return () => unsubscribe();
-  }, [roomId, clientId, isVoiceEnabled]);
+  }, [roomId, clientId, isVoiceEnabled, isPaused]);
 
-  // Connect to new peers when voice is enabled
+  // Connect to new peers when voice is enabled (but not when paused)
   useEffect(() => {
-    if (!isVoiceEnabled || !roomId || !clientId) return;
+    if (!isVoiceEnabled || !roomId || !clientId || isPaused) return;
 
     // Find other voice-enabled clients
     const otherVoiceClients = Object.entries(clients).filter(
@@ -590,6 +650,7 @@ export function useVoiceChat({
     });
   }, [
     isVoiceEnabled,
+    isPaused,
     roomId,
     clientId,
     clients,
@@ -617,6 +678,7 @@ export function useVoiceChat({
 
   return {
     isVoiceEnabled,
+    isPaused,
     isMuted,
     isSpeaking,
     voiceName,
@@ -626,6 +688,8 @@ export function useVoiceChat({
     error,
     enableVoice,
     disableVoice,
+    pauseVoice,
+    resumeVoice,
     toggleMute,
     muteAll,
     unmuteAll,

@@ -77,6 +77,7 @@ export function TogetherRoomPage() {
   // Voice chat
   const {
     isVoiceEnabled,
+    isPaused: isVoicePaused,
     isMuted,
     isSpeaking,
     participants,
@@ -84,6 +85,8 @@ export function TogetherRoomPage() {
     error: voiceError,
     enableVoice,
     disableVoice,
+    pauseVoice,
+    resumeVoice,
     toggleMute,
     muteAll,
     unmuteAll,
@@ -267,6 +270,16 @@ export function TogetherRoomPage() {
       // Room will reset when everyone leaves or after timeout
     }
   }, [isPlaying]);
+
+  // Pause voice chat during audio playback to prevent iOS audio ducking
+  // Resume when audio ends
+  useEffect(() => {
+    if (isPlaying && isVoiceEnabled && !isVoicePaused) {
+      pauseVoice();
+    } else if (!isPlaying && hasAudioEnded && isVoiceEnabled && isVoicePaused) {
+      resumeVoice();
+    }
+  }, [isPlaying, hasAudioEnded, isVoiceEnabled, isVoicePaused, pauseVoice, resumeVoice]);
 
   // Auto-unmute voice chat when audio ends so people can talk (only once)
   useEffect(() => {
