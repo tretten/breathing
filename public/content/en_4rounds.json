@@ -1,0 +1,16 @@
+{
+  "lang": "20 min • EN",
+  "title": "Vim 4 Rounds",
+  "titleRu": "Вим 4 Раунда",
+  "url": "https://www.youtube.com/@wimhof1",
+  "phases": [
+    { "type": "breathe", "duration": 90 },
+    { "type": "hold", "duration": 60 },
+    { "type": "breathe", "duration": 90 },
+    { "type": "hold", "duration": 90 },
+    { "type": "breathe", "duration": 90 },
+    { "type": "hold", "duration": 120 },
+    { "type": "breathe", "duration": 90 },
+    { "type": "hold", "duration": 120 }
+  ]
+}

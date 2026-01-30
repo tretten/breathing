@@ -78,17 +78,35 @@ export function useVoiceChat({
   const processedOffersRef = useRef<Set<string>>(new Set());
   const processedAnswersRef = useRef<Set<string>>(new Set());
 
-  // Calculate participants from clients - filter out entries without voiceName (stale/invalid)
+  // Cache for clientId → voiceName to persist names during brief disconnections
+  const namesCacheRef = useRef<Map<string, string>>(new Map());
+
+  // Update cache when we see names from Firebase
+  useEffect(() => {
+    Object.entries(clients).forEach(([id, presence]) => {
+      if (presence.voiceName) {
+        namesCacheRef.current.set(id, presence.voiceName);
+      }
+    });
+  }, [clients]);
+
+  // Calculate participants from clients - use cached names if Firebase data is temporarily missing
   const participants: VoiceChatParticipant[] = Object.entries(clients)
-    .filter(([, presence]) => presence.voiceName) // Only include clients with a valid name
-    .map(([id, presence]) => ({
-      clientId: id,
-      name: presence.voiceName!,
-      isVoiceEnabled: presence.isVoiceEnabled || false,
-      isMuted: presence.isMuted || false,
-      isSpeaking: false, // We'll update this based on audio analysis
-      isReady: presence.isReady || false,
-    }));
+    .map(([id, presence]) => {
+      // Use Firebase name if available, otherwise fall back to cache
+      const name = presence.voiceName || namesCacheRef.current.get(id);
+      if (!name) return null; // Skip if no name available at all
+
+      return {
+        clientId: id,
+        name,
+        isVoiceEnabled: presence.isVoiceEnabled || false,
+        isMuted: presence.isMuted || false,
+        isSpeaking: false, // We'll update this based on audio analysis
+        isReady: presence.isReady || false,
+      };
+    })
+    .filter((p): p is VoiceChatParticipant => p !== null);
 
   const voiceEnabledCount = participants.filter((p) => p.isVoiceEnabled).length;
   const isRoomFull = voiceEnabledCount >= MAX_VOICE_PARTICIPANTS;

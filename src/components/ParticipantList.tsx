@@ -35,7 +35,7 @@ function getParticipantStatus(
 function StatusDot({ status }: { status: StatusType }) {
   return (
     <span
-      className={`status-dot status-dot-${status}`}
+      className={`status-dot ${status}`}
       aria-label={`Status: ${status}`}
     />
   );
@@ -104,7 +104,7 @@ export function ParticipantList({
         return (
           <div
             key={participant.clientId}
-            className={`participant-item ${isCurrentUser ? 'current-user' : ''} ${isReady ? 'is-ready' : 'not-ready'}`}
+            className={`participant-item ${isCurrentUser ? 'current-user' : ''} ${isReady ? 'ready' : 'not-ready'}`}
             role="listitem"
           >
             <StatusDot status={status} />

@@ -15,16 +15,12 @@ import {
 } from 'firebase/database';
 import { db } from '../firebase/config';
 import { getOrCreateVoiceName } from '../utils/randomNames';
+import { PRESENCE_MAX_AGE_MS, HEARTBEAT_INTERVAL_MS } from '../utils/constants';
 import type { UsePresenceReturn, ClientPresence } from '../types';
 
 interface UsePresenceOptions {
   isReady?: boolean;
 }
-
-// Max age for presence entries before considered stale (5 minutes)
-const PRESENCE_MAX_AGE_MS = 5 * 60 * 1000;
-// Heartbeat interval to keep presence alive (1 minute)
-const HEARTBEAT_INTERVAL_MS = 60 * 1000;
 
 /**
  * Hook to manage user presence in a Firebase room
@@ -62,8 +58,8 @@ export function usePresence(
             .filter(([id, presence]) => {
               // Don't remove our own entry
               if (id === clientId) return false;
-              // Remove if joinedAt is too old OR if missing voiceName (invalid entry)
-              return now - presence.joinedAt > PRESENCE_MAX_AGE_MS || !presence.voiceName;
+              // Remove only if joinedAt is too old (stale entry)
+              return now - presence.joinedAt > PRESENCE_MAX_AGE_MS;
             })
             .map(([id]) => id);
 
@@ -101,9 +97,10 @@ export function usePresence(
 
       if (data) {
         for (const [id, presence] of Object.entries(data)) {
-          // Always include our own entry, filter stale others and entries without voiceName
-          const isValid = presence.voiceName && (id === clientId || now - presence.joinedAt <= PRESENCE_MAX_AGE_MS);
-          if (isValid) {
+          // Always include our own entry, filter stale others
+          // Don't filter by voiceName - let the cache in useVoiceChat handle missing names
+          const isNotStale = id === clientId || now - presence.joinedAt <= PRESENCE_MAX_AGE_MS;
+          if (isNotStale) {
             activeClients[id] = presence;
           }
         }

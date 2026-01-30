@@ -5,11 +5,23 @@
 
 export type RoomType = 'solo' | 'together';
 export type RoomStatus = 'idle' | 'countdown' | 'playing' | 'completed';
-export type PresetId = 'ru_4rounds' | 'en_4rounds' | 'ru_3rounds' | 'en_3rounds';
+export type PresetId = string;
 export type RoomId = 'solo';
 
-// All available presets for Together rooms
-export const PRESET_IDS: PresetId[] = ['en_3rounds', 'en_4rounds', 'ru_3rounds', 'ru_4rounds'];
+/** Content index structure loaded from /content/index.json */
+export interface ContentIndex {
+  together: string[];
+  solo: string[];
+}
+
+/** Preset metadata loaded from /content/{id}.json */
+export interface PresetMetadata {
+  id: string;
+  lang: string;
+  title: string;
+  titleRu?: string;
+  url?: string;
+}
 
 export interface RoomConfig {
   lang?: 'ru' | 'en';

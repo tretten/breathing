@@ -1,0 +1,16 @@
+{
+  "lang": "20 min • RU",
+  "title": "Stan 4 Rounds",
+  "titleRu": "Стас 4 Раунда",
+  "url": "https://www.youtube.com/watch?v=jUyRWxwWeZE",
+  "phases": [
+    { "type": "breathe", "duration": 90 },
+    { "type": "hold", "duration": 60 },
+    { "type": "breathe", "duration": 90 },
+    { "type": "hold", "duration": 90 },
+    { "type": "breathe", "duration": 90 },
+    { "type": "hold", "duration": 120 },
+    { "type": "breathe", "duration": 90 },
+    { "type": "hold", "duration": 120 }
+  ]
+}

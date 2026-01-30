@@ -1,0 +1,14 @@
+{
+  "lang": "15 min • RU",
+  "title": "Stan 3 Rounds",
+  "titleRu": "Стас 3 Раунда",
+  "url": "https://www.youtube.com/watch?v=xOX7vYpXJbE",
+  "phases": [
+    { "type": "breathe", "duration": 11 },
+    { "type": "hold", "duration": 60 },
+    { "type": "breathe", "duration": 90 },
+    { "type": "hold", "duration": 90 },
+    { "type": "breathe", "duration": 90 },
+    { "type": "hold", "duration": 120 }
+  ]
+}

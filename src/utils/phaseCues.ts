@@ -106,7 +106,7 @@ export function getPhaseText(type: PhaseType, language: "en" | "ru"): string {
 
 /**
  * Convert audio URL to cue file URL
- * /audio/ru_4rounds.mp3 -> /audio/ru_4rounds.json
+ * /content/ru_4rounds.mp3 -> /content/ru_4rounds.json
  */
 export function getCueUrlFromAudioUrl(audioUrl: string): string {
   return audioUrl.replace(/\.(mp3|ogg|wav|m4a)$/i, ".json");

@@ -1,0 +1,11 @@
+{
+  "lang": "30 min • EN",
+  "title": "Yoga Nidra",
+  "titleRu": "Йога Нидра  ",
+  "url": "http://allyboothroyd.com/links/",
+  "phases": [
+    { "type": "intro", "duration": 30 },
+    { "type": "breathe", "duration": 1740 },
+    { "type": "outro", "duration": 30 }
+  ]
+}

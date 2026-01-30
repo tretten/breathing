@@ -60,7 +60,7 @@ export function VoiceChatButton({
   onToggle,
 }: VoiceChatButtonProps) {
   const getClassName = () => {
-    const classes = ['mic-button', 'icon-button-circle'];
+    const classes = ['voice-button', 'icon-button-circle'];
 
     if (!isVoiceEnabled) {
       // Not enabled yet - show as muted/off state

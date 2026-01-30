@@ -208,6 +208,11 @@
     gap: var(--space-2, 0.5rem);
 }
 
+.circle-overlay-content button {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
 .overlay-phase {
     display: flex;
     flex-direction: column;

@@ -14,13 +14,13 @@ export function AboutPage() {
 
   if (language === "ru") {
     return (
-      <div className="page-container">
+      <div className="app-container">
         <TopBar showBack onBack={handleBack} />
 
-        <main className="page-content">
+        <main className="app-content">
           <article className="about-content">
-            <header className="page-header">
-              <BreathingIcon className="page-icon" />
+            <header className="app-header">
+              <BreathingIcon className="app-icon" />
               <h1>О методе Вим Хофа</h1>
             </header>
 
@@ -156,8 +156,8 @@ export function AboutPage() {
 
       <main className="page-content">
         <article className="about-content">
-          <header className="page-header">
-            <BreathingIcon className="page-icon" />
+          <header className="app-header">
+              <BreathingIcon className="app-icon" />
             <h1>About Wim Hof Method</h1>
           </header>
 

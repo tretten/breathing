@@ -17,10 +17,10 @@ export function PageFooter() {
         };
 
   return (
-    <footer className="page-footer">
-      <span className="page-footer-hint">{texts.hint}</span>
-      <div className="page-footer-links">
-        <Link to="/about" className="page-footer-link">
+    <footer className="app-footer">
+      <span className="app-footer-hint">{texts.hint}</span>
+      <div className="app-footer-links">
+        <Link to="/about" className="app-footer-link">
           {texts.about}
         </Link>
       </div>

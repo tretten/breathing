@@ -33,3 +33,12 @@ export type { UsePhaseCuesReturn } from "./usePhaseCues";
 
 // Voice chat
 export { useVoiceChat } from "./useVoiceChat";
+
+// Offline presets
+export { useOfflinePresets } from "./useOfflinePresets";
+
+// Content index (list of available presets)
+export { useContentIndex, isValidPreset } from "./useContentIndex";
+
+// Preset metadata loading
+export { usePresetMetadata, useBulkPresetMetadata } from "./usePresetMetadata";

@@ -1,7 +1,7 @@
 // src/pages/RoomListPage.tsx
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
-import { useTotalTogetherCount } from "../hooks";
+import { useTotalTogetherCount, useContentIndex } from "../hooks";
 import { TopBar } from "../components/TopBar";
 import { PageFooter } from "../components/PageFooter";
 import {
@@ -13,7 +13,8 @@ import {
 export function RoomListPage() {
   const navigate = useNavigate();
   const { language } = useAppContext();
-  const totalTogetherCount = useTotalTogetherCount();
+  const { togetherPresets } = useContentIndex();
+  const totalTogetherCount = useTotalTogetherCount(togetherPresets);
 
   const texts =
     language === "en"
@@ -35,24 +36,24 @@ export function RoomListPage() {
         };
 
   return (
-    <div className="page-container">
+    <div className="app-container">
       <TopBar />
 
-      <main className="page-content">
+      <main className="app-content">
         <div className="content-centered">
-          <header className="page-header">
-            <BreathingIcon className="page-icon" />
+          <header className="app-header">
+            <BreathingIcon className="app-icon" />
             <h1>{texts.title}</h1>
-            <p className="subtitle">{texts.subtitle}</p>
+            <h4 className="subtitle">{texts.subtitle}</h4>
           </header>
 
           <div className="card-grid--row">
             <button className="card card--lg" onClick={() => navigate("/room")}>
-              <FriendsIcon className="card__icon" />
-              <span className="card__title">{texts.withFriends}</span>
-              <span className="card__subtitle">{texts.withFriendsDesc}</span>
+              <FriendsIcon className="card-icon" />
+              <h3 className="card-title">{texts.withFriends}</h3>
+              <p className="card-subtitle">{texts.withFriendsDesc}</p>
               {totalTogetherCount > 0 && (
-                <span className="card__badge">{totalTogetherCount}</span>
+                <span className="card-badge">{totalTogetherCount}</span>
               )}
             </button>
 
@@ -60,9 +61,9 @@ export function RoomListPage() {
               className="card card--lg"
               onClick={() => navigate("/solo/")}
             >
-              <MeditationIcon className="card__icon" />
-              <span className="card__title">{texts.solo}</span>
-              <span className="card__subtitle">{texts.soloDesc}</span>
+              <MeditationIcon className="card-icon" />
+              <h3 className="card-title">{texts.solo}</h3>
+              <h4 className="card-subtitle">{texts.soloDesc}</h4>
             </button>
           </div>
 

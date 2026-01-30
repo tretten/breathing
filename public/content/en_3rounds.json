@@ -1,0 +1,17 @@
+{
+  "lang": "15 min • EN",
+  "title": "Vim 3 Rounds",
+  "titleRu": "Вим 3 Раунда",
+  "url": "https://www.youtube.com/@wimhof1",
+  "phases": [
+    { "type": "intro", "duration": 10 },
+    { "type": "breathe", "duration": 5 },
+    { "type": "pause", "duration": 5 },
+    { "type": "hold", "duration": 5 },
+    { "type": "breathe", "duration": 5 },
+    { "type": "hold", "duration": 5 },
+    { "type": "breathe", "duration": 10 },
+    { "type": "hold", "duration": 5 },
+    { "type": "outro", "duration": 10 }
+  ]
+}

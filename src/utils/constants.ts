@@ -3,7 +3,7 @@
 // Application Constants
 // ============================================================================
 
-import type { RoomId, RoomConfig, PresetId } from "../types";
+import type { RoomId, RoomConfig } from "../types";
 
 // ============================================================================
 // Time Constants
@@ -31,10 +31,13 @@ export const AUTO_EXIT_DELAY_MS = 27000; // 27 seconds
 export const LATE_JOIN_WINDOW_MS = 36000; // 36 seconds
 
 /** Presence max age before considered stale */
-export const PRESENCE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
+export const PRESENCE_MAX_AGE_MS = 2 * 60 * 1000; // 2 minutes
 
 /** Heartbeat interval for presence */
-export const HEARTBEAT_INTERVAL_MS = 60 * 1000; // 1 minute
+export const HEARTBEAT_INTERVAL_MS = 30 * 1000; // 30 seconds
+
+/** Post-session chat duration after audio ends */
+export const POST_SESSION_CHAT_MS = 10 * 60 * 1000; // 10 minutes
 
 /** Audio sync check interval */
 export const AUDIO_SYNC_INTERVAL_MS = 1000; // 1 second
@@ -76,24 +79,24 @@ export const ROOM_LABELS: Record<RoomId, { ru: string; en: string }> = {
 };
 
 // ============================================================================
-// Preset Configuration
+// Content Configuration
 // ============================================================================
 
-/** Preset options for room selection */
-export const PRESET_OPTIONS: Array<{ id: PresetId; label: string }> = [
-  { id: "ru_4rounds", label: "Русский • 4 раунда" },
-  { id: "en_4rounds", label: "English • 4 rounds" },
-  { id: "ru_3rounds", label: "Русский • 3 раунда" },
-  { id: "en_3rounds", label: "English • 3 rounds" },
-];
+/** Base URL for content files */
+export const CONTENT_BASE_URL = '/content';
 
-/** Audio file URLs mapped by preset */
-export const AUDIO_URLS: Record<PresetId, string> = {
-  ru_4rounds: "/audio/ru_4rounds.mp3",
-  en_4rounds: "/audio/en_4rounds.mp3",
-  ru_3rounds: "/audio/ru_3rounds.mp3",
-  en_3rounds: "/audio/en_3rounds.mp3",
-};
+/** Get audio URL for a preset */
+export function getAudioUrl(presetId: string): string {
+  return `${CONTENT_BASE_URL}/${presetId}.mp3`;
+}
+
+/** Get metadata JSON URL for a preset */
+export function getMetadataUrl(presetId: string): string {
+  return `${CONTENT_BASE_URL}/${presetId}.json`;
+}
+
+/** Content index URL */
+export const CONTENT_INDEX_URL = `${CONTENT_BASE_URL}/index.json`;
 
 // ============================================================================
 // Storage Keys (re-exported from storageKeys.ts to avoid circular imports)

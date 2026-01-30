@@ -6,8 +6,8 @@
 import { useState, useEffect } from 'react';
 import { ref, onValue, update, get } from 'firebase/database';
 import { db } from '../firebase/config';
-import { PRESET_IDS } from '../types';
-import type { TogetherRoomState, ClientPresence, PresetId } from '../types';
+import { PRESENCE_MAX_AGE_MS } from '../utils/constants';
+import type { TogetherRoomState, ClientPresence } from '../types';
 
 // ============================================================================
 // useTogetherRoomState - Subscribe to together room state by preset
@@ -17,7 +17,7 @@ import type { TogetherRoomState, ClientPresence, PresetId } from '../types';
  * Hook to subscribe to a Together room's state in Firebase
  * Returns real-time room status, participants, and start timestamp
  */
-export function useTogetherRoomState(presetId: PresetId | null): TogetherRoomState | null {
+export function useTogetherRoomState(presetId: string | null): TogetherRoomState | null {
   const [roomState, setRoomState] = useState<TogetherRoomState | null>(null);
 
   useEffect(() => {
@@ -56,24 +56,31 @@ export function useTogetherRoomState(presetId: PresetId | null): TogetherRoomSta
 /**
  * Hook to get the total number of users across all Together rooms
  * Useful for showing global activity on the home page
+ * @param presetIds - List of preset IDs to monitor
  */
-export function useTotalTogetherCount(): number {
+export function useTotalTogetherCount(presetIds: string[]): number {
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
+    if (presetIds.length === 0) return;
+
     const unsubscribes: (() => void)[] = [];
 
     // Track counts per preset
     const counts: Record<string, number> = {};
 
-    for (const presetId of PRESET_IDS) {
+    for (const presetId of presetIds) {
       const onlineRef = ref(db, `rooms/together/${presetId}/online`);
 
       const unsubscribe = onValue(onlineRef, (snapshot) => {
         const data = snapshot.val();
-        // Only count clients with voiceName (valid entries)
+        const now = Date.now();
+        // Only count active clients (with voiceName and not stale)
         const validCount = data
-          ? Object.values(data).filter((c: any) => c.voiceName).length
+          ? Object.values(data).filter(
+              (c: any) =>
+                c.voiceName && c.joinedAt && now - c.joinedAt <= PRESENCE_MAX_AGE_MS,
+            ).length
           : 0;
         counts[presetId] = validCount;
 
@@ -88,7 +95,7 @@ export function useTotalTogetherCount(): number {
     return () => {
       unsubscribes.forEach((unsub) => unsub());
     };
-  }, []);
+  }, [presetIds.join(',')]); // Use join to create stable dependency
 
   return totalCount;
 }
@@ -105,7 +112,7 @@ const COUNTDOWN_DURATION_MS = 3000;
  * Sets room status to 'countdown' and schedules playback start
  */
 export async function startTogetherCountdown(
-  presetId: PresetId,
+  presetId: string,
   getServerTime: () => number
 ): Promise<boolean> {
   const roomRef = ref(db, `rooms/together/${presetId}`);
@@ -126,7 +133,7 @@ export async function startTogetherCountdown(
  * Reset a Together room back to idle state
  * Called after session ends or when cleaning up abandoned sessions
  */
-export async function resetTogetherRoom(presetId: PresetId): Promise<void> {
+export async function resetTogetherRoom(presetId: string): Promise<void> {
   const roomRef = ref(db, `rooms/together/${presetId}`);
   const onlineRef = ref(db, `rooms/together/${presetId}/online`);
 
