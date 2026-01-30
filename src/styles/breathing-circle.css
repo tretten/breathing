@@ -16,35 +16,35 @@
     --circle-glow: var(--accent-glow);
 }
 
-/* Phase-specific colors */
+/* Phase-specific colors - using global CSS variables */
 .breathing-container.phase-breathe {
-    --circle-primary: rgba(120, 200, 255, 0.95);
-    --circle-secondary: rgba(80, 160, 220, 0.8);
-    --circle-glow: rgba(120, 200, 255, 0.25);
+    --circle-primary: var(--phase-breathe-primary);
+    --circle-secondary: var(--phase-breathe-secondary);
+    --circle-glow: var(--phase-breathe-glow);
 }
 
 .breathing-container.phase-hold {
-    --circle-primary: rgba(251, 191, 36, 0.95);
-    --circle-secondary: rgba(245, 158, 11, 0.8);
-    --circle-glow: rgba(251, 191, 36, 0.25);
+    --circle-primary: var(--phase-hold-primary);
+    --circle-secondary: var(--phase-hold-secondary);
+    --circle-glow: var(--phase-hold-glow);
 }
 
 .breathing-container.phase-pause {
-    --circle-primary: rgba(160, 160, 170, 0.8);
-    --circle-secondary: rgba(120, 120, 130, 0.6);
-    --circle-glow: rgba(160, 160, 170, 0.15);
+    --circle-primary: var(--phase-pause-primary);
+    --circle-secondary: var(--phase-pause-secondary);
+    --circle-glow: var(--phase-pause-glow);
 }
 
 .breathing-container.phase-intro {
-    --circle-primary: rgba(167, 139, 250, 0.9);
-    --circle-secondary: rgba(139, 92, 246, 0.7);
-    --circle-glow: rgba(167, 139, 250, 0.2);
+    --circle-primary: var(--phase-intro-primary);
+    --circle-secondary: var(--phase-intro-secondary);
+    --circle-glow: var(--phase-intro-glow);
 }
 
 .breathing-container.phase-outro {
-    --circle-primary: rgba(52, 211, 153, 0.9);
-    --circle-secondary: rgba(16, 185, 129, 0.7);
-    --circle-glow: rgba(52, 211, 153, 0.2);
+    --circle-primary: var(--phase-outro-primary);
+    --circle-secondary: var(--phase-outro-secondary);
+    --circle-glow: var(--phase-outro-glow);
 }
 
 .breathing-circle {
@@ -239,30 +239,30 @@
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
-/* Phase-specific text colors */
+/* Phase-specific text colors - using global CSS variables */
 .phase-breathe .overlay-phase-label,
 .phase-breathe .overlay-phase-time {
-    color: rgba(120, 200, 255, 1);
+    color: var(--phase-breathe-text);
 }
 
 .phase-hold .overlay-phase-label,
 .phase-hold .overlay-phase-time {
-    color: rgba(251, 191, 36, 1);
+    color: var(--phase-hold-text);
 }
 
 .phase-pause .overlay-phase-label,
 .phase-pause .overlay-phase-time {
-    color: rgba(200, 200, 210, 0.9);
+    color: var(--phase-pause-text);
 }
 
 .phase-intro .overlay-phase-label,
 .phase-intro .overlay-phase-time {
-    color: rgba(167, 139, 250, 1);
+    color: var(--phase-intro-text);
 }
 
 .phase-outro .overlay-phase-label,
 .phase-outro .overlay-phase-time {
-    color: rgba(52, 211, 153, 1);
+    color: var(--phase-outro-text);
 }
 
 /* Mobile */

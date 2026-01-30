@@ -6,7 +6,6 @@
   "phases": [
     { "type": "intro", "duration": 10 },
     { "type": "breathe", "duration": 5 },
-    { "type": "pause", "duration": 5 },
     { "type": "hold", "duration": 5 },
     { "type": "breathe", "duration": 5 },
     { "type": "hold", "duration": 5 },

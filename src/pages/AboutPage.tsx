@@ -151,10 +151,10 @@ export function AboutPage() {
 
   // English version
   return (
-    <div className="page-container">
+    <div className="app-container">
       <TopBar showBack onBack={handleBack} />
 
-      <main className="page-content">
+      <main className="app-content">
         <article className="about-content">
           <header className="app-header">
               <BreathingIcon className="app-icon" />
