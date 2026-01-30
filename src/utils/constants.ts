@@ -22,7 +22,7 @@ export const COUNTDOWN_DURATION_MS = 3000; // 3 seconds
 export const SINGLE_USER_WAIT_MS = 3000; // 3 seconds
 
 /** Maximum session duration before considered stale */
-export const MAX_SESSION_DURATION_MS = 20 * 60 * 1000; // 20 minutes
+export const MAX_SESSION_DURATION_MS = 60 * 60 * 1000; // 60 minutes
 
 /** Auto-exit delay after session ends */
 export const AUTO_EXIT_DELAY_MS = 27000; // 27 seconds
