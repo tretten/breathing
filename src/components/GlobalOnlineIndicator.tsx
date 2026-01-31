@@ -44,12 +44,12 @@ export function GlobalOnlineIndicator() {
 
   return (
     <div
-      className="global-online-indicator"
+      className="presence"
       role="status"
       aria-live="polite"
       aria-label={ariaLabel}
     >
-      <span className="online-dot" aria-hidden="true" />
+      <span className="dot" aria-hidden="true" />
       <span>
         {onlineCount} {text}
       </span>

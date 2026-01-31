@@ -61,13 +61,13 @@ export function SoloLobbyPage() {
   const error = indexError || metadataError;
 
   return (
-    <div className="app-container">
+    <div className="wrap">
       <TopBar showBack onBack={handleBack} />
 
-      <main className="app-content">
-        <div className="content-centered">
-          <header className="app-header">
-            <MeditationIcon className="app-icon" />
+      <main className="main">
+        <div className="center">
+          <header className="hdr">
+            <MeditationIcon className="ico" />
             <h1>{texts.title}</h1>
             <p className="subtitle">{texts.subtitle}</p>
           </header>
@@ -75,7 +75,7 @@ export function SoloLobbyPage() {
           {isLoading ? (
             <div className="loading">{texts.loading}</div>
           ) : error ? (
-            <div className="error-state">
+            <div className="err">
               <p>{texts.error}</p>
               <button
                 className="btn btn--primary"
@@ -85,11 +85,11 @@ export function SoloLobbyPage() {
               </button>
             </div>
           ) : sortedPresets.length === 0 ? (
-            <div className="empty-state">
+            <div className="empty">
               <p>{texts.empty}</p>
             </div>
           ) : (
-            <div className="preset-grid">
+            <div className="grid">
               {sortedPresets.map((preset) => {
                 const displayTitle =
                   language === "ru"
@@ -103,11 +103,11 @@ export function SoloLobbyPage() {
                     className="card"
                     onClick={() => handleSelectPreset(preset.id)}
                   >
-                    <span className="preset-lang">{preset.lang}</span>
-                    <h3 className="card-title">{displayTitle}</h3>
+                    <span className="lang">{preset.lang}</span>
+                    <h3 className="card-ttl">{displayTitle}</h3>
                     {isCached && (
                       <span
-                        className="preset-offline-badge"
+                        className="offline"
                         title={
                           language === "ru"
                             ? "Доступен офлайн"

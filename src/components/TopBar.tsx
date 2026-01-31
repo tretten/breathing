@@ -26,17 +26,17 @@ export function TopBar({ showBack = false, onBack }: TopBarProps) {
   const backLabel = language === 'en' ? 'Back to home' : 'На главную';
 
   return (
-    <header className="top-bar">
-      <nav className="top-bar-left" aria-label={language === 'en' ? 'Navigation' : 'Навигация'}>
+    <header className="nav">
+      <nav className="nav-l" aria-label={language === 'en' ? 'Navigation' : 'Навигация'}>
         {showBack && (
-          <button className="back-button" onClick={handleBack} aria-label={backLabel}>
-            <span className="back-arrow" aria-hidden="true">←</span>
-            <span className="back-text">{backText}</span>
+          <button className="back-btn" onClick={handleBack} aria-label={backLabel}>
+            <span className="back-arr" aria-hidden="true">←</span>
+            <span className="back-txt">{backText}</span>
           </button>
         )}
         <GlobalOnlineIndicator />
       </nav>
-      <div className="top-bar-right">
+      <div className="nav-r">
         <ThemeToggle />
         <LanguageSwitcher />
       </div>

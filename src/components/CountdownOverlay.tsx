@@ -14,8 +14,8 @@ export function CountdownOverlay({ seconds, language = "en" }: CountdownOverlayP
       : `Starting in ${Math.ceil(seconds)}`;
 
   return (
-    <div className="countdown-overlay" role="alert" aria-live="assertive" aria-atomic="true">
-      <div className="countdown-number" aria-label={ariaLabel}>
+    <div className="cdown-ovl" role="alert" aria-live="assertive" aria-atomic="true">
+      <div className="cdown-num" aria-label={ariaLabel}>
         {Math.ceil(seconds)}
       </div>
     </div>

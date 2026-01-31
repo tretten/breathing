@@ -84,17 +84,17 @@ export function ParticipantList({
 
   if (sortedParticipants.length === 0) {
     return (
-      <div className="participant-list" role="list" aria-label="Participants">
-        <div className="participant-item">
+      <div className="roster" role="list" aria-label="Participants">
+        <div className="roster-row">
           <StatusDot status="online" />
-          <span className="participant-name">...</span>
+          <span className="roster-name">...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="participant-list" role="list" aria-label="Participants">
+    <div className="roster" role="list" aria-label="Participants">
       {sortedParticipants.map((participant) => {
         const isCurrentUser = participant.clientId === currentClientId;
         const status = getParticipantStatus(participant);
@@ -104,11 +104,11 @@ export function ParticipantList({
         return (
           <div
             key={participant.clientId}
-            className={`participant-item ${isCurrentUser ? 'current-user' : ''} ${isReady ? 'ready' : 'not-ready'}`}
+            className={`roster-row ${isCurrentUser ? 'current-user' : ''} ${isReady ? 'ready' : 'not-ready'}`}
             role="listitem"
           >
             <StatusDot status={status} />
-            <span className="participant-name">
+            <span className="roster-name">
               {displayName}
               {isCurrentUser && ` (${youLabel})`}
             </span>

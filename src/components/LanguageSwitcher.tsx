@@ -5,7 +5,7 @@ export function LanguageSwitcher() {
   const { language, setLanguage } = useAppContext();
 
   return (
-    <div className="language-switcher" role="group" aria-label="Language selection">
+    <div className="lang-sw" role="group" aria-label="Language selection">
       <button
         className={`lang-btn ${language === 'en' ? 'active' : ''}`}
         onClick={() => setLanguage('en')}

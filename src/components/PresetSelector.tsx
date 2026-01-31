@@ -48,7 +48,7 @@ export function PresetSelector({
 
   if (error) {
     return (
-      <div className="error-state">
+      <div className="err">
         <p>{texts.error}</p>
         <button
           className="btn btn--primary"
@@ -62,7 +62,7 @@ export function PresetSelector({
 
   if (sortedPresets.length === 0) {
     return (
-      <div className="empty-state">
+      <div className="empty">
         <p>{texts.empty}</p>
       </div>
     );
@@ -70,7 +70,7 @@ export function PresetSelector({
 
   return (
     <div
-      className="preset-grid"
+      className="grid"
       role="group"
       aria-label={language === "en" ? "Select preset" : "Выберите пресет"}
     >
@@ -88,11 +88,11 @@ export function PresetSelector({
             type="button"
             aria-pressed={isSelected}
           >
-            <span className="preset-lang">{preset.lang}</span>
-            <h3 className="card-title">{displayTitle}</h3>
+            <span className="lang">{preset.lang}</span>
+            <h3 className="card-ttl">{displayTitle}</h3>
             {isCached && (
               <span
-                className="preset-offline-badge"
+                className="offline"
                 title={language === "ru" ? "Доступен офлайн" : "Available offline"}
               >
                 <svg

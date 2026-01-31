@@ -582,21 +582,21 @@ export function TogetherRoomPage() {
   }
 
   return (
-    <div className="app-container">
+    <div className="wrap">
       {roomStatus === "countdown" && countdownSeconds > 0 && (
         <CountdownOverlay seconds={countdownSeconds} language={language} />
       )}
 
       <TopBar showBack onBack={handleBack} />
 
-      <main className="app-content">
-        <div className="content-centered">
-          <header className="app-header">
+      <main className="main">
+        <div className="center">
+          <header className="hdr">
             <h1>{texts.title}</h1>
             <h4 className="subtitle">
               {isCurrentPresetCached && (
                 <span
-                  className="offline-indicator"
+                  className="offline-ico"
                   title={
                     language === "ru" ? "Доступен офлайн" : "Available offline"
                   }
@@ -627,9 +627,9 @@ export function TogetherRoomPage() {
           <BreathingCircle isActive={isPlaying} phase={currentPhase}>
             {/* Phase info - displayed as overlay on the circle during playback or when ended */}
             {(isPlaying || hasAudioEnded) && (
-              <div className="circle-overlay-content">
-                <div className="overlay-phase">
-                  <span className="overlay-phase-label">
+              <div className="circ-ovl">
+                <div className="phase">
+                  <span className="phase-lbl">
                     {hasAudioEnded
                       ? texts.done
                       : currentPhase
@@ -650,7 +650,7 @@ export function TogetherRoomPage() {
                             }[currentPhase]
                         : ""}
                   </span>
-                  <span className="overlay-phase-time">
+                  <span className="phase-time">
                     {!hasAudioEnded && phaseRemaining > 0 ? formatSeconds(phaseRemaining) : ""}
                   </span>
                 </div>
@@ -669,12 +669,12 @@ export function TogetherRoomPage() {
             {(isLateJoin || isTooLateToJoin) &&
               !isPlaying &&
               !hasAudioEnded && (
-                <div className="circle-overlay-content">
-                  <div className="overlay-phase">
-                    <span className="overlay-phase-label">
+                <div className="circ-ovl">
+                  <div className="phase">
+                    <span className="phase-lbl">
                       {isLateJoin ? texts.sessionInProgress : texts.tooLate}
                     </span>
-                    <span className="overlay-phase-time">
+                    <span className="phase-time">
                       {formatRemainingTime(remainingTime)}
                     </span>
                   </div>
@@ -682,14 +682,14 @@ export function TogetherRoomPage() {
               )}
           </BreathingCircle>
 
-          <div className="room-info">
+          <div className="info">
             {/* Voice error message */}
-            {voiceError && <p className="voice-error">{voiceError}</p>}
+            {voiceError && <p className="voice-err">{voiceError}</p>}
 
             {/* Idle state - show only when not playing and audio hasn't ended */}
             {roomStatus === "idle" && !isPlaying && !hasAudioEnded && (
               <>
-                <div className="voice-controls">
+                <div className="voice">
                   <VoiceChatButton
                     isVoiceEnabled={isVoiceEnabled}
                     isMuted={isMuted}
@@ -712,7 +712,7 @@ export function TogetherRoomPage() {
                 </div>
 
                 {isReady && onlineCount > 1 && !allReady && (
-                  <p className="waiting-message">{texts.waiting}</p>
+                  <p className="wait-msg">{texts.waiting}</p>
                 )}
               </>
             )}
@@ -722,8 +722,8 @@ export function TogetherRoomPage() {
               !isPlaying &&
               !isLateJoin &&
               !isTooLateToJoin && (
-                <div className="countdown-message">
-                  <div className="voice-controls">
+                <div className="cdown-msg">
+                  <div className="voice">
                     {isVoiceEnabled && (
                       <VoiceChatButton
                         isVoiceEnabled={isVoiceEnabled}
@@ -764,14 +764,14 @@ export function TogetherRoomPage() {
 
             {/* Playing state - audio is playing */}
             {isPlaying && (
-              <div className="playing-controls">
-                <div className="remaining-time">
-                  <span className="remaining-time-label">{texts.sessionEnd}</span>
-                  <span className="remaining-time-value">
+              <div className="playback">
+                <div className="timer">
+                  <span className="timer-lbl">{texts.sessionEnd}</span>
+                  <span className="timer-val">
                     {formatRemainingTime(remainingTime)}
                   </span>
                 </div>
-                <div className="voice-controls">
+                <div className="voice">
                   <VoiceChatButton
                     isVoiceEnabled={isVoiceEnabled}
                     isMuted={isMuted}
@@ -792,8 +792,8 @@ export function TogetherRoomPage() {
 
             {/* Audio ended state - voice chat continues */}
             {hasAudioEnded && !isPlaying && (
-              <div className="playing-controls">
-                <div className="voice-controls">
+              <div className="playback">
+                <div className="voice">
                   <VoiceChatButton
                     isVoiceEnabled={isVoiceEnabled}
                     isMuted={isMuted}

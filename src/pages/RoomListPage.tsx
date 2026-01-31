@@ -36,13 +36,13 @@ export function RoomListPage() {
         };
 
   return (
-    <div className="app-container">
+    <div className="wrap">
       <TopBar />
 
-      <main className="app-content">
-        <div className="content-centered">
-          <header className="app-header">
-            <BreathingIcon className="app-icon" />
+      <main className="main">
+        <div className="center">
+          <header className="hdr">
+            <BreathingIcon className="ico" />
             <h1>{texts.title}</h1>
             <h4 className="subtitle">{texts.subtitle}</h4>
           </header>
@@ -50,10 +50,10 @@ export function RoomListPage() {
           <div className="card-grid--row">
             <button className="card card--lg" onClick={() => navigate("/room")}>
               <FriendsIcon className="card-icon" />
-              <h3 className="card-title">{texts.withFriends}</h3>
+              <h3 className="card-ttl">{texts.withFriends}</h3>
               <p className="card-subtitle">{texts.withFriendsDesc}</p>
               {totalTogetherCount > 0 && (
-                <span className="card-badge">{totalTogetherCount}</span>
+                <span className="badge">{totalTogetherCount}</span>
               )}
             </button>
 
@@ -62,7 +62,7 @@ export function RoomListPage() {
               onClick={() => navigate("/solo/")}
             >
               <MeditationIcon className="card-icon" />
-              <h3 className="card-title">{texts.solo}</h3>
+              <h3 className="card-ttl">{texts.solo}</h3>
               <h4 className="card-subtitle">{texts.soloDesc}</h4>
             </button>
           </div>

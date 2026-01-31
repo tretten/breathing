@@ -89,7 +89,7 @@ export function BreathingCircle({
 
   // Determine CSS class based on state and phase
   const getCircleClass = () => {
-    const classes = ["breathing-circle"];
+    const classes = ["breath-circ"];
 
     if (isActive) {
       classes.push("reactive");
@@ -120,17 +120,17 @@ export function BreathingCircle({
 
   // Phase class for container (affects rings too)
   const containerClass = phase
-    ? `breathing-container phase-${phase}`
-    : "breathing-container";
+    ? `breath phase-${phase}`
+    : "breath";
 
   return (
     <div className={containerClass}>
       <div className={getCircleClass()} style={reactiveStyle}>
-        <div className="breathing-inner">
-          <div className="breathing-core" style={coreStyle} />
+        <div className="breath-in">
+          <div className="breath-core" style={coreStyle} />
         </div>
       </div>
-      <div className="breathing-rings">
+      <div className="rings">
         {[...Array(3)].map((_, i) => (
           <div
             key={i}

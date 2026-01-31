@@ -226,10 +226,10 @@ export function SoloRoomPage() {
   // Show loading while checking preset validity
   if (isLoadingPresets || soloPresets.length === 0) {
     return (
-      <div className="app-container">
+      <div className="wrap">
         <TopBar showBack onBack={handleBack} />
-        <main className="app-content">
-          <div className="content-centered">
+        <main className="main">
+          <div className="center">
             <div className="loading">
               {language === "ru" ? "Загрузка..." : "Loading..."}
             </div>
@@ -240,21 +240,21 @@ export function SoloRoomPage() {
   }
 
   return (
-    <div className="app-container">
+    <div className="wrap">
       {status === "countdown" && countdownSeconds > 0 && (
         <CountdownOverlay seconds={countdownSeconds} language={language} />
       )}
 
       <TopBar showBack onBack={handleBack} />
 
-      <main className="app-content">
-        <div className="content-centered">
-          <header className="app-header">
+      <main className="main">
+        <div className="center">
+          <header className="hdr">
             <h1>{texts.title}</h1>
             <h4 className="subtitle">
               {isCurrentPresetCached && (
                 <span
-                  className="offline-indicator"
+                  className="offline-ico"
                   title={
                     language === "ru" ? "Доступен офлайн" : "Available offline"
                   }
@@ -279,9 +279,9 @@ export function SoloRoomPage() {
           <BreathingCircle isActive={isPlaying || isPaused} phase={currentPhase}>
             {/* Phase info - displayed as overlay on the circle */}
             {(isPlaying || isPaused || hasAudioEnded) && (
-              <div className="circle-overlay-content">
-                <div className="overlay-phase">
-                  <span className="overlay-phase-label">
+              <div className="circ-ovl">
+                <div className="phase">
+                  <span className="phase-lbl">
                     {hasAudioEnded
                       ? texts.done
                       : currentPhase
@@ -302,7 +302,7 @@ export function SoloRoomPage() {
                             }[currentPhase]
                         : ""}
                   </span>
-                  <span className="overlay-phase-time">
+                  <span className="phase-time">
                     {!hasAudioEnded && phaseRemaining > 0 ? formatSeconds(phaseRemaining) : ""}
                   </span>
                 </div>
@@ -319,13 +319,13 @@ export function SoloRoomPage() {
             )}
           </BreathingCircle>
 
-          <div className="room-info">
+          <div className="info">
             {status === "idle" && !isLoaded && (
-              <p className="waiting-message">{texts.loading}</p>
+              <p className="wait-msg">{texts.loading}</p>
             )}
 
             {status === "countdown" && (
-              <div className="countdown-message">
+              <div className="cdown-msg">
                 <button className="btn btn--danger" onClick={handleStop}>
                   {texts.stop}
                 </button>
@@ -333,18 +333,18 @@ export function SoloRoomPage() {
             )}
 
             {(isPlaying || isPaused || hasAudioEnded) && (
-              <div className="playing-controls">
+              <div className="playback">
                 {!hasAudioEnded && (
-                  <div className="remaining-time">
-                    <span className="remaining-time-label">
+                  <div className="timer">
+                    <span className="timer-lbl">
                       {isPaused ? texts.paused : texts.sessionEnd}
                     </span>
-                    <span className="remaining-time-value">
+                    <span className="timer-val">
                       {formatSeconds(remainingTime)}
                     </span>
                   </div>
                 )}
-                <div className="control-buttons">
+                <div className="ctrls">
                   {isPlaying && (
                     <button
                       className="btn btn--icon btn--primary"

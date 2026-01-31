@@ -1,7 +1,7 @@
 /* src/styles/breathing-circle.css */
 /* Breathing Circle - Uses CSS variables for phase colors */
 
-.breathing-container {
+.breath {
     position: relative;
     width: 280px;
     height: 280px;
@@ -17,37 +17,37 @@
 }
 
 /* Phase-specific colors - using global CSS variables */
-.breathing-container.phase-breathe {
+.breath.phase-breathe {
     --circle-primary: var(--phase-breathe-primary);
     --circle-secondary: var(--phase-breathe-secondary);
     --circle-glow: var(--phase-breathe-glow);
 }
 
-.breathing-container.phase-hold {
+.breath.phase-hold {
     --circle-primary: var(--phase-hold-primary);
     --circle-secondary: var(--phase-hold-secondary);
     --circle-glow: var(--phase-hold-glow);
 }
 
-.breathing-container.phase-pause {
+.breath.phase-pause {
     --circle-primary: var(--phase-pause-primary);
     --circle-secondary: var(--phase-pause-secondary);
     --circle-glow: var(--phase-pause-glow);
 }
 
-.breathing-container.phase-intro {
+.breath.phase-intro {
     --circle-primary: var(--phase-intro-primary);
     --circle-secondary: var(--phase-intro-secondary);
     --circle-glow: var(--phase-intro-glow);
 }
 
-.breathing-container.phase-outro {
+.breath.phase-outro {
     --circle-primary: var(--phase-outro-primary);
     --circle-secondary: var(--phase-outro-secondary);
     --circle-glow: var(--phase-outro-glow);
 }
 
-.breathing-circle {
+.breath-circ {
     width: 160px;
     height: 160px;
     border-radius: 50%;
@@ -69,7 +69,7 @@
     animation: breathe-idle 6s ease-in-out infinite;
 }
 
-.breathing-circle.active {
+.breath-circ.active {
     opacity: 1;
     filter: none;
     animation: breathe-active 4s ease-in-out infinite;
@@ -99,7 +99,7 @@
     }
 }
 
-.breathing-circle.reactive {
+.breath-circ.reactive {
     opacity: 1;
     filter: none;
     animation: none;
@@ -113,19 +113,19 @@
 }
 
 /* Inner elements also respond when reactive */
-.breathing-circle.reactive .breathing-inner {
+.breath-circ.reactive .breath-in {
     transition: transform 0.04s linear;
     will-change: transform;
 }
 
-.breathing-circle.reactive .breathing-core {
+.breath-circ.reactive .breath-core {
     transition:
         transform 0.03s linear,
         box-shadow 0.05s linear;
     will-change: transform, box-shadow;
 }
 
-.breathing-inner {
+.breath-in {
     width: 80%;
     height: 80%;
     border-radius: 50%;
@@ -136,7 +136,7 @@
     justify-content: center;
 }
 
-.breathing-core {
+.breath-core {
     width: 60%;
     height: 60%;
     border-radius: 50%;
@@ -152,7 +152,7 @@
         box-shadow 0.4s ease;
 }
 
-.breathing-rings {
+.rings {
     position: absolute;
     inset: 0;
     pointer-events: none;
@@ -196,7 +196,7 @@
    OVERLAY CONTENT (text on top of circle)
    ============================================ */
 
-.circle-overlay-content {
+.circ-ovl {
     position: absolute;
     inset: 0;
     display: flex;
@@ -208,72 +208,44 @@
     gap: var(--space-2, 0.5rem);
 }
 
-.circle-overlay-content button {
+.circ-ovl button {
     pointer-events: auto;
     cursor: pointer;
 }
 
-.overlay-phase {
+.phase {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--space-1, 4px);
 }
 
-.overlay-phase-label {
+.phase-lbl {
     font-size: var(--text-2xs, 0.75rem);
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--text-primary);
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+    color: var(--text);
 }
 
-.overlay-phase-time {
+.phase-time {
     font-family: var(--font-sans, system-ui);
     font-size: var(--text-xl, 2rem);
     font-weight: 300;
     font-variant-numeric: tabular-nums;
     line-height: 1;
-    color: var(--text-primary);
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
-}
-
-/* Phase-specific text colors - using global CSS variables */
-.phase-breathe .overlay-phase-label,
-.phase-breathe .overlay-phase-time {
-    color: var(--phase-breathe-text);
-}
-
-.phase-hold .overlay-phase-label,
-.phase-hold .overlay-phase-time {
-    color: var(--phase-hold-text);
-}
-
-.phase-pause .overlay-phase-label,
-.phase-pause .overlay-phase-time {
-    color: var(--phase-pause-text);
-}
-
-.phase-intro .overlay-phase-label,
-.phase-intro .overlay-phase-time {
-    color: var(--phase-intro-text);
-}
-
-.phase-outro .overlay-phase-label,
-.phase-outro .overlay-phase-time {
-    color: var(--phase-outro-text);
+    color: var(--text);
 }
 
 /* Mobile */
 @media (max-width: 640px) {
-    .breathing-container {
+    .breath {
         width: 200px;
         height: 200px;
         flex-shrink: 0;
     }
 
-    .breathing-circle {
+    .breath-circ {
         width: 120px;
         height: 120px;
     }
@@ -281,12 +253,12 @@
 
 /* Extra small screens */
 @media (max-width: 380px) {
-    .breathing-container {
+    .breath {
         width: 160px;
         height: 160px;
     }
 
-    .breathing-circle {
+    .breath-circ {
         width: 100px;
         height: 100px;
     }

@@ -14,17 +14,17 @@ export function AboutPage() {
 
   if (language === "ru") {
     return (
-      <div className="app-container">
+      <div className="wrap">
         <TopBar showBack onBack={handleBack} />
 
-        <main className="app-content">
-          <article className="about-content">
-            <header className="app-header">
-              <BreathingIcon className="app-icon" />
+        <main className="main">
+          <article className="abt">
+            <header className="hdr">
+              <BreathingIcon className="ico" />
               <h1>О методе Вим Хофа</h1>
             </header>
 
-            <section className="about-section">
+            <section className="abt-sec">
               <h2>Что такое метод Вим Хофа?</h2>
               <p>
                 Метод Вим Хофа — это техника дыхания, разработанная голландцем
@@ -40,7 +40,7 @@ export function AboutPage() {
               </p>
             </section>
 
-            <section className="about-section">
+            <section className="abt-sec">
               <h2>Как выполнять дыхание по Вим Хофу</h2>
               <ol>
                 <li>Примите удобную позу сидя или лёжа</li>
@@ -63,21 +63,21 @@ export function AboutPage() {
               </ol>
             </section>
 
-            <section className="about-section">
+            <section className="abt-sec">
               <h2>Возможные эффекты</h2>
               <ul>
                 <li>Покалывание в теле, особенно в пальцах рук и ног</li>
                 <li>Лёгкое головокружение</li>
                 <li>Ощущение эйфории и спокойствия после практики</li>
               </ul>
-              <p className="about-warning">
+              <p className="abt-warn">
                 <strong>Важно:</strong> Никогда не выполняйте эту технику за
                 рулём, в воде или в любой ситуации, где потеря сознания может
                 быть опасна.
               </p>
             </section>
 
-            <section className="about-section">
+            <section className="abt-sec">
               <h2>Заявленные преимущества</h2>
               <ul>
                 <li>Повышение уровня энергии</li>
@@ -88,7 +88,7 @@ export function AboutPage() {
               </ul>
             </section>
 
-            <section className="about-section about-faq">
+            <section className="abt-sec abt-faq">
               <h2>Часто задаваемые вопросы</h2>
 
               <details>
@@ -137,7 +137,7 @@ export function AboutPage() {
               </details>
             </section>
 
-            <footer className="about-footer">
+            <footer className="abt-ftr">
               <p>
                 Это приложение — некоммерческий проект для совместных
                 дыхательных практик. Аудио-инструкции принадлежат их авторам.
@@ -151,17 +151,17 @@ export function AboutPage() {
 
   // English version
   return (
-    <div className="app-container">
+    <div className="wrap">
       <TopBar showBack onBack={handleBack} />
 
-      <main className="app-content">
-        <article className="about-content">
-          <header className="app-header">
-              <BreathingIcon className="app-icon" />
+      <main className="main">
+        <article className="abt">
+          <header className="hdr">
+              <BreathingIcon className="ico" />
             <h1>About Wim Hof Method</h1>
           </header>
 
-          <section className="about-section">
+          <section className="abt-sec">
             <h2>What is the Wim Hof Method?</h2>
             <p>
               The Wim Hof Method is a breathing technique developed by Dutch
@@ -176,7 +176,7 @@ export function AboutPage() {
             </p>
           </section>
 
-          <section className="about-section">
+          <section className="abt-sec">
             <h2>How to Do Wim Hof Breathing</h2>
             <ol>
               <li>Get into a comfortable position, sitting or lying down</li>
@@ -199,21 +199,21 @@ export function AboutPage() {
             </ol>
           </section>
 
-          <section className="about-section">
+          <section className="abt-sec">
             <h2>Possible Effects</h2>
             <ul>
               <li>Tingling sensations, especially in fingers and toes</li>
               <li>Light-headedness or dizziness</li>
               <li>Feelings of euphoria and calm after practice</li>
             </ul>
-            <p className="about-warning">
+            <p className="abt-warn">
               <strong>Important:</strong> Never practice while driving, in
               water, or in any situation where losing consciousness could be
               dangerous.
             </p>
           </section>
 
-          <section className="about-section">
+          <section className="abt-sec">
             <h2>Claimed Benefits</h2>
             <ul>
               <li>Increased energy levels</li>
@@ -224,7 +224,7 @@ export function AboutPage() {
             </ul>
           </section>
 
-          <section className="about-section about-faq">
+          <section className="abt-sec abt-faq">
             <h2>Frequently Asked Questions</h2>
 
             <details>
@@ -273,7 +273,7 @@ export function AboutPage() {
             </details>
           </section>
 
-          <footer className="about-footer">
+          <footer className="abt-ftr">
             <p>
               This app is a non-commercial project for group breathing sessions.
               Audio instructions belong to their respective authors.
