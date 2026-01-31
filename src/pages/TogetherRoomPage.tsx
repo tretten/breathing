@@ -25,6 +25,7 @@ import {
   POST_SESSION_CHAT_MS,
   getAudioUrl,
 } from "../utils/constants";
+import { formatSeconds } from "../utils/helpers";
 import { BreathingCircle } from "../components/BreathingCircle";
 import { CountdownOverlay } from "../components/CountdownOverlay";
 import { TopBar } from "../components/TopBar";
@@ -650,7 +651,7 @@ export function TogetherRoomPage() {
                         : ""}
                   </span>
                   <span className="overlay-phase-time">
-                    {!hasAudioEnded && phaseRemaining > 0 ? phaseRemaining : ""}
+                    {!hasAudioEnded && phaseRemaining > 0 ? formatSeconds(phaseRemaining) : ""}
                   </span>
                 </div>
                 {/* Support author button during outro or when finished */}

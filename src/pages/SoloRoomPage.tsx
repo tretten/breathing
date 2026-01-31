@@ -301,7 +301,7 @@ export function SoloRoomPage() {
                         : ""}
                   </span>
                   <span className="overlay-phase-time">
-                    {!hasAudioEnded && phaseRemaining > 0 ? phaseRemaining : ""}
+                    {!hasAudioEnded && phaseRemaining > 0 ? formatSeconds(phaseRemaining) : ""}
                   </span>
                 </div>
                 {/* Support author button during outro or when finished */}
