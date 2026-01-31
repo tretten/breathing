@@ -544,10 +544,10 @@ export function TogetherRoomPage() {
           ready: "I'm Ready",
           notReady: "Cancel",
           waiting: "Waiting...",
-          loading: "Wait...",
+          loading: "Loading...",
           readyLabel: "ready",
           sessionEnd: "Remaining",
-          exit: "Back",
+          exit: "Exit",
           join: "Join the session",
           sessionInProgress: "In progress",
           tooLate: "Session already started",
@@ -559,10 +559,10 @@ export function TogetherRoomPage() {
           ready: "Я Готов",
           notReady: "Отмена",
           waiting: "Ожидание...",
-          loading: "Ждите",
+          loading: "Загрузка...",
           readyLabel: "готовы",
           sessionEnd: "Осталось",
-          exit: "Назад",
+          exit: "Выход",
           join: "Присоединиться",
           sessionInProgress: "Идёт сеанс",
           tooLate: "Сессия уже началась",
@@ -584,7 +584,7 @@ export function TogetherRoomPage() {
   return (
     <div className="app-container">
       {roomStatus === "countdown" && countdownSeconds > 0 && (
-        <CountdownOverlay seconds={countdownSeconds} />
+        <CountdownOverlay seconds={countdownSeconds} language={language} />
       )}
 
       <TopBar showBack onBack={handleBack} />
@@ -637,16 +637,16 @@ export function TogetherRoomPage() {
                           ? {
                               breathe: "Дыши",
                               hold: "Держи",
-                              pause: "Пауза",
+                              pause: "Отдых",
                               intro: "Начало",
-                              outro: "Конец",
+                              outro: "Завершение",
                             }[currentPhase]
                           : {
                               breathe: "Breathe",
                               hold: "Hold",
-                              pause: "Pause",
-                              intro: "Intro",
-                              outro: "Outro",
+                              pause: "Rest",
+                              intro: "Starting",
+                              outro: "Finishing",
                             }[currentPhase]
                         : ""}
                   </span>
@@ -695,6 +695,7 @@ export function TogetherRoomPage() {
                     isMuted={isMuted}
                     isSpeaking={isSpeaking}
                     disabled={isRoomFull && !isVoiceEnabled}
+                    language={language}
                     onToggle={handleVoiceToggle}
                   />
                   <button
@@ -728,6 +729,7 @@ export function TogetherRoomPage() {
                         isVoiceEnabled={isVoiceEnabled}
                         isMuted={isMuted}
                         isSpeaking={isSpeaking}
+                        language={language}
                         onToggle={toggleMute}
                       />
                     )}
@@ -775,6 +777,7 @@ export function TogetherRoomPage() {
                     isMuted={isMuted}
                     isSpeaking={isSpeaking}
                     disabled={isRoomFull && !isVoiceEnabled}
+                    language={language}
                     onToggle={handleVoiceToggle}
                   />
                   <button
@@ -796,6 +799,7 @@ export function TogetherRoomPage() {
                     isMuted={isMuted}
                     isSpeaking={isSpeaking}
                     disabled={isRoomFull && !isVoiceEnabled}
+                    language={language}
                     onToggle={handleVoiceToggle}
                   />
                   <button

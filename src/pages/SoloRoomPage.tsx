@@ -202,22 +202,22 @@ export function SoloRoomPage() {
     language === "en"
       ? {
           title: "Solo",
-          loading: "Wait...",
+          loading: "Loading...",
           sessionEnd: "Remaining",
           stop: "Stop",
           pause: "Pause",
-          resume: "Play",
+          resume: "Resume",
           paused: "Paused",
           done: "Done",
           supportAuthor: "Support Author",
         }
       : {
           title: "Соло",
-          loading: "Ждите",
+          loading: "Загрузка...",
           sessionEnd: "Осталось",
           stop: "Стоп",
           pause: "Пауза",
-          resume: "Плей",
+          resume: "Продолжить",
           paused: "Пауза",
           done: "Готово",
           supportAuthor: "Поддержать автора",
@@ -230,7 +230,9 @@ export function SoloRoomPage() {
         <TopBar showBack onBack={handleBack} />
         <main className="app-content">
           <div className="content-centered">
-            <div className="loading">...</div>
+            <div className="loading">
+              {language === "ru" ? "Загрузка..." : "Loading..."}
+            </div>
           </div>
         </main>
       </div>
@@ -240,7 +242,7 @@ export function SoloRoomPage() {
   return (
     <div className="app-container">
       {status === "countdown" && countdownSeconds > 0 && (
-        <CountdownOverlay seconds={countdownSeconds} />
+        <CountdownOverlay seconds={countdownSeconds} language={language} />
       )}
 
       <TopBar showBack onBack={handleBack} />
@@ -287,16 +289,16 @@ export function SoloRoomPage() {
                           ? {
                               breathe: "Дыши",
                               hold: "Держи",
-                              pause: "Пауза",
+                              pause: "Отдых",
                               intro: "Начало",
-                              outro: "Конец",
+                              outro: "Завершение",
                             }[currentPhase]
                           : {
                               breathe: "Breathe",
                               hold: "Hold",
-                              pause: "Pause",
-                              intro: "Intro",
-                              outro: "Outro",
+                              pause: "Rest",
+                              intro: "Starting",
+                              outro: "Finishing",
                             }[currentPhase]
                         : ""}
                   </span>

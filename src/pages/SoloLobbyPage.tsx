@@ -38,6 +38,7 @@ export function SoloLobbyPage() {
       ? {
           title: "Solo",
           subtitle: "Choose preset",
+          loading: "Loading...",
           error: "Failed to load presets",
           retry: "Retry",
           empty: "No presets available",
@@ -45,6 +46,7 @@ export function SoloLobbyPage() {
       : {
           title: "Соло",
           subtitle: "Выбери пресет",
+          loading: "Загрузка...",
           error: "Не удалось загрузить пресеты",
           retry: "Повторить",
           empty: "Нет доступных пресетов",
@@ -71,7 +73,7 @@ export function SoloLobbyPage() {
           </header>
 
           {isLoading ? (
-            <div className="loading">...</div>
+            <div className="loading">{texts.loading}</div>
           ) : error ? (
             <div className="error-state">
               <p>{texts.error}</p>

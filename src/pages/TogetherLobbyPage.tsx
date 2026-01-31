@@ -95,6 +95,7 @@ export function TogetherLobbyPage() {
       ? {
           title: "Together",
           subtitle: "Choose preset",
+          loading: "Loading...",
           live: "Live",
           error: "Failed to load presets",
           retry: "Retry",
@@ -103,6 +104,7 @@ export function TogetherLobbyPage() {
       : {
           title: "Вместе",
           subtitle: "Выбери пресет",
+          loading: "Загрузка...",
           live: "Live",
           error: "Не удалось загрузить пресеты",
           retry: "Повторить",
@@ -130,7 +132,7 @@ export function TogetherLobbyPage() {
           </header>
 
           {isLoading ? (
-            <div className="loading">...</div>
+            <div className="loading">{texts.loading}</div>
           ) : error ? (
             <div className="error-state">
               <p>{texts.error}</p>

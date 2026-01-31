@@ -8,6 +8,7 @@ interface VoiceChatButtonProps {
   isMuted: boolean;
   isSpeaking: boolean;
   disabled?: boolean;
+  language?: "en" | "ru";
   onToggle: () => void;
 }
 
@@ -57,6 +58,7 @@ export function VoiceChatButton({
   isMuted,
   isSpeaking,
   disabled = false,
+  language = "en",
   onToggle,
 }: VoiceChatButtonProps) {
   const getClassName = () => {
@@ -77,9 +79,13 @@ export function VoiceChatButton({
   };
 
   const getAriaLabel = () => {
-    if (!isVoiceEnabled) return 'Enable voice chat';
-    if (isMuted) return 'Unmute microphone';
-    return 'Mute microphone';
+    if (!isVoiceEnabled) {
+      return language === "ru" ? "Включить голосовой чат" : "Enable voice chat";
+    }
+    if (isMuted) {
+      return language === "ru" ? "Включить микрофон" : "Unmute microphone";
+    }
+    return language === "ru" ? "Выключить микрофон" : "Mute microphone";
   };
 
   return (

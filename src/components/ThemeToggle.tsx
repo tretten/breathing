@@ -1,8 +1,10 @@
 // src/components/ThemeToggle.tsx
 import { useState, useEffect } from "react";
+import { useAppContext } from "../context/AppContext";
 import { STORAGE_KEY_THEME } from "../utils/storageKeys";
 
 export function ThemeToggle() {
+  const { language } = useAppContext();
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY_THEME);
     if (saved) return saved === "dark";
@@ -18,7 +20,14 @@ export function ThemeToggle() {
     localStorage.setItem(STORAGE_KEY_THEME, isDark ? "dark" : "light");
   }, [isDark]);
 
-  const label = isDark ? "Switch to light mode" : "Switch to dark mode";
+  const label =
+    language === "ru"
+      ? isDark
+        ? "Светлая тема"
+        : "Тёмная тема"
+      : isDark
+        ? "Switch to light mode"
+        : "Switch to dark mode";
 
   return (
     <button
