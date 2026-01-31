@@ -1,25 +1,35 @@
 // src/pages/SoloRoomPage.tsx
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
-import { useAudioPlayback, usePhaseCues, useOfflinePresets } from "../hooks";
+import {
+  useAudioPlayback,
+  usePhaseCues,
+  useOfflinePresets,
+  useContentIndex,
+} from "../hooks";
+import { isValidPreset } from "../hooks/useContentIndex";
 import { COUNTDOWN_DURATION_MS, getAudioUrl } from "../utils/constants";
 import { formatSeconds } from "../utils/helpers";
 import { getCueUrlFromAudioUrl } from "../utils/phaseCues";
 import { BreathingCircle } from "../components/BreathingCircle";
-import { PresetSelector } from "../components/PresetSelector";
 import { CountdownOverlay } from "../components/CountdownOverlay";
 import { TopBar } from "../components/TopBar";
 import { PageFooter } from "../components/PageFooter";
-import { MeditationIcon } from "../components/Icons";
 
 type RoomStatus = "idle" | "countdown" | "playing";
 
 export function SoloRoomPage() {
   const navigate = useNavigate();
+  const { presetId: presetIdParam } = useParams<{ presetId: string }>();
   const { language } = useAppContext();
+  const { soloPresets, isLoading: isLoadingPresets } = useContentIndex();
 
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  // Validate preset ID
+  const validPresetId = isValidPreset(presetIdParam, soloPresets)
+    ? presetIdParam
+    : null;
+
   const [status, setStatus] = useState<RoomStatus>("idle");
   const [countdownSeconds, setCountdownSeconds] = useState(0);
   const [presetTitle, setPresetTitle] = useState<string>("");
@@ -27,7 +37,7 @@ export function SoloRoomPage() {
   const hasStartedPlayingRef = useRef(false);
   const audioDidPlayRef = useRef(false);
 
-  const audioUrl = selectedPreset ? getAudioUrl(selectedPreset) : null;
+  const audioUrl = validPresetId ? getAudioUrl(validPresetId) : null;
 
   const {
     isLoaded,
@@ -40,7 +50,7 @@ export function SoloRoomPage() {
     resumePlayback,
     stopPlayback,
     getCurrentTime,
-  } = useAudioPlayback(audioUrl, { presetId: selectedPreset, language });
+  } = useAudioPlayback(audioUrl, { presetId: validPresetId, language });
 
   // Phase cues for displaying Breathe/Pause/Hold (keep active during pause)
   const { currentPhase, phaseRemaining, authorUrl } = usePhaseCues(
@@ -51,14 +61,23 @@ export function SoloRoomPage() {
 
   // Offline status
   const { isPresetCached, cachePreset } = useOfflinePresets();
-  const isCurrentPresetCached = selectedPreset ? isPresetCached(selectedPreset) : false;
+  const isCurrentPresetCached = validPresetId
+    ? isPresetCached(validPresetId)
+    : false;
+
+  // Redirect to lobby if preset is invalid (after presets have loaded)
+  useEffect(() => {
+    if (!isLoadingPresets && soloPresets.length > 0 && !validPresetId) {
+      navigate("/solo", { replace: true });
+    }
+  }, [isLoadingPresets, soloPresets.length, validPresetId, navigate]);
 
   // Cache preset for offline use when playback starts
   useEffect(() => {
-    if (isPlaying && selectedPreset && !isCurrentPresetCached) {
-      cachePreset(selectedPreset);
+    if (isPlaying && validPresetId && !isCurrentPresetCached) {
+      cachePreset(validPresetId);
     }
-  }, [isPlaying, selectedPreset, isCurrentPresetCached, cachePreset]);
+  }, [isPlaying, validPresetId, isCurrentPresetCached, cachePreset]);
 
   // Fetch preset title from JSON cue file
   useEffect(() => {
@@ -67,22 +86,28 @@ export function SoloRoomPage() {
       return;
     }
 
+    const controller = new AbortController();
+
     const fetchTitle = async () => {
       const jsonUrl = getCueUrlFromAudioUrl(audioUrl);
       try {
-        const response = await fetch(jsonUrl);
+        const response = await fetch(jsonUrl, { signal: controller.signal });
         const data = await response.json();
         setPresetTitle(
           language === "ru"
             ? data.titleRu || data.title || ""
             : data.title || "",
         );
-      } catch {
-        setPresetTitle("");
+      } catch (error) {
+        if (error instanceof Error && error.name !== "AbortError") {
+          setPresetTitle("");
+        }
       }
     };
 
     fetchTitle();
+
+    return () => controller.abort();
   }, [audioUrl, language]);
 
   // Run countdown timer
@@ -90,18 +115,18 @@ export function SoloRoomPage() {
     if (status !== "countdown") return;
 
     const interval = setInterval(() => {
-      setCountdownSeconds((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          setStatus("playing");
-          return 0;
-        }
-        return prev - 1;
-      });
+      setCountdownSeconds((prev) => prev - 1);
     }, 1000);
 
     return () => clearInterval(interval);
   }, [status]);
+
+  // Transition to playing when countdown reaches 0
+  useEffect(() => {
+    if (status === "countdown" && countdownSeconds <= 0) {
+      setStatus("playing");
+    }
+  }, [status, countdownSeconds]);
 
   // Play audio when countdown reaches 0
   useEffect(() => {
@@ -128,11 +153,37 @@ export function SoloRoomPage() {
     }
   }, [isPlaying, isPaused]);
 
-  // When audio finishes playing naturally, stay on the page (don't auto-close)
-  // User can manually go back or select another preset
+  // Auto-start when audio is loaded
+  const hasAutoStartedRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      status !== "idle" ||
+      !validPresetId ||
+      !isLoaded ||
+      hasAutoStartedRef.current
+    ) {
+      return;
+    }
+
+    hasAutoStartedRef.current = true;
+
+    const startSession = async () => {
+      try {
+        await unlockAudio();
+        setStatus("countdown");
+        setCountdownSeconds(COUNTDOWN_DURATION_MS / 1000);
+      } catch (error) {
+        console.error("Failed to unlock audio:", error);
+        hasAutoStartedRef.current = false;
+      }
+    };
+
+    startSession();
+  }, [status, validPresetId, isLoaded, unlockAudio]);
 
   const handleBack = useCallback(() => {
-    navigate("/");
+    navigate("/solo");
   }, [navigate]);
 
   const handleSupportAuthor = useCallback(() => {
@@ -141,47 +192,16 @@ export function SoloRoomPage() {
     }
   }, [authorUrl]);
 
-  const handlePresetChange = useCallback(
-    (preset: string) => {
-      if (status !== "idle") return;
-      setSelectedPreset(preset);
-      setHasAudioEnded(false);
-      hasStartedPlayingRef.current = false;
-      audioDidPlayRef.current = false;
-    },
-    [status],
-  );
-
-  // Auto-start when audio is loaded after preset selection
-  useEffect(() => {
-    if (status !== "idle" || !selectedPreset || !isLoaded) return;
-
-    const startSession = async () => {
-      await unlockAudio();
-      setStatus("countdown");
-      setCountdownSeconds(COUNTDOWN_DURATION_MS / 1000);
-    };
-
-    startSession();
-  }, [status, selectedPreset, isLoaded, unlockAudio]);
-
   const handleStop = useCallback(() => {
     stopPlayback();
-    setStatus("idle");
-    setSelectedPreset(null);
-    setHasAudioEnded(false);
-    hasStartedPlayingRef.current = false;
-    audioDidPlayRef.current = false;
-  }, [stopPlayback]);
-
-  const canChangePreset = status === "idle";
+    navigate("/solo");
+  }, [stopPlayback, navigate]);
 
   // Text based on language
   const texts =
     language === "en"
       ? {
           title: "Solo",
-          subtitle: "Choose a preset",
           loading: "Wait...",
           sessionEnd: "Remaining",
           stop: "Stop",
@@ -193,7 +213,6 @@ export function SoloRoomPage() {
         }
       : {
           title: "Соло",
-          subtitle: "Выбери пресет",
           loading: "Ждите",
           sessionEnd: "Осталось",
           stop: "Стоп",
@@ -203,6 +222,20 @@ export function SoloRoomPage() {
           done: "Готово",
           supportAuthor: "Поддержать автора",
         };
+
+  // Show loading while checking preset validity
+  if (isLoadingPresets || soloPresets.length === 0) {
+    return (
+      <div className="app-container">
+        <TopBar showBack onBack={handleBack} />
+        <main className="app-content">
+          <div className="content-centered">
+            <div className="loading">...</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="app-container">
@@ -215,82 +248,78 @@ export function SoloRoomPage() {
       <main className="app-content">
         <div className="content-centered">
           <header className="app-header">
-            {status === "idle" && <MeditationIcon className="app-icon" />}
             <h1>{texts.title}</h1>
             <h4 className="subtitle">
               {isCurrentPresetCached && (
-                <span className="offline-indicator" title={language === "ru" ? "Доступен офлайн" : "Available offline"}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <span
+                  className="offline-indicator"
+                  title={
+                    language === "ru" ? "Доступен офлайн" : "Available offline"
+                  }
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                     <polyline points="22 4 12 14.01 9 11.01" />
                   </svg>
                 </span>
               )}
-              {presetTitle || texts.subtitle}
+              {presetTitle || texts.loading}
             </h4>
           </header>
 
-          {status !== "idle" && (
-            <BreathingCircle
-              isActive={isPlaying || isPaused}
-              phase={currentPhase}
-            >
-              {/* Phase info - displayed as overlay on the circle */}
-              {(isPlaying || isPaused || hasAudioEnded) && (
-                <div className="circle-overlay-content">
-                  <div className="overlay-phase">
-                    <span className="overlay-phase-label">
-                      {hasAudioEnded
-                        ? texts.done
-                        : currentPhase
-                          ? language === "ru"
-                            ? {
-                                breathe: "Дыши",
-                                hold: "Держи",
-                                pause: "Пауза",
-                                intro: "Начало",
-                                outro: "Конец",
-                              }[currentPhase]
-                            : {
-                                breathe: "Breathe",
-                                hold: "Hold",
-                                pause: "Pause",
-                                intro: "Intro",
-                                outro: "Outro",
-                              }[currentPhase]
-                          : ""}
-                    </span>
-                    <span className="overlay-phase-time">
-                      {!hasAudioEnded && phaseRemaining > 0 ? phaseRemaining : ""}
-                    </span>
-                  </div>
-                  {/* Support author button during outro or when finished */}
-                  {(currentPhase === "outro" || hasAudioEnded) && authorUrl && (
-                    <button
-                      className="btn btn--accent btn--lg"
-                      onClick={handleSupportAuthor}
-                    >
-                      {texts.supportAuthor}
-                    </button>
-                  )}
+          <BreathingCircle isActive={isPlaying || isPaused} phase={currentPhase}>
+            {/* Phase info - displayed as overlay on the circle */}
+            {(isPlaying || isPaused || hasAudioEnded) && (
+              <div className="circle-overlay-content">
+                <div className="overlay-phase">
+                  <span className="overlay-phase-label">
+                    {hasAudioEnded
+                      ? texts.done
+                      : currentPhase
+                        ? language === "ru"
+                          ? {
+                              breathe: "Дыши",
+                              hold: "Держи",
+                              pause: "Пауза",
+                              intro: "Начало",
+                              outro: "Конец",
+                            }[currentPhase]
+                          : {
+                              breathe: "Breathe",
+                              hold: "Hold",
+                              pause: "Pause",
+                              intro: "Intro",
+                              outro: "Outro",
+                            }[currentPhase]
+                        : ""}
+                  </span>
+                  <span className="overlay-phase-time">
+                    {!hasAudioEnded && phaseRemaining > 0 ? phaseRemaining : ""}
+                  </span>
                 </div>
-              )}
-            </BreathingCircle>
-          )}
+                {/* Support author button during outro or when finished */}
+                {(currentPhase === "outro" || hasAudioEnded) && authorUrl && (
+                  <button
+                    className="btn btn--accent btn--lg"
+                    onClick={handleSupportAuthor}
+                  >
+                    {texts.supportAuthor}
+                  </button>
+                )}
+              </div>
+            )}
+          </BreathingCircle>
 
           <div className="room-info">
-            {status === "idle" && (
-              <>
-                <PresetSelector
-                  selected={selectedPreset}
-                  onChange={handlePresetChange}
-                  disabled={!canChangePreset}
-                />
-
-                {selectedPreset && !isLoaded && (
-                  <p className="waiting-message">{texts.loading}</p>
-                )}
-              </>
+            {status === "idle" && !isLoaded && (
+              <p className="waiting-message">{texts.loading}</p>
             )}
 
             {status === "countdown" && (
@@ -357,10 +386,9 @@ export function SoloRoomPage() {
                 </div>
               </div>
             )}
-
           </div>
 
-          {status === "idle" && <PageFooter />}
+          {(status === "idle" || hasAudioEnded) && <PageFooter />}
         </div>
       </main>
     </div>

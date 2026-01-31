@@ -2,6 +2,7 @@
 import { Routes, Route } from "react-router-dom";
 import { AppProvider } from "./context/AppContext";
 import { RoomListPage } from "./pages/RoomListPage";
+import { SoloLobbyPage } from "./pages/SoloLobbyPage";
 import { SoloRoomPage } from "./pages/SoloRoomPage";
 import { TogetherLobbyPage } from "./pages/TogetherLobbyPage";
 import { TogetherRoomPage } from "./pages/TogetherRoomPage";
@@ -25,7 +26,8 @@ function App() {
       <div className="app">
         <Routes>
           <Route path="/" element={<RoomListPage />} />
-          <Route path="/solo/" element={<SoloRoomPage />} />
+          <Route path="/solo" element={<SoloLobbyPage />} />
+          <Route path="/solo/:presetId" element={<SoloRoomPage />} />
           <Route path="/room" element={<TogetherLobbyPage />} />
           <Route path="/room/:presetId" element={<TogetherRoomPage />} />
           <Route path="/about" element={<AboutPage />} />
