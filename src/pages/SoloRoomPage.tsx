@@ -176,6 +176,8 @@ export function SoloRoomPage() {
       } catch (error) {
         console.error("Failed to unlock audio:", error);
         hasAutoStartedRef.current = false;
+        // Reset status to trigger re-attempt
+        setStatus("idle");
       }
     };
 
@@ -251,7 +253,7 @@ export function SoloRoomPage() {
         <div className="center">
           <header className="hdr">
             <h1>{texts.title}</h1>
-            <h4 className="subtitle">
+            <p className="subtitle">
               {isCurrentPresetCached && (
                 <span
                   className="offline-ico"
@@ -260,6 +262,7 @@ export function SoloRoomPage() {
                   }
                 >
                   <svg
+                    aria-hidden="true"
                     width="14"
                     height="14"
                     viewBox="0 0 24 24"
@@ -273,7 +276,7 @@ export function SoloRoomPage() {
                 </span>
               )}
               {presetTitle || texts.loading}
-            </h4>
+            </p>
           </header>
 
           <BreathingCircle isActive={isPlaying || isPaused} phase={currentPhase}>

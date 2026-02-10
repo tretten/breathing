@@ -90,11 +90,11 @@ export function VoiceChatButton({
 
   return (
     <button
+      type="button"
       className={getClassName()}
       onClick={onToggle}
       disabled={disabled}
       aria-label={getAriaLabel()}
-      aria-pressed={isVoiceEnabled && !isMuted}
     >
       {!isVoiceEnabled || isMuted ? (
         <MicOffIcon size={20} />

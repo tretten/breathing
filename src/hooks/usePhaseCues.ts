@@ -46,9 +46,10 @@ export function usePhaseCues(
       return;
     }
 
+    const controller = new AbortController();
     const cueUrl = getCueUrlFromAudioUrl(audioUrl);
 
-    fetch(cueUrl, { cache: 'no-store' })
+    fetch(cueUrl, { cache: 'no-store', signal: controller.signal })
       .then((response) => {
         if (!response.ok) {
           throw new Error('Cue file not found');
@@ -61,12 +62,15 @@ export function usePhaseCues(
         setAuthorUrl(parsed.authorUrl);
         setIsLoaded(true);
       })
-      .catch(() => {
+      .catch((error) => {
+        if (error instanceof Error && error.name === 'AbortError') return;
         // No cue file - that's OK
         setCues([]);
         setAuthorUrl(null);
         setIsLoaded(true);
       });
+
+    return () => controller.abort();
   }, [audioUrl]);
 
   // Update current phase based on playback position

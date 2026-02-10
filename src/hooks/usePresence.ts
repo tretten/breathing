@@ -42,6 +42,7 @@ export function usePresence(
       return;
     }
 
+    let isMounted = true;
     const myRef = ref(db, `rooms/${roomPath}/online/${clientId}`);
     const onlineRef = ref(db, `rooms/${roomPath}/online`);
 
@@ -50,6 +51,8 @@ export function usePresence(
       try {
         // Get current entries
         const snapshot = await get(onlineRef);
+        if (!isMounted) return;
+
         const data = snapshot.val() as Record<string, ClientPresence> | null;
 
         if (data) {
@@ -71,6 +74,8 @@ export function usePresence(
       } catch (e) {
         console.warn('Failed to cleanup stale presence entries:', e);
       }
+
+      if (!isMounted) return;
 
       // Register presence with initial data (including voice name)
       const presenceData: ClientPresence = {
@@ -114,6 +119,7 @@ export function usePresence(
 
     // Cleanup on unmount
     return () => {
+      isMounted = false;
       unsubscribe();
       remove(myRef);
     };

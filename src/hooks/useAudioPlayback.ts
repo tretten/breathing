@@ -42,12 +42,15 @@ export function useAudioPlayback(
   // HTML5 Audio element for reliable iOS playback
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
+  // Scheduled playback timeout for cleanup
+  const scheduledTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Create audio element
   useEffect(() => {
     const audio = new Audio();
     audio.preload = 'auto';
-    (audio as any).playsInline = true; // Important for iOS
-    (audio as any).webkitPlaysinline = true; // Safari
+    audio.setAttribute('playsinline', ''); // Important for iOS
+    audio.setAttribute('webkit-playsinline', ''); // Safari
     audioElementRef.current = audio;
 
     // Event handlers
@@ -92,6 +95,10 @@ export function useAudioPlayback(
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.pause();
       audio.src = '';
+      if (scheduledTimeoutRef.current) {
+        clearTimeout(scheduledTimeoutRef.current);
+        scheduledTimeoutRef.current = null;
+      }
     };
   }, []);
 
@@ -156,7 +163,12 @@ export function useAudioPlayback(
       return false;
     }
 
-    setTimeout(() => {
+    if (scheduledTimeoutRef.current) {
+      clearTimeout(scheduledTimeoutRef.current);
+    }
+
+    scheduledTimeoutRef.current = setTimeout(() => {
+      scheduledTimeoutRef.current = null;
       if (audioElementRef.current) {
         audioElementRef.current.currentTime = 0;
         audioElementRef.current.play().then(() => {

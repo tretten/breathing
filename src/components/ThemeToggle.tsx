@@ -8,8 +8,8 @@ export function ThemeToggle() {
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY_THEME);
     if (saved) return saved === "dark";
-    // Default to dark theme
-    return true;
+    // Match index.html: respect prefers-color-scheme, fallback to dark
+    return !window.matchMedia("(prefers-color-scheme: light)").matches;
   });
 
   useEffect(() => {

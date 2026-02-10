@@ -63,6 +63,8 @@ export function useVoiceChat({
   const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const isMutedRef = useRef(isMuted);
+  isMutedRef.current = isMuted;
   const [error, setError] = useState<string | null>(null);
   const [voiceName] = useState(() => getOrCreateVoiceName());
 
@@ -129,6 +131,25 @@ export function useVoiceChat({
     [roomId, clientId],
   );
 
+  // Close peer connection
+  const closePeerConnection = useCallback((remoteClientId: string) => {
+    const peerData = peerConnectionsRef.current.get(remoteClientId);
+    if (peerData) {
+      peerData.connection.close();
+      peerConnectionsRef.current.delete(remoteClientId);
+    }
+
+    const audioElement = audioElementsRef.current.get(remoteClientId);
+    if (audioElement) {
+      audioElement.pause();
+      audioElement.srcObject = null;
+      if (audioElement.parentNode) {
+        audioElement.parentNode.removeChild(audioElement);
+      }
+      audioElementsRef.current.delete(remoteClientId);
+    }
+  }, []);
+
   // Create peer connection for a remote peer
   const createPeerConnection = useCallback(
     async (remoteClientId: string, isInitiator: boolean) => {
@@ -162,8 +183,8 @@ export function useVoiceChat({
         if (!audioElement) {
           audioElement = document.createElement("audio");
           // iOS requirements
-          (audioElement as any).playsInline = true;
-          (audioElement as any).webkitPlaysInline = true;
+          audioElement.setAttribute('playsinline', '');
+          audioElement.setAttribute('webkit-playsinline', '');
           audioElement.autoplay = true;
           audioElement.volume = 1.0;
           // Append to DOM (required for some browsers)
@@ -224,28 +245,8 @@ export function useVoiceChat({
 
       return pc;
     },
-    [roomId, clientId],
+    [roomId, clientId, closePeerConnection],
   );
-
-  // Close peer connection
-  const closePeerConnection = useCallback((remoteClientId: string) => {
-    const peerData = peerConnectionsRef.current.get(remoteClientId);
-    if (peerData) {
-      peerData.connection.close();
-      peerConnectionsRef.current.delete(remoteClientId);
-    }
-
-    const audioElement = audioElementsRef.current.get(remoteClientId);
-    if (audioElement) {
-      audioElement.pause();
-      audioElement.srcObject = null;
-      // Remove from DOM
-      if (audioElement.parentNode) {
-        audioElement.parentNode.removeChild(audioElement);
-      }
-      audioElementsRef.current.delete(remoteClientId);
-    }
-  }, []);
 
   // Start voice activity detection
   const startVoiceActivityDetection = useCallback(() => {
@@ -270,12 +271,12 @@ export function useVoiceChat({
         const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
         const normalized = average / 255;
 
-        setIsSpeaking(normalized > VOICE_ACTIVITY_THRESHOLD && !isMuted);
+        setIsSpeaking(normalized > VOICE_ACTIVITY_THRESHOLD && !isMutedRef.current);
       }, VOICE_ACTIVITY_CHECK_INTERVAL_MS);
     } catch (e) {
       console.warn("Voice activity detection not available:", e);
     }
-  }, [isMuted]);
+  }, []);
 
   // Stop voice activity detection
   const stopVoiceActivityDetection = useCallback(() => {
@@ -507,7 +508,7 @@ export function useVoiceChat({
       const data = snapshot.val();
       if (!data) return;
 
-      for (const [key, signaling] of Object.entries(data) as [string, any][]) {
+      for (const [key, signaling] of Object.entries(data) as [string, { from: string; to: string; offer?: RTCSessionDescriptionInit; answer?: RTCSessionDescriptionInit }][]) {
         // Handle incoming offers (I'm the recipient)
         if (signaling.to === clientId && signaling.offer && !signaling.answer) {
           const remoteClientId = signaling.from;
@@ -572,7 +573,7 @@ export function useVoiceChat({
       const data = snapshot.val();
       if (!data) return;
 
-      for (const [key, signaling] of Object.entries(data) as [string, any][]) {
+      for (const [key, signaling] of Object.entries(data) as [string, { from: string; to: string; iceCandidates?: Record<string, RTCIceCandidateInit> }][]) {
         // Key format: client_XXXX_client_YYYY (fromId_toId where each id is client_XXX)
         const parts = key.split("_");
         if (
@@ -658,10 +659,14 @@ export function useVoiceChat({
     closePeerConnection,
   ]);
 
+  // Keep a ref to disableVoice so cleanup always uses latest version
+  const disableVoiceRef = useRef(disableVoice);
+  disableVoiceRef.current = disableVoice;
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      disableVoice();
+      disableVoiceRef.current();
     };
   }, []);
 

@@ -24,7 +24,7 @@ const AppContext = createContext<AppContextType | null>(null);
 
 // Auto-detect language from browser
 function detectLanguage(): Language {
-  const browserLang = navigator.language || (navigator as any).userLanguage || "en";
+  const browserLang = navigator.language || "en";
   return browserLang.toLowerCase().startsWith("ru") ? "ru" : "en";
 }
 
@@ -45,8 +45,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Initialize AudioContext on mount
   useEffect(() => {
-    const AudioContextClass =
-      window.AudioContext || (window as any).webkitAudioContext;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     audioContextRef.current = new AudioContextClass();
 
     return () => {
@@ -59,6 +59,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const handleSetLanguage = useCallback((lang: Language) => {
     setLanguage(lang);
     localStorage.setItem(STORAGE_KEY_LANGUAGE, lang);
+    document.documentElement.lang = lang;
   }, []);
 
   const unlockAudio = useCallback(async () => {
@@ -86,6 +87,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAppContext() {
   const context = useContext(AppContext);
   if (!context) {

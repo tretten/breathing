@@ -162,12 +162,13 @@ export function TogetherLobbyPage() {
 
                 return (
                   <button
+                    type="button"
                     key={preset.id}
                     className={`card ${isLive ? "is-live" : ""}`}
                     onClick={() => handleSelectPreset(preset.id)}
                   >
                     <span className="lang">{preset.lang}</span>
-                    <h3 className="card-ttl">{displayTitle}</h3>
+                    <span className="card-ttl">{displayTitle}</span>
                     {isCached && (
                       <span
                         className="offline"
@@ -178,6 +179,7 @@ export function TogetherLobbyPage() {
                         }
                       >
                         <svg
+                          aria-hidden="true"
                           width="12"
                           height="12"
                           viewBox="0 0 24 24"

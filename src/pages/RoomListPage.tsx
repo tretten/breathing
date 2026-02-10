@@ -32,7 +32,7 @@ export function RoomListPage() {
           solo: "Соло",
           soloDesc: "Практика соло",
           withFriends: "Вместе",
-          withFriendsDesc: "Дышать с друзьями",
+          withFriendsDesc: "Практика вместе",
         };
 
   return (
@@ -44,13 +44,13 @@ export function RoomListPage() {
           <header className="hdr">
             <BreathingIcon className="ico" />
             <h1>{texts.title}</h1>
-            <h4 className="subtitle">{texts.subtitle}</h4>
+            <p className="subtitle">{texts.subtitle}</p>
           </header>
 
           <div className="card-grid--row">
-            <button className="card card--lg" onClick={() => navigate("/room")}>
+            <button type="button" className="card card--lg" onClick={() => navigate("/room")}>
               <FriendsIcon className="card-icon" />
-              <h3 className="card-ttl">{texts.withFriends}</h3>
+              <span className="card-ttl">{texts.withFriends}</span>
               <p className="card-subtitle">{texts.withFriendsDesc}</p>
               {totalTogetherCount > 0 && (
                 <span className="badge">{totalTogetherCount}</span>
@@ -58,12 +58,13 @@ export function RoomListPage() {
             </button>
 
             <button
+              type="button"
               className="card card--lg"
               onClick={() => navigate("/solo/")}
             >
               <MeditationIcon className="card-icon" />
-              <h3 className="card-ttl">{texts.solo}</h3>
-              <h4 className="card-subtitle">{texts.soloDesc}</h4>
+              <span className="card-ttl">{texts.solo}</span>
+              <p className="card-subtitle">{texts.soloDesc}</p>
             </button>
           </div>
 

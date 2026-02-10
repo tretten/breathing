@@ -4,7 +4,7 @@
 // Presets are automatically cached by Service Worker on first playback
 // ============================================================================
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getAudioUrl, getMetadataUrl } from '../utils/constants';
 import { useContentIndex } from './useContentIndex';
 
@@ -46,6 +46,9 @@ async function sendToServiceWorker<T>(message: object): Promise<T> {
   return new Promise((resolve, reject) => {
     const channel = new MessageChannel();
     const timeout = setTimeout(() => {
+      channel.port1.onmessage = null;
+      channel.port1.onmessageerror = null;
+      channel.port1.close();
       reject(new Error('Service worker message timeout'));
     }, 5000);
 
@@ -56,6 +59,7 @@ async function sendToServiceWorker<T>(message: object): Promise<T> {
 
     channel.port1.onmessageerror = () => {
       clearTimeout(timeout);
+      channel.port1.close();
       reject(new Error('Message error'));
     };
 
@@ -69,7 +73,10 @@ export function useOfflinePresets(): UseOfflinePresetsReturn {
   const { togetherPresets, soloPresets } = useContentIndex();
 
   // Combine all presets for checking
-  const allPresets = [...new Set([...togetherPresets, ...soloPresets])];
+  const allPresets = useMemo(
+    () => [...new Set([...togetherPresets, ...soloPresets])],
+    [togetherPresets, soloPresets]
+  );
 
   // Check if service worker is supported
   useEffect(() => {
@@ -106,7 +113,7 @@ export function useOfflinePresets(): UseOfflinePresetsReturn {
     } catch (error) {
       console.warn('Failed to check cached presets:', error);
     }
-  }, [isSupported, allPresets.join(',')]);
+  }, [isSupported, allPresets]);
 
   // Check on mount and when service worker becomes available
   useEffect(() => {

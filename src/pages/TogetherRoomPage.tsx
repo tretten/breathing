@@ -333,13 +333,6 @@ export function TogetherRoomPage() {
     syncTo,
   ]);
 
-  // Format remaining time as MM:SS
-  const formatRemainingTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
   const handleBack = useCallback(() => {
     navigate("/room");
   }, [navigate]);
@@ -593,7 +586,7 @@ export function TogetherRoomPage() {
         <div className="center">
           <header className="hdr">
             <h1>{texts.title}</h1>
-            <h4 className="subtitle">
+            <p className="subtitle">
               {isCurrentPresetCached && (
                 <span
                   className="offline-ico"
@@ -602,6 +595,7 @@ export function TogetherRoomPage() {
                   }
                 >
                   <svg
+                    aria-hidden="true"
                     width="14"
                     height="14"
                     viewBox="0 0 24 24"
@@ -615,7 +609,7 @@ export function TogetherRoomPage() {
                 </span>
               )}
               {subtitleText}
-            </h4>
+            </p>
             {/* Participant list - moved to header, above the circle */}
             <ParticipantList
               participants={participants}
@@ -657,6 +651,7 @@ export function TogetherRoomPage() {
                 {/* Support author button during outro or when finished */}
                 {(currentPhase === "outro" || hasAudioEnded) && authorUrl && (
                   <button
+                    type="button"
                     className="btn btn--accent btn--lg"
                     onClick={handleSupportAuthor}
                   >
@@ -675,7 +670,7 @@ export function TogetherRoomPage() {
                       {isLateJoin ? texts.sessionInProgress : texts.tooLate}
                     </span>
                     <span className="phase-time">
-                      {formatRemainingTime(remainingTime)}
+                      {formatSeconds(remainingTime)}
                     </span>
                   </div>
                 </div>
@@ -733,7 +728,7 @@ export function TogetherRoomPage() {
                         onToggle={toggleMute}
                       />
                     )}
-                    <button className="btn btn--secondary" onClick={handleExit}>
+                    <button type="button" className="btn btn--secondary" onClick={handleExit}>
                       {texts.exit}
                     </button>
                   </div>
@@ -744,6 +739,7 @@ export function TogetherRoomPage() {
             {isLateJoin && !isPlaying && (
               <div className="late-join-message">
                 <button
+                  type="button"
                   className="btn btn--primary btn--lg"
                   onClick={handleJoinSession}
                   disabled={!isLoaded}
@@ -768,7 +764,7 @@ export function TogetherRoomPage() {
                 <div className="timer">
                   <span className="timer-lbl">{texts.sessionEnd}</span>
                   <span className="timer-val">
-                    {formatRemainingTime(remainingTime)}
+                    {formatSeconds(remainingTime)}
                   </span>
                 </div>
                 <div className="voice">
@@ -781,6 +777,7 @@ export function TogetherRoomPage() {
                     onToggle={handleVoiceToggle}
                   />
                   <button
+                    type="button"
                     className="btn btn--primary btn--lg"
                     onClick={handleExit}
                   >
@@ -803,6 +800,7 @@ export function TogetherRoomPage() {
                     onToggle={handleVoiceToggle}
                   />
                   <button
+                    type="button"
                     className="btn btn--primary btn--lg"
                     onClick={handleExit}
                   >
