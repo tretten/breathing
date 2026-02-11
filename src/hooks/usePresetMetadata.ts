@@ -111,6 +111,7 @@ export function useBulkPresetMetadata(presetIds: string[]): UseBulkPresetMetadat
       isMounted = false;
       controller.abort();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presetIdsKey]);
 
   return { presets, isLoading, error };

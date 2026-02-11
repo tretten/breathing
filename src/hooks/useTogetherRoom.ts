@@ -77,8 +77,8 @@ export function useTotalTogetherCount(presetIds: string[]): number {
         const now = Date.now();
         // Only count active clients (with voiceName and not stale)
         const validCount = data
-          ? Object.values(data).filter(
-              (c: any) =>
+          ? Object.values(data as Record<string, ClientPresence>).filter(
+              (c) =>
                 c.voiceName && c.joinedAt && now - c.joinedAt <= PRESENCE_MAX_AGE_MS,
             ).length
           : 0;
@@ -95,6 +95,7 @@ export function useTotalTogetherCount(presetIds: string[]): number {
     return () => {
       unsubscribes.forEach((unsub) => unsub());
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presetIds.join(',')]); // Use join to create stable dependency
 
   return totalCount;

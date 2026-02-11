@@ -1,4 +1,4 @@
 {
-  "together": ["en_3rounds", "en_4rounds", "ru_3rounds", "ru_4rounds"],
-  "solo": ["en_3rounds", "en_4rounds", "ru_3rounds", "ru_4rounds", "yoga_nidra"]
+  "together": ["en-3rounds", "en-4rounds", "ru-3rounds", "ru-4rounds"],
+  "solo": ["en-3rounds", "en-4rounds", "ru-3rounds", "ru-4rounds", "yoga-nidra"]
 }

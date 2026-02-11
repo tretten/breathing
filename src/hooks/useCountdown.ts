@@ -40,13 +40,13 @@ export function useCountdown(
  * Hook to calculate the next session slot (every 30 minutes)
  * Returns the timestamp of the next slot
  */
+// 30 minutes in milliseconds
+const SLOT_INTERVAL_MS = 30 * 60 * 1000;
+// Window for considering current slot as "starting now"
+const SLOT_WINDOW_MS = 5000;
+
 export function useNextSlot(getServerTime: () => number): number | null {
   const [nextSlot, setNextSlot] = useState<number | null>(null);
-
-  // 30 minutes in milliseconds
-  const SLOT_INTERVAL_MS = 30 * 60 * 1000;
-  // Window for considering current slot as "starting now"
-  const SLOT_WINDOW_MS = 5000;
 
   useEffect(() => {
     const calculateNextSlot = () => {

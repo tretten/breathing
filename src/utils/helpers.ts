@@ -111,6 +111,7 @@ export function countReadyClients(
 /**
  * Debounce function
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number,
@@ -131,6 +132,7 @@ export function debounce<T extends (...args: any[]) => any>(
 /**
  * Throttle function
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
   limit: number,
@@ -152,6 +154,7 @@ export function throttle<T extends (...args: any[]) => any>(
  * Check if browser supports Web Audio API
  */
 export function isWebAudioSupported(): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return !!(window.AudioContext || (window as any).webkitAudioContext);
 }
 
