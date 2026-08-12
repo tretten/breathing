@@ -169,7 +169,7 @@ export function TogetherRoomPage() {
 
   // Start the session when more than one user is online and all are ready
   useEffect(() => {
-    if (roomStatus !== "idle" || !isLoaded || !isReady || !validPresetId) {
+    if (roomStatus !== "idle" || !isReady || !validPresetId) {
       return;
     }
 
@@ -178,7 +178,6 @@ export function TogetherRoomPage() {
     }
   }, [
     roomStatus,
-    isLoaded,
     isReady,
     onlineCount,
     allReady,
@@ -186,8 +185,9 @@ export function TogetherRoomPage() {
     validPresetId,
   ]);
 
-  // Schedule playback from position 0 at the server timestamp
-  // Re-arms when audio finishes loading, so a slow load still starts from the beginning
+  // Schedule playback from position 0 at the server timestamp.
+  // Re-arms when audio finishes loading; if the start window was missed
+  // (slow load, transient error), joins mid-session from the current position.
   useEffect(() => {
     if (
       roomStatus !== "countdown" ||
@@ -200,8 +200,29 @@ export function TogetherRoomPage() {
     }
 
     hasStartedPlayingRef.current = true;
-    schedulePlayback(startTimestamp, getServerTime);
-  }, [roomStatus, startTimestamp, isLoaded, isPlaying, getServerTime, schedulePlayback]);
+
+    const delayMs = startTimestamp - getServerTime();
+    if (delayMs > -1000) {
+      schedulePlayback(startTimestamp, getServerTime);
+      return;
+    }
+
+    // Start timestamp already passed - play from where the session is now
+    const elapsedSeconds = (getServerTime() - startTimestamp) / 1000;
+    if (!hasAudioEnded && elapsedSeconds >= 0 && elapsedSeconds < duration) {
+      playAt(elapsedSeconds, () => (getServerTime() - startTimestamp) / 1000);
+    }
+  }, [
+    roomStatus,
+    startTimestamp,
+    isLoaded,
+    isPlaying,
+    duration,
+    hasAudioEnded,
+    getServerTime,
+    schedulePlayback,
+    playAt,
+  ]);
 
   // Track playback state and handle audio ending naturally
   useEffect(() => {
@@ -249,6 +270,14 @@ export function TogetherRoomPage() {
       setHasAudioEnded(false);
     }
   }, [roomStatus]);
+
+  // If the audio dropped out of the loaded state (transient error, retry in
+  // progress), allow the playback effect to re-arm once it loads again
+  useEffect(() => {
+    if (!isLoaded) {
+      hasStartedPlayingRef.current = false;
+    }
+  }, [isLoaded]);
 
   // Periodic audio sync - correct drift if audio position differs from expected
   useEffect(() => {
@@ -442,20 +471,39 @@ export function TogetherRoomPage() {
     duration,
   ]);
 
+  // Track if audio is ready via refs so the async join handler can poll
+  const isLoadedRef = useRef(isLoaded);
+  isLoadedRef.current = isLoaded;
+  const durationRef = useRef(duration);
+  durationRef.current = duration;
+
   // Handle joining an active session (late join)
   const handleJoinSession = useCallback(async () => {
-    if (!startTimestamp || !isLoaded || !duration) return;
+    if (!startTimestamp) return;
 
     await unlockAudio();
+
+    // Wait briefly for audio to become ready (slow load / transient error)
+    for (
+      let i = 0;
+      i < 50 && (!isLoadedRef.current || !durationRef.current);
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+
+    if (!isLoadedRef.current || !durationRef.current) {
+      console.error("Audio not ready, cannot join session");
+      return;
+    }
 
     const elapsedMs = getServerTime() - startTimestamp;
     const elapsedSeconds = elapsedMs / 1000;
 
-    if (elapsedSeconds >= 0 && elapsedSeconds < duration) {
-      const getExactPosition = () => (getServerTime() - startTimestamp) / 1000;
-      await playAt(elapsedSeconds, getExactPosition);
+    if (elapsedSeconds >= 0 && elapsedSeconds < durationRef.current) {
+      await playAt(elapsedSeconds, () => (getServerTime() - startTimestamp) / 1000);
     }
-  }, [startTimestamp, isLoaded, duration, unlockAudio, getServerTime, playAt]);
+  }, [startTimestamp, unlockAudio, getServerTime, playAt]);
 
   // Text based on language
   const texts =

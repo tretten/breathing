@@ -49,6 +49,11 @@ export function useAudioPlayback(
   // Scheduled playback timeout for cleanup
   const scheduledTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Retry counter for transient load failures (SW/CDN issues)
+  const loadRetriesRef = useRef(0);
+  const loadRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
+
   // Create audio element
   useEffect(() => {
     const audio = new Audio();
@@ -77,6 +82,16 @@ export function useAudioPlayback(
     const handleError = (e: Event) => {
       console.error('Audio error:', e);
       setIsLoaded(false);
+      // Transient failures (SW/CDN) - retry loading a couple of times
+      if (loadRetriesRef.current < 2 && audioUrlRef.current) {
+        loadRetriesRef.current += 1;
+        loadRetryTimeoutRef.current = setTimeout(() => {
+          if (audioElementRef.current && audioUrlRef.current) {
+            audioElementRef.current.src = audioUrlRef.current;
+            audioElementRef.current.load();
+          }
+        }, 1500);
+      }
     };
 
     const handleTimeUpdate = () => {
@@ -103,6 +118,10 @@ export function useAudioPlayback(
         clearTimeout(scheduledTimeoutRef.current);
         scheduledTimeoutRef.current = null;
       }
+      if (loadRetryTimeoutRef.current) {
+        clearTimeout(loadRetryTimeoutRef.current);
+        loadRetryTimeoutRef.current = null;
+      }
     };
   }, []);
 
@@ -113,6 +132,8 @@ export function useAudioPlayback(
       return;
     }
 
+    audioUrlRef.current = audioUrl;
+    loadRetriesRef.current = 0;
     setIsLoaded(false);
     audioElementRef.current.src = audioUrl;
     audioElementRef.current.load();
