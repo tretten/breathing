@@ -1,5 +1,5 @@
 // Service Worker for offline audio caching
-const CACHE_NAME = 'rooms-offline-v1';
+const CACHE_NAME = 'rooms-offline-v2';
 
 // Install event - activate immediately
 self.addEventListener('install', () => {

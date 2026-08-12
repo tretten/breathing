@@ -20,6 +20,8 @@ export interface UseAudioPlaybackOptions {
   /** Wire lock screen play/pause controls to real playback (solo mode).
    *  Together mode keeps them ignored so one client can't desync the session. */
   lockScreenControls?: boolean;
+  /** Called when the audio element genuinely fires the 'ended' event. */
+  onEnded?: () => void;
 }
 
 /**
@@ -33,8 +35,12 @@ export function useAudioPlayback(
   audioUrl: string | null,
   options: UseAudioPlaybackOptions = {}
 ): UseAudioPlaybackReturn {
-  const { presetId = null, language: langOption = 'en', lockScreenControls = false } = options;
+  const { presetId = null, language: langOption = 'en', lockScreenControls = false, onEnded } = options;
   const language = langOption || 'en';
+
+  // Keep the latest onEnded callback without re-creating the audio element
+  const onEndedRef = useRef(onEnded);
+  onEndedRef.current = onEnded;
 
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -77,6 +83,7 @@ export function useAudioPlayback(
       setIsPlaying(false);
       setIsPaused(false);
       setRemainingTime(0);
+      onEndedRef.current?.();
     };
 
     const handleError = (e: Event) => {

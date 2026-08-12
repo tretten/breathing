@@ -101,7 +101,17 @@ export function TogetherRoomPage() {
     syncTo,
     getCurrentTime,
     stopPlayback,
-  } = useAudioPlayback(audioUrl, { presetId: validPresetId, language });
+  } = useAudioPlayback(audioUrl, {
+    presetId: validPresetId,
+    language,
+    onEnded: () => {
+      // Audio genuinely reached the end - not inferred from state, so a
+      // slow start or failed play() can never fake the "done" screen
+      hasStartedPlayingRef.current = false;
+      setIsReady(false);
+      setHasAudioEnded(true);
+    },
+  });
 
   // Phase cues for displaying Breathe/Pause/Hold (keep active during pause)
   const { currentPhase, phaseRemaining, authorUrl, title, titleRu } =
@@ -137,9 +147,6 @@ export function TogetherRoomPage() {
 
   // Calculate countdown seconds for overlay
   const [countdownSeconds, setCountdownSeconds] = useState(0);
-
-  // Track if user manually exited (vs audio ending naturally)
-  const exitedManuallyRef = useRef(false);
 
   // Redirect if invalid preset (wait for presets to load first)
   useEffect(() => {
@@ -224,19 +231,11 @@ export function TogetherRoomPage() {
     playAt,
   ]);
 
-  // Track playback state and handle audio ending naturally
+  // Track playback state - reset end state when playback starts
   useEffect(() => {
     if (isPlaying) {
       hasStartedPlayingRef.current = true;
-      exitedManuallyRef.current = false;
       setHasAudioEnded(false);
-    } else if (hasStartedPlayingRef.current && !exitedManuallyRef.current) {
-      // Audio finished playing naturally - stay on page for voice chat
-      setHasAudioEnded(true);
-      setIsReady(false);
-      hasStartedPlayingRef.current = false;
-      // Don't reset room - let people continue talking
-      // Room will reset when everyone leaves or after timeout
     }
   }, [isPlaying]);
 
@@ -329,7 +328,6 @@ export function TogetherRoomPage() {
   }, [roomStatus, isReady, unlockAudio, isVoiceEnabled, muteAll]);
 
   const handleExit = useCallback(async () => {
-    exitedManuallyRef.current = true;
     stopPlayback();
     setIsReady(false);
     setHasAudioEnded(false);
