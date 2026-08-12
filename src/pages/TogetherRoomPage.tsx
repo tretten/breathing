@@ -32,6 +32,7 @@ import { CountdownOverlay } from "../components/CountdownOverlay";
 import { TopBar } from "../components/TopBar";
 import { VoiceChatButton } from "../components/VoiceChatButton";
 import { ParticipantList } from "../components/ParticipantList";
+import { DebugStrip } from "../components/DebugStrip";
 
 export function TogetherRoomPage() {
   const navigate = useNavigate();
@@ -512,6 +513,7 @@ export function TogetherRoomPage() {
 
   return (
     <div className="wrap">
+      <DebugStrip />
       {roomStatus === "countdown" && countdownSeconds > 0 && (
         <CountdownOverlay seconds={countdownSeconds} language={language} />
       )}

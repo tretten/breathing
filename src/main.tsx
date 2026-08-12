@@ -14,6 +14,15 @@ if ('serviceWorker' in navigator) {
   }).catch((error) => {
     console.warn('Service Worker registration failed:', error);
   });
+
+  // If a newer SW takes over mid-session, reload once so the page runs
+  // under it. A page stays controlled by the old SW until reload, and a
+  // stale SW serving cached media breaks iOS Safari playback.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (sessionStorage.getItem('swReloaded')) return;
+    sessionStorage.setItem('swReloaded', '1');
+    window.location.reload();
+  });
 }
 
 // Reload with cleared caches if the server has a newer build

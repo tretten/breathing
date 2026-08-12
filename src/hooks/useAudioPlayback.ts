@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { UseAudioPlaybackReturn } from '../types';
 import { PLAY_LATENCY_COMPENSATION_S } from '../utils/constants';
+import { debugAudio } from '../utils/audioDebug';
 import {
   setupMediaSession,
   setupMediaSessionHandlers,
@@ -60,6 +61,10 @@ export function useAudioPlayback(
   const loadRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioUrlRef = useRef<string | null>(null);
 
+  // When the last play() was attempted - used to detect a spurious 'ended'
+  // fired within moments of starting (broken media on some devices)
+  const lastPlayAttemptRef = useRef(0);
+
   // Create audio element
   useEffect(() => {
     const audio = new Audio();
@@ -70,23 +75,51 @@ export function useAudioPlayback(
 
     // Event handlers
     const handleLoadedMetadata = () => {
+      debugAudio('loadedmetadata', `duration=${audio.duration}`);
       setDuration(audio.duration);
       setRemainingTime(audio.duration);
       setIsLoaded(true);
     };
 
     const handleCanPlayThrough = () => {
+      debugAudio('canplaythrough', `duration=${audio.duration}`);
       setIsLoaded(true);
     };
 
+    const handlePlaying = () => {
+      debugAudio('playing', `t=${audio.currentTime.toFixed(1)}`);
+    };
+
     const handleEnded = () => {
+      const elapsedSincePlay = performance.now() - lastPlayAttemptRef.current;
+      debugAudio('ended', `t=${audio.currentTime.toFixed(1)} dur=${audio.duration}`);
       setIsPlaying(false);
       setIsPaused(false);
       setRemainingTime(0);
+
+      // 'ended' right after play() means the media never really played
+      // (broken/empty resource on some devices) - don't report a real end,
+      // retry the load instead
+      if (elapsedSincePlay < 1500) {
+        debugAudio('ended', `SPURIOUS (${elapsedSincePlay.toFixed(0)}ms after play)`);
+        if (loadRetriesRef.current < 2 && audioUrlRef.current) {
+          loadRetriesRef.current += 1;
+          loadRetryTimeoutRef.current = setTimeout(() => {
+            if (audioElementRef.current && audioUrlRef.current) {
+              audioElementRef.current.src = audioUrlRef.current;
+              audioElementRef.current.load();
+            }
+          }, 1500);
+        }
+        return;
+      }
+
       onEndedRef.current?.();
     };
 
     const handleError = (e: Event) => {
+      const el = e.target as HTMLAudioElement | null;
+      debugAudio('error', `code=${el?.error?.code} msg=${el?.error?.message}`);
       console.error('Audio error:', e);
       setIsLoaded(false);
       // Transient failures (SW/CDN) - retry loading a couple of times
@@ -109,6 +142,7 @@ export function useAudioPlayback(
 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('canplaythrough', handleCanPlayThrough);
+    audio.addEventListener('playing', handlePlaying);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
     audio.addEventListener('timeupdate', handleTimeUpdate);
@@ -116,6 +150,7 @@ export function useAudioPlayback(
     return () => {
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('canplaythrough', handleCanPlayThrough);
+      audio.removeEventListener('playing', handlePlaying);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
@@ -158,9 +193,11 @@ export function useAudioPlayback(
     try {
       // Play and immediately pause to unlock iOS audio
       audioElementRef.current.muted = true;
+      debugAudio('unlock: muted play');
       await audioElementRef.current.play();
       audioElementRef.current.pause();
       audioElementRef.current.muted = false;
+      debugAudio('unlock: done');
       // Don't reset currentTime here - let playAt handle position
 
       setIsUnlocked(true);
@@ -203,9 +240,14 @@ export function useAudioPlayback(
       scheduledTimeoutRef.current = null;
       if (audioElementRef.current) {
         audioElementRef.current.currentTime = 0;
+        lastPlayAttemptRef.current = performance.now();
+        debugAudio('play()', `delay=${Math.max(0, delayMs)}ms`);
         audioElementRef.current.play().then(() => {
           setIsPlaying(true);
-        }).catch(console.error);
+        }).catch((err) => {
+          debugAudio('play rejected', String(err));
+          console.error(err);
+        });
       }
     }, Math.max(0, delayMs));
 
@@ -301,6 +343,7 @@ export function useAudioPlayback(
 
       // Set position and play immediately
       audio.currentTime = clampedPosition;
+      lastPlayAttemptRef.current = performance.now();
       await audio.play();
 
       setIsPlaying(true);
