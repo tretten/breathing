@@ -6,9 +6,20 @@ self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
-// Activate event - claim clients
+// Activate event - claim clients and purge caches from older SW versions
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    Promise.all([
+      self.clients.claim(),
+      caches.keys().then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key !== CACHE_NAME)
+            .map((key) => caches.delete(key)),
+        ),
+      ),
+    ]),
+  );
 });
 
 // Fetch event - serve media from the network when online; only when offline

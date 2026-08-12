@@ -1,0 +1,5 @@
+# Never cache the service worker - browsers must pick up SW updates
+# immediately, otherwise stale SWs keep serving media from cache (which
+# breaks playback on iOS Safari).
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
