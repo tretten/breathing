@@ -16,6 +16,7 @@
     "react-router-dom": "^6.21.1"
   },
   "devDependencies": {
+    "@dietrichgebert/ponytail": "^4.9.0",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
@@ -24,6 +25,7 @@
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "firebase-tools": "^15.26.0",
     "typescript": "^5.3.3",
     "vite": "^7.3.1"
   }
