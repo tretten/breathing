@@ -583,7 +583,7 @@ export function TogetherRoomPage() {
                       {isLateJoin ? texts.sessionInProgress : texts.tooLate}
                     </span>
                     <span className="phase-time">
-                      {formatSeconds(remainingTime)}
+                      {formatSeconds(Math.max(0, sessionElapsedMs / 1000))}
                     </span>
                   </div>
                 </div>
