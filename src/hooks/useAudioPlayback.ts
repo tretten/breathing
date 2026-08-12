@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { UseAudioPlaybackReturn } from '../types';
 import { PLAY_LATENCY_COMPENSATION_S } from '../utils/constants';
 import { debugAudio } from '../utils/audioDebug';
+import { setAppPlaying } from '../utils/appState';
 import {
   setupMediaSession,
   setupMediaSessionHandlers,
@@ -49,6 +50,12 @@ export function useAudioPlayback(
   const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
   const [duration, setDuration] = useState<number>(0);
   const [remainingTime, setRemainingTime] = useState<number>(0);
+
+  // Expose playing state so auto-reloads (version/SW updates) never fire
+  // mid-session
+  useEffect(() => {
+    setAppPlaying(isPlaying);
+  }, [isPlaying]);
 
   // HTML5 Audio element for reliable iOS playback
   const audioElementRef = useRef<HTMLAudioElement | null>(null);

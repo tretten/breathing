@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './styles/global.css';
 import { checkForUpdate } from './utils/versionCheck';
+import { isAppPlaying } from './utils/appState';
 
 // Register service worker for offline support
 if ('serviceWorker' in navigator) {
@@ -15,10 +16,11 @@ if ('serviceWorker' in navigator) {
     console.warn('Service Worker registration failed:', error);
   });
 
-  // If a newer SW takes over mid-session, reload once so the page runs
-  // under it. A page stays controlled by the old SW until reload, and a
-  // stale SW serving cached media breaks iOS Safari playback.
+  // If a newer SW takes over, reload once so the page runs under it -
+  // but never mid-session (a stale SW serving cached media was what broke
+  // iOS playback; the update lands on the next visit otherwise).
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (isAppPlaying()) return;
     if (sessionStorage.getItem('swReloaded')) return;
     sessionStorage.setItem('swReloaded', '1');
     window.location.reload();

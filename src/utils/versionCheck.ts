@@ -1,7 +1,8 @@
 // src/utils/versionCheck.ts
 // Compares the running bundle against the one the server serves. If the
 // server has a newer build, drops caches/SW and reloads so stale visitors
-// pick up the update automatically.
+// pick up the update automatically. Never fires mid-session (audio playing).
+import { isAppPlaying } from "./appState";
 
 export function getBundleHash(): string | null {
   const script = Array.from(document.querySelectorAll("script[src]")).find(
@@ -23,6 +24,9 @@ export async function checkForUpdate(): Promise<void> {
     const html = await res.text();
     const latest = html.match(/index-([A-Za-z0-9_-]+)\.js/)?.[1];
     if (!latest || latest === current) return;
+
+    // Never interrupt a running session - the update lands on next visit
+    if (isAppPlaying()) return;
 
     sessionStorage.setItem("versionReloaded", "1");
 
