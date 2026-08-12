@@ -1,5 +1,5 @@
 // Service Worker for offline audio caching
-const CACHE_NAME = 'rooms-offline-v2';
+const CACHE_NAME = 'rooms-offline-v3';
 
 // Install event - activate immediately
 self.addEventListener('install', () => {
@@ -11,7 +11,10 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// Fetch event - cache audio/json files automatically on first load
+// Fetch event - serve media from the network when online; only when offline
+// (or network unreachable) fall back to the cache. iOS Safari cannot play
+// SW-served media reliably (instant 'ended'), so we keep the SW out of the
+// online media path entirely.
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
@@ -23,15 +26,33 @@ self.addEventListener('fetch', (event) => {
 });
 
 async function handleAudioRequest(request) {
+  // Try network first when online
+  if (navigator.onLine) {
+    try {
+      const networkResponse = await fetch(request);
+      // Cache complete responses for offline use
+      if (networkResponse.ok && networkResponse.status === 200) {
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(request, networkResponse.clone()).catch(() => {});
+        }).catch(() => {});
+      }
+      return networkResponse;
+    } catch (e) {
+      // Network failed - fall through to cache
+    }
+  }
+
+  return serveFromCache(request);
+}
+
+async function serveFromCache(request) {
   let cache;
   try {
     cache = await caches.open(CACHE_NAME);
   } catch (e) {
-    // Cache API unavailable, just fetch from network
     return fetch(request);
   }
 
-  // Try cache first
   try {
     const cachedResponse = await cache.match(request, { ignoreSearch: true });
     if (cachedResponse) {
@@ -46,16 +67,7 @@ async function handleAudioRequest(request) {
     // Cache read error, continue to network
   }
 
-  // Fetch from network
-  const networkResponse = await fetch(request);
-
-  // Only cache complete responses (status 200), not partial (206)
-  if (networkResponse.ok && networkResponse.status === 200) {
-    // Clone and cache (ignore errors)
-    cache.put(request, networkResponse.clone()).catch(() => {});
-  }
-
-  return networkResponse;
+  return fetch(request);
 }
 
 // Handle Range requests by streaming a slice of the cached response.

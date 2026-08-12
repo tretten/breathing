@@ -8,7 +8,10 @@ import { checkForUpdate } from './utils/versionCheck';
 
 // Register service worker for offline support
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch((error) => {
+  navigator.serviceWorker.register('/sw.js').then((registration) => {
+    // Check for SW updates on every load so fixes roll out quickly
+    registration.update().catch(() => {});
+  }).catch((error) => {
     console.warn('Service Worker registration failed:', error);
   });
 }

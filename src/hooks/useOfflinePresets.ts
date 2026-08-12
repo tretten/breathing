@@ -9,7 +9,7 @@ import { getAudioUrl, getMetadataUrl } from '../utils/constants';
 import { useContentIndex } from './useContentIndex';
 
 // Must match CACHE_NAME in public/sw.js
-const CACHE_NAME = 'rooms-offline-v2';
+const CACHE_NAME = 'rooms-offline-v3';
 
 interface UseOfflinePresetsReturn {
   /** Which presets are cached and available offline */
