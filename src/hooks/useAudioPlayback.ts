@@ -164,6 +164,10 @@ export function useAudioPlayback(
         clearTimeout(loadRetryTimeoutRef.current);
         loadRetryTimeoutRef.current = null;
       }
+      if (unlockCtxRef.current) {
+        unlockCtxRef.current.close().catch(() => {});
+        unlockCtxRef.current = null;
+      }
     };
   }, []);
 
@@ -182,6 +186,9 @@ export function useAudioPlayback(
   }, [audioUrl]);
 
   // Unlock audio (must be called from user gesture)
+  // AudioContext kept open (silent) to hold the iOS audio session active
+  const unlockCtxRef = useRef<AudioContext | null>(null);
+
   const unlockAudio = useCallback(async (): Promise<boolean> => {
     if (!audioElementRef.current) return false;
 
@@ -191,20 +198,47 @@ export function useAudioPlayback(
     }
 
     try {
-      // Play and immediately pause to unlock iOS audio
-      audioElementRef.current.muted = true;
-      debugAudio('unlock: muted play');
-      await audioElementRef.current.play();
-      audioElementRef.current.pause();
-      audioElementRef.current.muted = false;
-      debugAudio('unlock: done');
-      // Don't reset currentTime here - let playAt handle position
+      // 1) Web Audio unlock: a running AudioContext activates the page's
+      //    audio session so media elements can play without a gesture.
+      //    Deliberately does NOT touch the media element - play()+pause()
+      //    on iOS fires a spurious 'ended' and corrupts the element
+      //    (duration collapses to ~0 and playback is dead).
+      let webAudioUnlocked = false;
+      const Ctor =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext;
+      if (Ctor) {
+        try {
+          const ctx = new Ctor();
+          unlockCtxRef.current = ctx;
+          if (ctx.state === "suspended") {
+            await ctx.resume();
+          }
+          webAudioUnlocked = ctx.state === "running";
+        } catch {
+          webAudioUnlocked = false;
+        }
+      }
+
+      // 2) Fallback (no Web Audio / resume blocked): muted play WITHOUT
+      //    pausing. The element keeps "playing" silently; it is unmuted at
+      //    actual playback start. Pausing here is what breaks iOS Safari.
+      if (!webAudioUnlocked) {
+        debugAudio("unlock: muted play (no pause)");
+        audioElementRef.current.muted = true;
+        audioElementRef.current.currentTime = 0;
+        lastPlayAttemptRef.current = performance.now();
+        const p = audioElementRef.current.play();
+        if (p && typeof p.catch === "function") {
+          p.catch(() => {});
+        }
+      }
 
       setIsUnlocked(true);
       return true;
     } catch (error) {
-      console.error('Failed to unlock audio:', error);
-      // Ensure muted is reset even if play() failed
+      console.error("Failed to unlock audio:", error);
       if (audioElementRef.current) {
         audioElementRef.current.muted = false;
       }
@@ -240,6 +274,8 @@ export function useAudioPlayback(
       scheduledTimeoutRef.current = null;
       if (audioElementRef.current) {
         audioElementRef.current.currentTime = 0;
+        // Unmute here - the unlock fallback leaves the element muted-playing
+        audioElementRef.current.muted = false;
         lastPlayAttemptRef.current = performance.now();
         debugAudio('play()', `delay=${Math.max(0, delayMs)}ms`);
         audioElementRef.current.play().then(() => {
