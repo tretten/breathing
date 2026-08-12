@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './styles/global.css';
+import { checkForUpdate } from './utils/versionCheck';
 
 // Register service worker for offline support
 if ('serviceWorker' in navigator) {
@@ -11,6 +12,9 @@ if ('serviceWorker' in navigator) {
     console.warn('Service Worker registration failed:', error);
   });
 }
+
+// Reload with cleared caches if the server has a newer build
+checkForUpdate();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
