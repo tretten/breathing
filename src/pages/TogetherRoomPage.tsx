@@ -193,8 +193,10 @@ export function TogetherRoomPage() {
   ]);
 
   // Schedule playback from position 0 at the server timestamp.
-  // Re-arms when audio finishes loading; if the start window was missed
-  // (slow load, transient error), joins mid-session from the current position.
+  // Only fires while the start timestamp is still ahead (the client was
+  // present during the countdown). If the session already started, the
+  // client sees the "Join" button instead and resumes from the current
+  // position via playAt.
   useEffect(() => {
     if (
       roomStatus !== "countdown" ||
@@ -207,29 +209,8 @@ export function TogetherRoomPage() {
     }
 
     hasStartedPlayingRef.current = true;
-
-    const delayMs = startTimestamp - getServerTime();
-    if (delayMs > -1000) {
-      schedulePlayback(startTimestamp, getServerTime);
-      return;
-    }
-
-    // Start timestamp already passed - play from where the session is now
-    const elapsedSeconds = (getServerTime() - startTimestamp) / 1000;
-    if (!hasAudioEnded && elapsedSeconds >= 0 && elapsedSeconds < duration) {
-      playAt(elapsedSeconds, () => (getServerTime() - startTimestamp) / 1000);
-    }
-  }, [
-    roomStatus,
-    startTimestamp,
-    isLoaded,
-    isPlaying,
-    duration,
-    hasAudioEnded,
-    getServerTime,
-    schedulePlayback,
-    playAt,
-  ]);
+    schedulePlayback(startTimestamp, getServerTime);
+  }, [roomStatus, startTimestamp, isLoaded, isPlaying, getServerTime, schedulePlayback]);
 
   // Track playback state - reset end state when playback starts
   useEffect(() => {
@@ -338,19 +319,14 @@ export function TogetherRoomPage() {
       disableVoice();
     }
 
-    // Always reset room when exiting - let other users restart if needed
-    // This prevents stale sessions when the last user leaves
-    if (validPresetId) {
-      resetTogetherRoom(validPresetId);
-    }
-
+    // Do NOT reset the room - the session keeps running for the others,
+    // and the exiting participant can re-join from the current position
     navigate("/room");
   }, [
     stopPlayback,
     navigate,
     isVoiceEnabled,
     disableVoice,
-    validPresetId,
   ]);
 
   const handleSupportAuthor = useCallback(() => {
