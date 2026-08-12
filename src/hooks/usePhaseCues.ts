@@ -18,6 +18,8 @@ export interface UsePhaseCuesReturn {
   cues: PhaseCue[];
   isLoaded: boolean;
   authorUrl: string | null;
+  title: string | null;
+  titleRu: string | null;
 }
 
 /**
@@ -31,6 +33,8 @@ export function usePhaseCues(
 ): UsePhaseCuesReturn {
   const [cues, setCues] = useState<PhaseCue[]>([]);
   const [authorUrl, setAuthorUrl] = useState<string | null>(null);
+  const [title, setTitle] = useState<string | null>(null);
+  const [titleRu, setTitleRu] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<PhaseType | null>(null);
   const [phaseRemaining, setPhaseRemaining] = useState<number>(0);
@@ -40,6 +44,8 @@ export function usePhaseCues(
     if (!audioUrl) {
       setCues([]);
       setAuthorUrl(null);
+      setTitle(null);
+      setTitleRu(null);
       setIsLoaded(false);
       setCurrentPhase(null);
       setPhaseRemaining(0);
@@ -60,6 +66,8 @@ export function usePhaseCues(
         const parsed = parsePhaseCues(text);
         setCues(parsed.cues);
         setAuthorUrl(parsed.authorUrl);
+        setTitle(parsed.title);
+        setTitleRu(parsed.titleRu);
         setIsLoaded(true);
       })
       .catch((error) => {
@@ -67,6 +75,8 @@ export function usePhaseCues(
         // No cue file - that's OK
         setCues([]);
         setAuthorUrl(null);
+        setTitle(null);
+        setTitleRu(null);
         setIsLoaded(true);
       });
 
@@ -101,5 +111,5 @@ export function usePhaseCues(
     return () => clearInterval(interval);
   }, [isActive, cues, getCurrentTime]);
 
-  return { currentPhase, phaseRemaining, cues, isLoaded, authorUrl };
+  return { currentPhase, phaseRemaining, cues, isLoaded, authorUrl, title, titleRu };
 }

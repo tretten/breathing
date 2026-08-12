@@ -7,7 +7,6 @@ export interface MediaSessionConfig {
   title: string;
   artist: string;
   album?: string;
-  artwork?: MediaImage[];
 }
 
 // Default artwork as inline SVG data URL (breathing circle icon)
@@ -45,7 +44,7 @@ export function setupMediaSession(config: MediaSessionConfig): void {
       title: config.title,
       artist: config.artist,
       album: config.album || "Wim Hof Breathing",
-      artwork: config.artwork || DEFAULT_ARTWORK,
+      artwork: DEFAULT_ARTWORK,
     });
   } catch (e) {
     console.warn("Failed to set media session metadata:", e);
@@ -98,48 +97,12 @@ export function setupMediaSessionHandlers(handlers: {
 }
 
 /**
- * Update Media Session playback state
+ * Get localized artist name
  */
-export function updateMediaSessionPlaybackState(
-  state: MediaSessionPlaybackState,
-): void {
-  if (!isMediaSessionSupported()) return;
-
-  try {
-    navigator.mediaSession.playbackState = state;
-  } catch (e) {
-    console.warn("Failed to update media session playback state:", e);
-  }
+export function getArtistName(): string {
+  return "Breathing Room";
 }
 
-/**
- * Update Media Session position state (for seek bar on lock screen)
- */
-export function updateMediaSessionPositionState(
-  duration: number,
-  position: number,
-  playbackRate: number = 1,
-): void {
-  if (!isMediaSessionSupported()) return;
-  if (!navigator.mediaSession.setPositionState) return;
-
-  try {
-    // Only set position state if we have valid values
-    if (duration > 0 && position >= 0 && position <= duration) {
-      navigator.mediaSession.setPositionState({
-        duration,
-        position,
-        playbackRate,
-      });
-    }
-  } catch (e) {
-    console.warn("Failed to update media session position state:", e);
-  }
-}
-
-/**
- * Clear Media Session (call when playback ends)
- */
 export function clearMediaSession(): void {
   if (!isMediaSessionSupported()) return;
 
@@ -172,11 +135,4 @@ export function getSessionTitle(
     return `Дыхание • ${rounds} раунда`;
   }
   return `Breathing • ${rounds} rounds`;
-}
-
-/**
- * Get localized artist name
- */
-export function getArtistName(language: "en" | "ru"): string {
-  return language === "ru" ? "Breathing Room" : "Breathing Room";
 }

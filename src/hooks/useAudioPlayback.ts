@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { UseAudioPlaybackReturn } from '../types';
+import { PLAY_LATENCY_COMPENSATION_S } from '../utils/constants';
 import {
   setupMediaSession,
   setupMediaSessionHandlers,
@@ -16,6 +17,9 @@ import {
 export interface UseAudioPlaybackOptions {
   presetId?: string | null;
   language?: 'en' | 'ru' | null;
+  /** Wire lock screen play/pause controls to real playback (solo mode).
+   *  Together mode keeps them ignored so one client can't desync the session. */
+  lockScreenControls?: boolean;
 }
 
 /**
@@ -29,7 +33,7 @@ export function useAudioPlayback(
   audioUrl: string | null,
   options: UseAudioPlaybackOptions = {}
 ): UseAudioPlaybackReturn {
-  const { presetId = null, language: langOption = 'en' } = options;
+  const { presetId = null, language: langOption = 'en', lockScreenControls = false } = options;
   const language = langOption || 'en';
 
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
@@ -218,37 +222,6 @@ export function useAudioPlayback(
     setRemainingTime(duration);
   }, [duration]);
 
-  // Play immediately (must be called from user gesture)
-  const playNow = useCallback(async (): Promise<boolean> => {
-    if (!audioElementRef.current || !isLoaded) {
-      console.warn('Audio not ready for playback');
-      return false;
-    }
-
-    if (isPlaying) {
-      console.warn('Already playing');
-      return false;
-    }
-
-    try {
-      // Ensure audio is not muted (could be left muted from failed unlock)
-      audioElementRef.current.muted = false;
-
-      // Reset to beginning and play
-      audioElementRef.current.currentTime = 0;
-      await audioElementRef.current.play();
-
-      setIsPlaying(true);
-      setIsPaused(false);
-      setIsUnlocked(true);
-
-      return true;
-    } catch (error) {
-      console.error('Failed to play audio:', error);
-      return false;
-    }
-  }, [isLoaded, isPlaying]);
-
   // Play from specific position (for late join sync)
   // getPositionFn allows recalculating position right before play for better accuracy
   const playAt = useCallback(async (
@@ -285,7 +258,7 @@ export function useAudioPlayback(
       }
 
       // Add compensation for play() startup latency
-      const PLAY_LATENCY_COMPENSATION = 0.3; // 300ms
+      const PLAY_LATENCY_COMPENSATION = PLAY_LATENCY_COMPENSATION_S;
 
       // Calculate exact position RIGHT NOW (use callback if provided)
       const targetPosition = getPositionFn
@@ -332,33 +305,47 @@ export function useAudioPlayback(
   // Set up Media Session for iOS lock screen
   // Only set play handler - this hides pause and seek buttons
   useEffect(() => {
-    if (!isPlaying || !audioElementRef.current) {
+    // Keep the session alive while playing OR paused, so lock screen
+    // controls survive a pause and can resume the track
+    if ((!isPlaying && !isPaused) || !audioElementRef.current) {
       return;
     }
 
     // Set up media session metadata for lock screen
     setupMediaSession({
       title: getSessionTitle(presetId, language),
-      artist: getArtistName(language),
+      artist: getArtistName(),
       album: 'Wim Hof Breathing',
     });
 
-    // Set handlers that ignore user actions - prevents pausing from lock screen
-    const cleanup = setupMediaSessionHandlers({
-      onPlay: () => {
-        // Ignore - audio is already playing
-      },
-      onPause: () => {
-        // Ignore pause button - do nothing, keep playing
-      },
-      // Intentionally NOT setting: onSeekBackward, onSeekForward, onSeekTo
-    });
+    const handlers: Parameters<typeof setupMediaSessionHandlers>[0] = lockScreenControls
+      ? {
+          onPlay: () => {
+            resumePlayback();
+          },
+          onPause: () => {
+            pausePlayback();
+          },
+        }
+      : {
+          // Together mode: ignore lock screen actions - pausing one client
+          // would desync the shared session
+          onPlay: () => {
+            // Ignore - audio is already playing
+          },
+          onPause: () => {
+            // Ignore pause button - do nothing, keep playing
+          },
+        };
+
+    const cleanup = setupMediaSessionHandlers(handlers);
 
     return () => {
       cleanup();
       clearMediaSession();
     };
-  }, [isPlaying, presetId, language]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPlaying, isPaused, presetId, language, lockScreenControls]);
 
   return {
     isLoaded,
@@ -369,7 +356,6 @@ export function useAudioPlayback(
     remainingTime,
     unlockAudio,
     schedulePlayback,
-    playNow,
     playAt,
     syncTo,
     getCurrentTime,

@@ -40,9 +40,7 @@ interface UseVoiceChatReturn {
   isPaused: boolean;
   isMuted: boolean;
   isSpeaking: boolean;
-  voiceName: string;
   participants: VoiceChatParticipant[];
-  participantCount: number;
   isRoomFull: boolean;
   error: string | null;
   enableVoice: () => Promise<boolean>;
@@ -112,7 +110,6 @@ export function useVoiceChat({
         name,
         isVoiceEnabled: presence.isVoiceEnabled || false,
         isMuted: presence.isMuted || false,
-        isSpeaking: false, // We'll update this based on audio analysis
         isReady: presence.isReady || false,
       };
     })
@@ -686,9 +683,7 @@ export function useVoiceChat({
     isPaused,
     isMuted,
     isSpeaking,
-    voiceName,
     participants,
-    participantCount: voiceEnabledCount,
     isRoomFull,
     error,
     enableVoice,

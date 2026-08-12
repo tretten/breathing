@@ -58,121 +58,79 @@ async function handleAudioRequest(request) {
   return networkResponse;
 }
 
-// Handle Range requests by slicing the cached response
+// Handle Range requests by streaming a slice of the cached response.
+// Streams instead of arrayBuffer() so multi-MB files never get copied into
+// memory on every seek (that crashed iOS Safari), while still returning a
+// proper 206 that iOS Safari requires for media playback.
 async function handleRangeRequest(cachedResponse, rangeHeader) {
-  try {
-    const arrayBuffer = await cachedResponse.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
-    const totalSize = bytes.length;
+  const totalSize = Number(cachedResponse.headers.get('Content-Length') || 0);
+  const rangeMatch = rangeHeader.match(/bytes=(\d+)-(\d*)/);
 
-    // Parse Range header (e.g., "bytes=12345-" or "bytes=12345-67890")
-    const rangeMatch = rangeHeader.match(/bytes=(\d+)-(\d*)/);
-    if (!rangeMatch) {
-      // Invalid range, return full response
-      return new Response(bytes, {
-        status: 200,
-        headers: cachedResponse.headers,
-      });
-    }
-
-    const start = parseInt(rangeMatch[1], 10);
-    const end = rangeMatch[2] ? parseInt(rangeMatch[2], 10) : totalSize - 1;
-
-    // Validate range
-    if (start >= totalSize || start > end) {
-      return new Response(null, {
-        status: 416,
-        statusText: 'Range Not Satisfiable',
-        headers: { 'Content-Range': `bytes */${totalSize}` },
-      });
-    }
-
-    const clampedEnd = Math.min(end, totalSize - 1);
-    const slicedBytes = bytes.slice(start, clampedEnd + 1);
-
-    // Create new headers with range info
-    const headers = new Headers(cachedResponse.headers);
-    headers.set('Content-Range', `bytes ${start}-${clampedEnd}/${totalSize}`);
-    headers.set('Content-Length', slicedBytes.length.toString());
-    headers.set('Accept-Ranges', 'bytes');
-
-    return new Response(slicedBytes, {
-      status: 206,
-      statusText: 'Partial Content',
-      headers,
-    });
-  } catch (e) {
-    // On error, return the original cached response
+  // No usable range/body/size: fall back to the full response
+  if (!rangeMatch || !totalSize || !cachedResponse.body) {
     return cachedResponse;
   }
-}
 
-// Pre-cache a full audio file (without Range headers)
-async function cacheFullFile(url) {
-  let cache;
-  try {
-    cache = await caches.open(CACHE_NAME);
-  } catch (e) {
-    return false; // Cache API unavailable
+  const start = parseInt(rangeMatch[1], 10);
+  const end = rangeMatch[2] ? parseInt(rangeMatch[2], 10) : totalSize - 1;
+
+  if (start >= totalSize || start > end) {
+    return new Response(null, {
+      status: 416,
+      statusText: 'Range Not Satisfiable',
+      headers: { 'Content-Range': `bytes */${totalSize}` },
+    });
   }
 
-  // Check if already cached
-  try {
-    const existing = await cache.match(url);
-    if (existing) return true;
-  } catch (e) {
-    // Continue to fetch
-  }
+  const clampedEnd = Math.min(end, totalSize - 1);
+  const length = clampedEnd - start + 1;
 
-  try {
-    // Fetch full file
-    const response = await fetch(url);
+  const reader = cachedResponse.body.getReader();
+  let position = 0;
+  const stream = new ReadableStream({
+    async pull(controller) {
+      let chunk;
+      try {
+        const { done, value } = await reader.read();
+        if (done) {
+          controller.close();
+          return;
+        }
+        chunk = value;
+      } catch (e) {
+        controller.error(e);
+        return;
+      }
 
-    if (response.ok && response.status === 200) {
-      await cache.put(url, response);
-      return true;
-    }
-  } catch (error) {
-    // Silently fail - caching is optional
-  }
+      const chunkStart = position;
+      const chunkEnd = chunkStart + chunk.length;
+      position = chunkEnd;
 
-  return false;
-}
-
-// Message handler for checking cached status and manual caching
-self.addEventListener('message', async (event) => {
-  if (event.data.type === 'CHECK_CACHED') {
-    const { urls } = event.data;
-    const results = {};
-
-    try {
-      const cache = await caches.open(CACHE_NAME);
-      for (const url of urls) {
-        try {
-          const cached = await cache.match(url, { ignoreSearch: true });
-          results[url] = !!cached;
-        } catch (e) {
-          results[url] = false;
+      // Bytes we still need: [start, start + length)
+      const from = Math.max(chunkStart, start);
+      const to = Math.min(chunkEnd, start + length);
+      if (from < to) {
+        controller.enqueue(chunk.subarray(from - chunkStart, to - chunkStart));
+        if (to >= start + length) {
+          controller.close();
         }
       }
-    } catch (e) {
-      // Cache API unavailable, all false
-      for (const url of urls) {
-        results[url] = false;
-      }
-    }
+      // Chunks before `start` or after the slice are skipped - pull() is
+      // called again when enqueue()d data is consumed.
+    },
+    cancel() {
+      reader.cancel();
+    },
+  });
 
-    event.ports[0].postMessage({ results });
-  }
+  const headers = new Headers(cachedResponse.headers);
+  headers.set('Content-Range', `bytes ${start}-${clampedEnd}/${totalSize}`);
+  headers.set('Content-Length', length.toString());
+  headers.set('Accept-Ranges', 'bytes');
 
-  if (event.data.type === 'CACHE_FILES') {
-    const { urls } = event.data;
-    const results = {};
-
-    for (const url of urls) {
-      results[url] = await cacheFullFile(url);
-    }
-
-    event.ports[0].postMessage({ results });
-  }
-});
+  return new Response(stream, {
+    status: 206,
+    statusText: 'Partial Content',
+    headers,
+  });
+}

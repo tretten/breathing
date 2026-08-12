@@ -1,9 +1,8 @@
 // src/hooks/useClientId.ts
 // ============================================================================
-// useClientId - Generate and persist anonymous client ID
+// getClientId - Generate and persist anonymous client ID
 // ============================================================================
 
-import { useState } from "react";
 import { STORAGE_KEY_CLIENT_ID } from "../utils/storageKeys";
 
 /**
@@ -23,12 +22,4 @@ export function getClientId(): string {
   const id = generateClientId();
   localStorage.setItem(STORAGE_KEY_CLIENT_ID, id);
   return id;
-}
-
-/**
- * Hook to get a stable client ID that persists across sessions
- */
-export function useClientId(): string {
-  const [clientId] = useState<string>(() => getClientId());
-  return clientId;
 }

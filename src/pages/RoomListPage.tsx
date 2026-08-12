@@ -1,7 +1,7 @@
 // src/pages/RoomListPage.tsx
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
-import { useTotalTogetherCount, useContentIndex } from "../hooks";
+import { useTogetherActivity, useContentIndex } from "../hooks";
 import { TopBar } from "../components/TopBar";
 import { PageFooter } from "../components/PageFooter";
 import {
@@ -14,7 +14,7 @@ export function RoomListPage() {
   const navigate = useNavigate();
   const { language } = useAppContext();
   const { togetherPresets } = useContentIndex();
-  const totalTogetherCount = useTotalTogetherCount(togetherPresets);
+  const { totalOnline } = useTogetherActivity(togetherPresets);
 
   const texts =
     language === "en"
@@ -52,8 +52,8 @@ export function RoomListPage() {
               <FriendsIcon className="card-icon" />
               <span className="card-ttl">{texts.withFriends}</span>
               <p className="card-subtitle">{texts.withFriendsDesc}</p>
-              {totalTogetherCount > 0 && (
-                <span className="badge">{totalTogetherCount}</span>
+              {totalOnline > 0 && (
+                <span className="badge">{totalOnline}</span>
               )}
             </button>
 

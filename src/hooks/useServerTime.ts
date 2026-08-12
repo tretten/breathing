@@ -30,5 +30,5 @@ export function useServerTime(): UseServerTimeReturn {
     return Date.now() + offset;
   }, [offset]);
 
-  return { getServerTime, offset };
+  return { getServerTime };
 }

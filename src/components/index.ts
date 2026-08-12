@@ -6,7 +6,6 @@
 // Core UI components
 export { BreathingCircle } from "./BreathingCircle";
 export { CountdownOverlay } from "./CountdownOverlay";
-export { PresetSelector } from "./PresetSelector";
 export { TopBar } from "./TopBar";
 
 // Participant and voice components
@@ -24,10 +23,4 @@ export { ThemeToggle } from "./ThemeToggle";
 export { PageFooter } from "./PageFooter";
 
 // Icons
-export {
-  BreathingIcon,
-  MeditationIcon,
-  FriendsIcon,
-  LangRuIcon,
-  LangEnIcon,
-} from "./Icons";
+export { BreathingIcon, MeditationIcon, FriendsIcon } from "./Icons";

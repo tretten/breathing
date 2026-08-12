@@ -4,7 +4,7 @@
 // ============================================================================
 
 // Client identification
-export { useClientId, getClientId } from "./useClientId";
+export { getClientId } from "./useClientId";
 
 // Server time synchronization
 export { useServerTime } from "./useServerTime";
@@ -19,13 +19,11 @@ export type { UseAudioPlaybackOptions } from "./useAudioPlayback";
 // Together room state and actions
 export {
   useTogetherRoomState,
-  useTotalTogetherCount,
+  useTogetherActivity,
   startTogetherCountdown,
   resetTogetherRoom,
 } from "./useTogetherRoom";
-
-// Countdown timers
-export { useCountdown, useNextSlot } from "./useCountdown";
+export type { RoomActivity } from "./useTogetherRoom";
 
 // Phase cues for breathing display
 export { usePhaseCues } from "./usePhaseCues";
@@ -41,4 +39,4 @@ export { useOfflinePresets } from "./useOfflinePresets";
 export { useContentIndex, isValidPreset } from "./useContentIndex";
 
 // Preset metadata loading
-export { usePresetMetadata, useBulkPresetMetadata } from "./usePresetMetadata";
+export { useBulkPresetMetadata } from "./usePresetMetadata";

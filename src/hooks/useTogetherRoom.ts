@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { ref, onValue, update, get } from 'firebase/database';
 import { db } from '../firebase/config';
-import { PRESENCE_MAX_AGE_MS } from '../utils/constants';
+import { PRESENCE_MAX_AGE_MS, COUNTDOWN_DURATION_MS } from '../utils/constants';
 import type { TogetherRoomState, ClientPresence } from '../types';
 
 // ============================================================================
@@ -50,43 +50,55 @@ export function useTogetherRoomState(presetId: string | null): TogetherRoomState
 }
 
 // ============================================================================
-// useTotalTogetherCount - Get total online count across all together rooms
+// useTogetherActivity - Live activity for together rooms
 // ============================================================================
 
+export interface RoomActivity {
+  onlineCount: number;
+  isLive: boolean;
+}
+
 /**
- * Hook to get the total number of users across all Together rooms
- * Useful for showing global activity on the home page
- * @param presetIds - List of preset IDs to monitor
+ * Hook to watch live activity (online count + countdown status) for a list
+ * of Together rooms. Used by the lobby (per-room badges) and the home page
+ * (total online count).
  */
-export function useTotalTogetherCount(presetIds: string[]): number {
-  const [totalCount, setTotalCount] = useState(0);
+export function useTogetherActivity(presetIds: string[]): {
+  activity: Record<string, RoomActivity>;
+  totalOnline: number;
+} {
+  const [activity, setActivity] = useState<Record<string, RoomActivity>>({});
 
   useEffect(() => {
     if (presetIds.length === 0) return;
 
     const unsubscribes: (() => void)[] = [];
 
-    // Track counts per preset
-    const counts: Record<string, number> = {};
-
     for (const presetId of presetIds) {
-      const onlineRef = ref(db, `rooms/together/${presetId}/online`);
+      const roomRef = ref(db, `rooms/together/${presetId}`);
 
-      const unsubscribe = onValue(onlineRef, (snapshot) => {
-        const data = snapshot.val();
-        const now = Date.now();
+      const unsubscribe = onValue(roomRef, (snapshot) => {
+        const data = snapshot.val() as TogetherRoomState | null;
         // Only count active clients (with voiceName and not stale)
-        const validCount = data
-          ? Object.values(data as Record<string, ClientPresence>).filter(
-              (c) =>
-                c.voiceName && c.joinedAt && now - c.joinedAt <= PRESENCE_MAX_AGE_MS,
+        const now = Date.now();
+        const onlineCount = data?.online
+          ? Object.values(
+              data.online as Record<string, ClientPresence>,
+            ).filter(
+              (client) =>
+                client.voiceName &&
+                client.joinedAt &&
+                now - client.joinedAt <= PRESENCE_MAX_AGE_MS,
             ).length
           : 0;
-        counts[presetId] = validCount;
+        const isLive =
+          data?.status === "countdown" && data?.startTimestamp !== null;
 
-        // Calculate total
-        const total = Object.values(counts).reduce((sum, c) => sum + c, 0);
-        setTotalCount(total);
+        // Update state immutably
+        setActivity(prev => ({
+          ...prev,
+          [presetId]: { onlineCount, isLive }
+        }));
       });
 
       unsubscribes.push(unsubscribe);
@@ -98,15 +110,17 @@ export function useTotalTogetherCount(presetIds: string[]): number {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presetIds.join(',')]); // Use join to create stable dependency
 
-  return totalCount;
+  const totalOnline = Object.values(activity).reduce(
+    (sum, a) => sum + a.onlineCount,
+    0,
+  );
+
+  return { activity, totalOnline };
 }
 
 // ============================================================================
 // Together Room Actions
 // ============================================================================
-
-// Countdown duration before session starts (3 seconds)
-const COUNTDOWN_DURATION_MS = 3000;
 
 /**
  * Start the countdown for a Together room session

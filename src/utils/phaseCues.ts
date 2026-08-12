@@ -96,10 +96,10 @@ export function getCurrentPhase(
 export function getPhaseText(type: PhaseType, language: "en" | "ru"): string {
   const texts: Record<PhaseType, { en: string; ru: string }> = {
     breathe: { en: "Breathe", ru: "Дыши" },
-    pause: { en: "Pause", ru: "Пауза" },
-    hold: { en: "Hold", ru: "Задержка" },
-    intro: { en: "Intro", ru: "Начало" },
-    outro: { en: "Outro", ru: "Конец" },
+    hold: { en: "Hold", ru: "Держи" },
+    pause: { en: "Rest", ru: "Отдых" },
+    intro: { en: "Starting", ru: "Начало" },
+    outro: { en: "Finishing", ru: "Завершение" },
   };
   return texts[type][language];
 }

@@ -4,8 +4,6 @@ import {
   useContext,
   useState,
   useCallback,
-  useEffect,
-  useRef,
   ReactNode,
 } from "react";
 import { STORAGE_KEY_LANGUAGE } from "../utils/storageKeys";
@@ -14,10 +12,7 @@ export type Language = "ru" | "en";
 
 interface AppContextType {
   language: Language;
-  isAudioUnlocked: boolean;
   setLanguage: (lang: Language) => void;
-  unlockAudio: () => Promise<void>;
-  audioContextRef: React.RefObject<AudioContext | null>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -40,46 +35,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return detected;
   });
 
-  const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
-  const audioContextRef = useRef<AudioContext | null>(null);
-
-  // Initialize AudioContext on mount
-  useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    audioContextRef.current = new AudioContextClass();
-
-    return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-    };
-  }, []);
-
   const handleSetLanguage = useCallback((lang: Language) => {
     setLanguage(lang);
     localStorage.setItem(STORAGE_KEY_LANGUAGE, lang);
     document.documentElement.lang = lang;
   }, []);
 
-  const unlockAudio = useCallback(async () => {
-    if (
-      audioContextRef.current &&
-      audioContextRef.current.state === "suspended"
-    ) {
-      await audioContextRef.current.resume();
-    }
-    setIsAudioUnlocked(true);
-  }, []);
-
   return (
     <AppContext.Provider
       value={{
         language,
-        isAudioUnlocked,
         setLanguage: handleSetLanguage,
-        unlockAudio,
-        audioContextRef,
       }}
     >
       {children}

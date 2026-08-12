@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import {
-  useClientId,
+  getClientId,
   useServerTime,
   usePresence,
   useTogetherRoomState,
@@ -17,7 +17,6 @@ import {
   resetTogetherRoom,
 } from "../hooks";
 import {
-  SINGLE_USER_WAIT_MS,
   MAX_SESSION_DURATION_MS,
   LATE_JOIN_WINDOW_MS,
   AUDIO_SYNC_INTERVAL_MS,
@@ -26,12 +25,13 @@ import {
   getAudioUrl,
 } from "../utils/constants";
 import { formatSeconds } from "../utils/helpers";
+import { getPhaseText } from "../utils/phaseCues";
 import { BreathingCircle } from "../components/BreathingCircle";
+import { OfflineIcon } from "../components/Icons";
 import { CountdownOverlay } from "../components/CountdownOverlay";
 import { TopBar } from "../components/TopBar";
 import { VoiceChatButton } from "../components/VoiceChatButton";
 import { ParticipantList } from "../components/ParticipantList";
-import { getCueUrlFromAudioUrl } from "../utils/phaseCues";
 
 export function TogetherRoomPage() {
   const navigate = useNavigate();
@@ -46,7 +46,7 @@ export function TogetherRoomPage() {
   const audioUrl = validPresetId ? getAudioUrl(validPresetId) : null;
 
   // Firebase hooks
-  const clientId = useClientId();
+  const [clientId] = useState(() => getClientId());
   const { getServerTime } = useServerTime();
   const roomState = useTogetherRoomState(validPresetId);
 
@@ -55,17 +55,10 @@ export function TogetherRoomPage() {
 
   // Local ready state (sent to Firebase)
   const [isReady, setIsReady] = useState(false);
-  const [presetTitle, setPresetTitle] = useState<string>("");
   const [hasAudioEnded, setHasAudioEnded] = useState(false);
-
-  // Single user waiting timer ref
-  const singleUserTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track if playback has been initiated to prevent duplicate calls
   const hasStartedPlayingRef = useRef(false);
-
-  // Track previous countdown value to detect transition from >0 to 0
-  const prevCountdownRef = useRef<number | null>(null);
 
   // Track if auto-unmute already happened after audio ended
   const autoUnmutedRef = useRef(false);
@@ -103,7 +96,7 @@ export function TogetherRoomPage() {
     duration,
     remainingTime,
     unlockAudio,
-    playNow,
+    schedulePlayback,
     playAt,
     syncTo,
     getCurrentTime,
@@ -111,11 +104,15 @@ export function TogetherRoomPage() {
   } = useAudioPlayback(audioUrl, { presetId: validPresetId, language });
 
   // Phase cues for displaying Breathe/Pause/Hold (keep active during pause)
-  const { currentPhase, phaseRemaining, authorUrl } = usePhaseCues(
-    audioUrl,
-    getCurrentTime,
-    isPlaying,
-  );
+  const { currentPhase, phaseRemaining, authorUrl, title, titleRu } =
+    usePhaseCues(audioUrl, getCurrentTime, isPlaying);
+
+  // Preset title from the same cue file usePhaseCues already loads
+  const presetTitle = title
+    ? language === "ru"
+      ? titleRu || title
+      : title
+    : "";
 
   // Offline status
   const { isPresetCached, cachePreset } = useOfflinePresets();
@@ -129,28 +126,6 @@ export function TogetherRoomPage() {
       cachePreset(validPresetId);
     }
   }, [isPlaying, validPresetId, isCurrentPresetCached, cachePreset]);
-
-  // Fetch preset title from JSON cue file
-  useEffect(() => {
-    if (!audioUrl) return;
-
-    const fetchTitle = async () => {
-      const jsonUrl = getCueUrlFromAudioUrl(audioUrl);
-      try {
-        const response = await fetch(jsonUrl);
-        const data = await response.json();
-        setPresetTitle(
-          language === "ru"
-            ? data.titleRu || data.title || ""
-            : data.title || "",
-        );
-      } catch {
-        setPresetTitle("");
-      }
-    };
-
-    fetchTitle();
-  }, [audioUrl, language]);
 
   // Calculate ready count
   const readyCount = Object.values(clients).filter((c) => c.isReady).length;
@@ -176,7 +151,6 @@ export function TogetherRoomPage() {
   useEffect(() => {
     if (roomStatus !== "countdown" || !startTimestamp) {
       setCountdownSeconds(0);
-      prevCountdownRef.current = null;
       return;
     }
 
@@ -193,38 +167,15 @@ export function TogetherRoomPage() {
     return () => clearInterval(interval);
   }, [roomStatus, startTimestamp, getServerTime]);
 
-  // Handle single user waiting (3 second delay before starting)
+  // Start the session when more than one user is online and all are ready
   useEffect(() => {
-    // Clear any existing timer
-    if (singleUserTimerRef.current) {
-      clearTimeout(singleUserTimerRef.current);
-      singleUserTimerRef.current = null;
-    }
-
-    // Only proceed if room is idle, audio loaded, and user is ready
     if (roomStatus !== "idle" || !isLoaded || !isReady || !validPresetId) {
       return;
     }
 
-    // If more than one user online and all ready, start immediately
     if (onlineCount > 1 && allReady) {
       startTogetherCountdown(validPresetId, getServerTime);
-      return;
     }
-
-    // If single user and ready, wait 3 seconds silently then start
-    if (onlineCount === 1 && isReady) {
-      singleUserTimerRef.current = setTimeout(() => {
-        startTogetherCountdown(validPresetId, getServerTime);
-      }, SINGLE_USER_WAIT_MS);
-    }
-
-    return () => {
-      if (singleUserTimerRef.current) {
-        clearTimeout(singleUserTimerRef.current);
-        singleUserTimerRef.current = null;
-      }
-    };
   }, [
     roomStatus,
     isLoaded,
@@ -235,26 +186,22 @@ export function TogetherRoomPage() {
     validPresetId,
   ]);
 
-  // Play audio when countdown transitions from >0 to 0
+  // Schedule playback from position 0 at the server timestamp
+  // Re-arms when audio finishes loading, so a slow load still starts from the beginning
   useEffect(() => {
-    const prev = prevCountdownRef.current;
-    prevCountdownRef.current = countdownSeconds;
-
-    // Only play when countdown was > 0 and now is 0 (actual countdown finished)
-    const countdownJustFinished =
-      prev !== null && prev > 0 && countdownSeconds === 0;
-
     if (
-      roomStatus === "countdown" &&
-      countdownJustFinished &&
-      isLoaded &&
-      !isPlaying &&
-      !hasStartedPlayingRef.current
+      roomStatus !== "countdown" ||
+      !startTimestamp ||
+      !isLoaded ||
+      isPlaying ||
+      hasStartedPlayingRef.current
     ) {
-      hasStartedPlayingRef.current = true;
-      playNow();
+      return;
     }
-  }, [roomStatus, countdownSeconds, isLoaded, isPlaying, playNow]);
+
+    hasStartedPlayingRef.current = true;
+    schedulePlayback(startTimestamp, getServerTime);
+  }, [roomStatus, startTimestamp, isLoaded, isPlaying, getServerTime, schedulePlayback]);
 
   // Track playback state and handle audio ending naturally
   useEffect(() => {
@@ -294,10 +241,12 @@ export function TogetherRoomPage() {
     }
   }, [hasAudioEnded, isVoiceEnabled, isMuted, unmuteAll]);
 
-  // Reset playback flag when room goes back to idle
+  // Reset playback/end flags when room goes back to idle, so a lone user
+  // lands back on the Ready screen instead of the done screen
   useEffect(() => {
     if (roomStatus === "idle") {
       hasStartedPlayingRef.current = false;
+      setHasAudioEnded(false);
     }
   }, [roomStatus]);
 
@@ -386,12 +335,10 @@ export function TogetherRoomPage() {
   const handleVoiceToggle = useCallback(async () => {
     if (!isVoiceEnabled) {
       await enableVoice();
-    } else if (isMuted) {
-      toggleMute();
     } else {
       toggleMute();
     }
-  }, [isVoiceEnabled, isMuted, enableVoice, toggleMute]);
+  }, [isVoiceEnabled, enableVoice, toggleMute]);
 
   // Calculate elapsed time since session started
   const getElapsedSeconds = useCallback(() => {
@@ -432,27 +379,51 @@ export function TogetherRoomPage() {
     !isPlaying &&
     !isSessionExpired;
 
-  // Auto-reset expired sessions
+  // Periodically reset stale/abandoned sessions (merged checks)
   useEffect(() => {
-    if (isSessionExpired && validPresetId) {
-      resetTogetherRoom(validPresetId);
-    }
-  }, [isSessionExpired, validPresetId]);
-
-  // Periodically check for stale sessions
-  useEffect(() => {
-    if (
-      roomStatus !== "countdown" ||
-      isPlaying ||
-      !startTimestamp ||
-      !validPresetId
-    ) {
+    if (roomStatus !== "countdown" || !startTimestamp || !validPresetId) {
       return;
     }
 
     const checkStale = () => {
-      const elapsed = getServerTime() - startTimestamp;
-      if (elapsed > MAX_SESSION_DURATION_MS) {
+      const sessionElapsedMs = getServerTime() - startTimestamp;
+      if (sessionElapsedMs < 0) return; // countdown hasn't started yet
+      const sessionStartedSecondsAgo = sessionElapsedMs / 1000;
+      const audioEndedMs = duration > 0 ? sessionElapsedMs - duration * 1000 : 0;
+      const isAudioFinished = duration > 0 && sessionStartedSecondsAgo > duration;
+
+      // Session too old - reset
+      if (sessionElapsedMs > MAX_SESSION_DURATION_MS) {
+        resetTogetherRoom(validPresetId);
+        return;
+      }
+
+      // No one online - reset immediately
+      if (onlineCount === 0) {
+        resetTogetherRoom(validPresetId);
+        return;
+      }
+
+      // If audio finished, allow post-session chat only when others are in
+      // the room; a lone user gets reset right back to the Ready screen
+      if (isAudioFinished) {
+        const roomHasOthers = onlineCount > 1;
+        if (roomHasOthers && audioEndedMs <= POST_SESSION_CHAT_MS) {
+          return; // Let people chat - don't reset
+        }
+        resetTogetherRoom(validPresetId);
+        return;
+      }
+
+      // Single user with stale session (> 5 seconds old, not playing) - reset
+      if (onlineCount === 1 && !isPlaying && sessionStartedSecondsAgo > 5) {
+        resetTogetherRoom(validPresetId);
+        return;
+      }
+
+      // Session is past late join window and no one is playing - reset
+      // This handles the case where everyone left during countdown
+      if (!isPlaying && sessionStartedSecondsAgo > LATE_JOIN_WINDOW_MS / 1000) {
         resetTogetherRoom(validPresetId);
       }
     };
@@ -461,49 +432,6 @@ export function TogetherRoomPage() {
     const interval = setInterval(checkStale, 5000);
 
     return () => clearInterval(interval);
-  }, [roomStatus, isPlaying, startTimestamp, getServerTime, validPresetId]);
-
-  // Auto-end session if it appears abandoned or stale
-  useEffect(() => {
-    const isActiveSession =
-      roomStatus === "countdown" &&
-      startTimestamp !== null &&
-      getServerTime() > startTimestamp;
-
-    if (!isActiveSession || !validPresetId) return;
-
-    // No one online - reset immediately
-    if (onlineCount === 0) {
-      resetTogetherRoom(validPresetId);
-      return;
-    }
-
-    const sessionElapsedMs = getServerTime() - startTimestamp;
-    const sessionStartedSecondsAgo = sessionElapsedMs / 1000;
-    const audioEndedMs = duration > 0 ? sessionElapsedMs - duration * 1000 : 0;
-    const isAudioFinished = duration > 0 && sessionStartedSecondsAgo > duration;
-
-    // If audio finished, allow post-session chat for POST_SESSION_CHAT_MS
-    if (isAudioFinished) {
-      // Reset only if chat time exceeded
-      if (audioEndedMs > POST_SESSION_CHAT_MS) {
-        resetTogetherRoom(validPresetId);
-      }
-      // Otherwise let people chat - don't reset
-      return;
-    }
-
-    // Single user with stale session (> 5 seconds old, not playing) - reset
-    if (onlineCount === 1 && !isPlaying && sessionStartedSecondsAgo > 5) {
-      resetTogetherRoom(validPresetId);
-      return;
-    }
-
-    // Session is past late join window and no one is playing - reset
-    // This handles the case where everyone left during countdown
-    if (!isPlaying && sessionStartedSecondsAgo > LATE_JOIN_WINDOW_MS / 1000) {
-      resetTogetherRoom(validPresetId);
-    }
   }, [
     roomStatus,
     startTimestamp,
@@ -539,6 +467,7 @@ export function TogetherRoomPage() {
           waiting: "Waiting...",
           loading: "Loading...",
           readyLabel: "ready",
+          waitForOthers: "Waiting for others...",
           sessionEnd: "Remaining",
           exit: "Exit",
           join: "Join the session",
@@ -554,6 +483,7 @@ export function TogetherRoomPage() {
           waiting: "Ожидание...",
           loading: "Загрузка...",
           readyLabel: "готовы",
+          waitForOthers: "Ожидание других...",
           sessionEnd: "Осталось",
           exit: "Выход",
           join: "Присоединиться",
@@ -594,18 +524,7 @@ export function TogetherRoomPage() {
                     language === "ru" ? "Доступен офлайн" : "Available offline"
                   }
                 >
-                  <svg
-                    aria-hidden="true"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
+                  <OfflineIcon />
                 </span>
               )}
               {subtitleText}
@@ -627,21 +546,7 @@ export function TogetherRoomPage() {
                     {hasAudioEnded
                       ? texts.done
                       : currentPhase
-                        ? language === "ru"
-                          ? {
-                              breathe: "Дыши",
-                              hold: "Держи",
-                              pause: "Отдых",
-                              intro: "Начало",
-                              outro: "Завершение",
-                            }[currentPhase]
-                          : {
-                              breathe: "Breathe",
-                              hold: "Hold",
-                              pause: "Rest",
-                              intro: "Starting",
-                              outro: "Finishing",
-                            }[currentPhase]
+                        ? getPhaseText(currentPhase, language)
                         : ""}
                   </span>
                   <span className="phase-time">
@@ -696,13 +601,15 @@ export function TogetherRoomPage() {
                   <button
                     className={`btn btn--primary btn--lg ${isReady ? "active" : ""}`}
                     onClick={handleToggleReady}
-                    disabled={!isLoaded}
+                    disabled={!isLoaded || onlineCount <= 1}
                   >
                     {!isLoaded
                       ? texts.loading
-                      : isReady
-                        ? texts.notReady
-                        : texts.ready}
+                      : onlineCount <= 1 && !isReady
+                        ? texts.waitForOthers
+                        : isReady
+                          ? texts.notReady
+                          : texts.ready}
                   </button>
                 </div>
 

@@ -3,29 +3,15 @@
 // Application Constants
 // ============================================================================
 
-import type { RoomId, RoomConfig } from "../types";
-
 // ============================================================================
 // Time Constants
 // ============================================================================
 
-/** Session slot interval - sessions start every 30 minutes */
-export const SLOT_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-
-/** Window for considering current slot as "starting now" */
-export const SESSION_WINDOW_MS = 5000; // 5 seconds
-
 /** Countdown duration before session starts */
 export const COUNTDOWN_DURATION_MS = 3000; // 3 seconds
 
-/** Wait time for single user before starting */
-export const SINGLE_USER_WAIT_MS = 3000; // 3 seconds
-
 /** Maximum session duration before considered stale */
 export const MAX_SESSION_DURATION_MS = 60 * 60 * 1000; // 60 minutes
-
-/** Auto-exit delay after session ends */
-export const AUTO_EXIT_DELAY_MS = 27000; // 27 seconds
 
 /** Window for late joining a session */
 export const LATE_JOIN_WINDOW_MS = 36000; // 36 seconds
@@ -60,23 +46,6 @@ export const VOICE_ACTIVITY_THRESHOLD = 0.01;
 
 /** Voice activity check interval */
 export const VOICE_ACTIVITY_CHECK_INTERVAL_MS = 100;
-
-// ============================================================================
-// Room Configuration
-// ============================================================================
-
-/** Room configurations */
-export const ROOMS_CONFIG: Record<RoomId, RoomConfig> = {
-  solo: {
-    type: "solo",
-    label: "Сам",
-  },
-};
-
-/** Labels for room list (localized) */
-export const ROOM_LABELS: Record<RoomId, { ru: string; en: string }> = {
-  solo: { ru: "Сам", en: "Solo" },
-};
 
 // ============================================================================
 // Content Configuration

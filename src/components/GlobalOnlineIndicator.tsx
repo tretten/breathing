@@ -1,9 +1,10 @@
 // src/components/GlobalOnlineIndicator.tsx
 import { useEffect, useState } from "react";
-import { ref, onValue, set, remove, onDisconnect } from "firebase/database";
+import { ref, onValue, set, remove, onDisconnect, get } from "firebase/database";
 import { db } from "../firebase/config";
 import { useAppContext } from "../context/AppContext";
 import { getClientId } from "../hooks";
+import { PRESENCE_MAX_AGE_MS, HEARTBEAT_INTERVAL_MS } from "../utils/constants";
 
 export function GlobalOnlineIndicator() {
   const { language } = useAppContext();
@@ -14,23 +15,44 @@ export function GlobalOnlineIndicator() {
     const myPresenceRef = ref(db, `presence/${clientId}`);
     const presenceRef = ref(db, "presence");
 
-    // Register global presence
-    set(myPresenceRef, {
-      online: true,
-      lastSeen: Date.now(),
+    // Prune ghost entries from crashed tabs / old sessions, then register
+    get(presenceRef).then((snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const now = Date.now();
+        for (const [id, presence] of Object.entries(data) as [string, { lastSeen?: number }][]) {
+          if (id !== clientId && now - (presence.lastSeen || 0) > PRESENCE_MAX_AGE_MS) {
+            remove(ref(db, `presence/${id}`));
+          }
+        }
+      }
     });
+
+    // Register presence + heartbeat to keep lastSeen fresh
+    const writeHeartbeat = () => {
+      set(myPresenceRef, { online: true, lastSeen: Date.now() });
+    };
+    writeHeartbeat();
+    const heartbeat = setInterval(writeHeartbeat, HEARTBEAT_INTERVAL_MS);
 
     // Remove presence on disconnect
     onDisconnect(myPresenceRef).remove();
 
-    // Listen to all online users
+    // Listen to all online users (count only fresh entries)
     const unsubscribe = onValue(presenceRef, (snapshot) => {
       const data = snapshot.val();
-      setOnlineCount(data ? Object.keys(data).length : 0);
+      const now = Date.now();
+      const liveCount = data
+        ? Object.entries(data as Record<string, { lastSeen?: number }>).filter(
+            ([id, p]) => id === clientId || now - (p.lastSeen || 0) <= PRESENCE_MAX_AGE_MS,
+          ).length
+        : 0;
+      setOnlineCount(liveCount);
     });
 
     // Cleanup on unmount
     return () => {
+      clearInterval(heartbeat);
       unsubscribe();
       remove(myPresenceRef);
     };

@@ -140,14 +140,8 @@ export function getNameFromIndices(
   return `${adjective} ${noun}`;
 }
 
-// Legacy function for backward compatibility - returns indices as JSON string
+// Legacy format - returns indices as JSON string for Firebase presence
 export function getOrCreateVoiceName(): string {
   const indices = getOrCreateNameIndices();
-  return JSON.stringify(indices);
-}
-
-export function resetVoiceName(): string {
-  const indices = generateRandomIndices();
-  localStorage.setItem(STORAGE_KEY_VOICE_NAME, JSON.stringify(indices));
   return JSON.stringify(indices);
 }

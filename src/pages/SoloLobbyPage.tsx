@@ -9,6 +9,8 @@ import {
 import { TopBar } from "../components/TopBar";
 import { PageFooter } from "../components/PageFooter";
 import { MeditationIcon } from "../components/Icons";
+import { PresetCard } from "../components/PresetCard";
+import { splitPresetsByLang } from "../utils/helpers";
 
 export function SoloLobbyPage() {
   const navigate = useNavigate();
@@ -53,9 +55,7 @@ export function SoloLobbyPage() {
         };
 
   // Group presets by language (en first, then ru)
-  const enPresets = presets.filter((p) => p.lang.startsWith("EN"));
-  const ruPresets = presets.filter((p) => !p.lang.startsWith("EN"));
-  const sortedPresets = [...enPresets, ...ruPresets];
+  const sortedPresets = splitPresetsByLang(presets);
 
   const isLoading = isLoadingIndex || isLoadingMetadata;
   const error = indexError || metadataError;
@@ -90,48 +90,15 @@ export function SoloLobbyPage() {
             </div>
           ) : (
             <div className="grid">
-              {sortedPresets.map((preset) => {
-                const displayTitle =
-                  language === "ru"
-                    ? preset.titleRu || preset.title
-                    : preset.title;
-                const isCached = isPresetCached(preset.id);
-
-                return (
-                  <button
-                    type="button"
-                    key={preset.id}
-                    className="card"
-                    onClick={() => handleSelectPreset(preset.id)}
-                  >
-                    <span className="lang">{preset.lang}</span>
-                    <span className="card-ttl">{displayTitle}</span>
-                    {isCached && (
-                      <span
-                        className="offline"
-                        title={
-                          language === "ru"
-                            ? "Доступен офлайн"
-                            : "Available offline"
-                        }
-                      >
-                        <svg
-                          aria-hidden="true"
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                          <polyline points="22 4 12 14.01 9 11.01" />
-                        </svg>
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              {sortedPresets.map((preset) => (
+                <PresetCard
+                  key={preset.id}
+                  preset={preset}
+                  lang={preset.lang}
+                  isCached={isPresetCached(preset.id)}
+                  onClick={() => handleSelectPreset(preset.id)}
+                />
+              ))}
             </div>
           )}
 

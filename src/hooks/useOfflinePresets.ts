@@ -8,10 +8,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getAudioUrl, getMetadataUrl } from '../utils/constants';
 import { useContentIndex } from './useContentIndex';
 
+// Must match CACHE_NAME in public/sw.js
+const CACHE_NAME = 'rooms-offline-v1';
+
 interface UseOfflinePresetsReturn {
   /** Which presets are cached and available offline */
   cachedPresets: Set<string>;
-  /** Whether service worker is available */
+  /** Whether Cache Storage API is available */
   isSupported: boolean;
   /** Check which presets are cached */
   checkCachedPresets: () => Promise<void>;
@@ -32,44 +35,9 @@ function getPresetUrls(presetId: string): string[] {
   return [new URL(audioUrl, base).href, new URL(jsonUrl, base).href];
 }
 
-/**
- * Send message to service worker and wait for response
- */
-async function sendToServiceWorker<T>(message: object): Promise<T> {
-  const registration = await navigator.serviceWorker.ready;
-  const sw = registration.active;
-
-  if (!sw) {
-    throw new Error('No active service worker');
-  }
-
-  return new Promise((resolve, reject) => {
-    const channel = new MessageChannel();
-    const timeout = setTimeout(() => {
-      channel.port1.onmessage = null;
-      channel.port1.onmessageerror = null;
-      channel.port1.close();
-      reject(new Error('Service worker message timeout'));
-    }, 5000);
-
-    channel.port1.onmessage = (event) => {
-      clearTimeout(timeout);
-      resolve(event.data);
-    };
-
-    channel.port1.onmessageerror = () => {
-      clearTimeout(timeout);
-      channel.port1.close();
-      reject(new Error('Message error'));
-    };
-
-    sw.postMessage(message, [channel.port2]);
-  });
-}
-
 export function useOfflinePresets(): UseOfflinePresetsReturn {
   const [cachedPresets, setCachedPresets] = useState<Set<string>>(new Set());
-  const [isSupported, setIsSupported] = useState(false);
+  const isSupported = useMemo(() => 'caches' in window, []);
   const { togetherPresets, soloPresets } = useContentIndex();
 
   // Combine all presets for checking
@@ -78,33 +46,20 @@ export function useOfflinePresets(): UseOfflinePresetsReturn {
     [togetherPresets, soloPresets]
   );
 
-  // Check if service worker is supported
-  useEffect(() => {
-    setIsSupported('serviceWorker' in navigator);
-  }, []);
-
   // Check which presets are cached
   const checkCachedPresets = useCallback(async () => {
     if (!isSupported || allPresets.length === 0) return;
 
     try {
-      // Collect all URLs for all presets
-      const allUrls: string[] = [];
-      for (const presetId of allPresets) {
-        allUrls.push(...getPresetUrls(presetId));
-      }
+      const cache = await caches.open(CACHE_NAME);
 
-      const response = await sendToServiceWorker<{ results: Record<string, boolean> }>({
-        type: 'CHECK_CACHED',
-        urls: allUrls,
-      });
-
-      // Determine which presets have all files cached
       const cached = new Set<string>();
       for (const presetId of allPresets) {
         const urls = getPresetUrls(presetId);
-        const allCached = urls.every((url) => response.results[url]);
-        if (allCached) {
+        const results = await Promise.all(
+          urls.map((url) => cache.match(url, { ignoreSearch: true }))
+        );
+        if (results.every(Boolean)) {
           cached.add(presetId);
         }
       }
@@ -115,24 +70,11 @@ export function useOfflinePresets(): UseOfflinePresetsReturn {
     }
   }, [isSupported, allPresets]);
 
-  // Check on mount and when service worker becomes available
+  // Check on mount and when preset list changes
   useEffect(() => {
     if (isSupported && allPresets.length > 0) {
-      navigator.serviceWorker.ready.then(() => {
-        checkCachedPresets();
-      });
-    }
-  }, [isSupported, checkCachedPresets, allPresets.length]);
-
-  // Periodically re-check cache status (to detect new cached presets after playback)
-  useEffect(() => {
-    if (!isSupported || allPresets.length === 0) return;
-
-    const interval = setInterval(() => {
       checkCachedPresets();
-    }, 5000); // Check every 5 seconds
-
-    return () => clearInterval(interval);
+    }
   }, [isSupported, checkCachedPresets, allPresets.length]);
 
   // Check if specific preset is cached
@@ -146,11 +88,13 @@ export function useOfflinePresets(): UseOfflinePresetsReturn {
     if (cachedPresets.has(preset)) return; // Already cached
 
     try {
-      const urls = getPresetUrls(preset);
-      await sendToServiceWorker({
-        type: 'CACHE_FILES',
-        urls,
-      });
+      const cache = await caches.open(CACHE_NAME);
+      for (const url of getPresetUrls(preset)) {
+        const response = await fetch(url);
+        if (response.ok && response.status === 200) {
+          await cache.put(url, response).catch(() => {});
+        }
+      }
       // Refresh cache status
       await checkCachedPresets();
     } catch (error) {

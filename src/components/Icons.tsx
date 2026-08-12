@@ -77,7 +77,7 @@ export function FriendsIcon({ className, size = 24 }: IconProps) {
   );
 }
 
-export function LangRuIcon({ className, size = 24 }: IconProps) {
+export function OfflineIcon({ className, size = 14 }: IconProps) {
   return (
     <svg
       className={className}
@@ -85,46 +85,12 @@ export function LangRuIcon({ className, size = 24 }: IconProps) {
       height={size}
       viewBox="0 0 24 24"
       fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
       aria-hidden="true"
     >
-      <text
-        x="12"
-        y="16"
-        textAnchor="middle"
-        fill="currentColor"
-        fontSize="11"
-        fontWeight="500"
-        fontFamily="inherit"
-        letterSpacing="0.05em"
-      >
-        RU
-      </text>
-    </svg>
-  );
-}
-
-export function LangEnIcon({ className, size = 24 }: IconProps) {
-  return (
-    <svg
-      className={className}
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <text
-        x="12"
-        y="16"
-        textAnchor="middle"
-        fill="currentColor"
-        fontSize="11"
-        fontWeight="500"
-        fontFamily="inherit"
-        letterSpacing="0.05em"
-      >
-        EN
-      </text>
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
     </svg>
   );
 }

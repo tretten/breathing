@@ -12,16 +12,13 @@ interface ParticipantListProps {
   language: 'en' | 'ru';
 }
 
-type StatusType = 'offline' | 'online' | 'voice' | 'ready' | 'speaking' | 'muted';
+type StatusType = 'offline' | 'online' | 'voice' | 'ready' | 'muted';
 
 function getParticipantStatus(
   participant: VoiceChatParticipant
 ): StatusType {
   if (participant.isMuted && participant.isVoiceEnabled) {
     return 'muted';
-  }
-  if (participant.isSpeaking) {
-    return 'speaking';
   }
   if (participant.isReady) {
     return 'ready';

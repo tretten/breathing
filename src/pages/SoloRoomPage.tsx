@@ -11,8 +11,9 @@ import {
 import { isValidPreset } from "../hooks/useContentIndex";
 import { COUNTDOWN_DURATION_MS, getAudioUrl } from "../utils/constants";
 import { formatSeconds } from "../utils/helpers";
-import { getCueUrlFromAudioUrl } from "../utils/phaseCues";
+import { getPhaseText } from "../utils/phaseCues";
 import { BreathingCircle } from "../components/BreathingCircle";
+import { OfflineIcon } from "../components/Icons";
 import { CountdownOverlay } from "../components/CountdownOverlay";
 import { TopBar } from "../components/TopBar";
 import { PageFooter } from "../components/PageFooter";
@@ -32,9 +33,7 @@ export function SoloRoomPage() {
 
   const [status, setStatus] = useState<RoomStatus>("idle");
   const [countdownSeconds, setCountdownSeconds] = useState(0);
-  const [presetTitle, setPresetTitle] = useState<string>("");
   const [hasAudioEnded, setHasAudioEnded] = useState(false);
-  const hasStartedPlayingRef = useRef(false);
   const audioDidPlayRef = useRef(false);
 
   const audioUrl = validPresetId ? getAudioUrl(validPresetId) : null;
@@ -45,19 +44,27 @@ export function SoloRoomPage() {
     isPaused,
     remainingTime,
     unlockAudio,
-    playNow,
+    schedulePlayback,
     pausePlayback,
     resumePlayback,
     stopPlayback,
     getCurrentTime,
-  } = useAudioPlayback(audioUrl, { presetId: validPresetId, language });
+  } = useAudioPlayback(audioUrl, {
+    presetId: validPresetId,
+    language,
+    lockScreenControls: true,
+  });
 
   // Phase cues for displaying Breathe/Pause/Hold (keep active during pause)
-  const { currentPhase, phaseRemaining, authorUrl } = usePhaseCues(
-    audioUrl,
-    getCurrentTime,
-    isPlaying || isPaused,
-  );
+  const { currentPhase, phaseRemaining, authorUrl, title, titleRu } =
+    usePhaseCues(audioUrl, getCurrentTime, isPlaying || isPaused);
+
+  // Preset title from the same cue file usePhaseCues already loads
+  const presetTitle = title
+    ? language === "ru"
+      ? titleRu || title
+      : title
+    : "";
 
   // Offline status
   const { isPresetCached, cachePreset } = useOfflinePresets();
@@ -79,38 +86,7 @@ export function SoloRoomPage() {
     }
   }, [isPlaying, validPresetId, isCurrentPresetCached, cachePreset]);
 
-  // Fetch preset title from JSON cue file
-  useEffect(() => {
-    if (!audioUrl) {
-      setPresetTitle("");
-      return;
-    }
-
-    const controller = new AbortController();
-
-    const fetchTitle = async () => {
-      const jsonUrl = getCueUrlFromAudioUrl(audioUrl);
-      try {
-        const response = await fetch(jsonUrl, { signal: controller.signal });
-        const data = await response.json();
-        setPresetTitle(
-          language === "ru"
-            ? data.titleRu || data.title || ""
-            : data.title || "",
-        );
-      } catch (error) {
-        if (error instanceof Error && error.name !== "AbortError") {
-          setPresetTitle("");
-        }
-      }
-    };
-
-    fetchTitle();
-
-    return () => controller.abort();
-  }, [audioUrl, language]);
-
-  // Run countdown timer
+  // Run countdown timer (visual only - playback is anchored to endTimestamp)
   useEffect(() => {
     if (status !== "countdown") return;
 
@@ -121,30 +97,16 @@ export function SoloRoomPage() {
     return () => clearInterval(interval);
   }, [status]);
 
-  // Transition to playing when countdown reaches 0
+  // Transition to playing when countdown reaches 0 (UI state only)
   useEffect(() => {
     if (status === "countdown" && countdownSeconds <= 0) {
       setStatus("playing");
     }
   }, [status, countdownSeconds]);
 
-  // Play audio when countdown reaches 0
-  useEffect(() => {
-    if (
-      status === "playing" &&
-      !isPlaying &&
-      isLoaded &&
-      !hasStartedPlayingRef.current
-    ) {
-      hasStartedPlayingRef.current = true;
-      playNow();
-    }
-  }, [status, isPlaying, isLoaded, playNow]);
-
   // Track when audio actually starts playing and when it ends
   useEffect(() => {
     if (isPlaying) {
-      hasStartedPlayingRef.current = true;
       audioDidPlayRef.current = true;
       setHasAudioEnded(false);
     } else if (audioDidPlayRef.current && !isPaused) {
@@ -171,6 +133,9 @@ export function SoloRoomPage() {
     const startSession = async () => {
       try {
         await unlockAudio();
+        // Schedule playback at the exact moment the countdown display hits 0
+        const endTimestamp = Date.now() + COUNTDOWN_DURATION_MS;
+        schedulePlayback(endTimestamp, () => Date.now());
         setStatus("countdown");
         setCountdownSeconds(COUNTDOWN_DURATION_MS / 1000);
       } catch (error) {
@@ -182,7 +147,7 @@ export function SoloRoomPage() {
     };
 
     startSession();
-  }, [status, validPresetId, isLoaded, unlockAudio]);
+  }, [status, validPresetId, isLoaded, unlockAudio, schedulePlayback]);
 
   const handleBack = useCallback(() => {
     navigate("/solo");
@@ -261,18 +226,7 @@ export function SoloRoomPage() {
                     language === "ru" ? "Доступен офлайн" : "Available offline"
                   }
                 >
-                  <svg
-                    aria-hidden="true"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
+                  <OfflineIcon />
                 </span>
               )}
               {presetTitle || texts.loading}
@@ -288,21 +242,7 @@ export function SoloRoomPage() {
                     {hasAudioEnded
                       ? texts.done
                       : currentPhase
-                        ? language === "ru"
-                          ? {
-                              breathe: "Дыши",
-                              hold: "Держи",
-                              pause: "Отдых",
-                              intro: "Начало",
-                              outro: "Завершение",
-                            }[currentPhase]
-                          : {
-                              breathe: "Breathe",
-                              hold: "Hold",
-                              pause: "Rest",
-                              intro: "Starting",
-                              outro: "Finishing",
-                            }[currentPhase]
+                        ? getPhaseText(currentPhase, language)
                         : ""}
                   </span>
                   <span className="phase-time">
