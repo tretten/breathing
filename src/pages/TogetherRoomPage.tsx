@@ -267,6 +267,7 @@ export function TogetherRoomPage() {
     if (roomStatus === "idle") {
       hasStartedPlayingRef.current = false;
       setHasAudioEnded(false);
+      setIsReady(false);
     }
   }, [roomStatus]);
 
@@ -367,44 +368,27 @@ export function TogetherRoomPage() {
     }
   }, [isVoiceEnabled, enableVoice, toggleMute]);
 
-  // Calculate elapsed time since session started
-  const getElapsedSeconds = useCallback(() => {
-    if (!startTimestamp) return 0;
-    return (getServerTime() - startTimestamp) / 1000;
-  }, [startTimestamp, getServerTime]);
-
-  // Check if session has expired
-  const elapsedMs = startTimestamp ? getServerTime() - startTimestamp : 0;
-  const isSessionStale =
-    roomStatus === "countdown" &&
-    startTimestamp !== null &&
-    elapsedMs > MAX_SESSION_DURATION_MS;
-  const isSessionExpired =
-    isSessionStale ||
-    (roomStatus === "countdown" &&
-      startTimestamp !== null &&
-      duration > 0 &&
-      getElapsedSeconds() > duration);
-
-  // Check if this is a late join (session in progress, within 18s window, not expired)
+  // Check if this is a late join (session running, join at any point before
+  // the track ends)
   const sessionElapsedMs = startTimestamp
     ? getServerTime() - startTimestamp
     : 0;
   const isLateJoin =
     roomStatus === "countdown" &&
     startTimestamp !== null &&
+    duration > 0 &&
     sessionElapsedMs > 0 &&
-    sessionElapsedMs <= LATE_JOIN_WINDOW_MS &&
+    sessionElapsedMs / 1000 < duration &&
     !isPlaying &&
-    !isSessionExpired;
+    !hasAudioEnded;
 
-  // Too late to join - session started more than 18 seconds ago
-  const isTooLateToJoin =
+  // Session already finished - wait for the room to reset
+  const isSessionOver =
     roomStatus === "countdown" &&
     startTimestamp !== null &&
-    sessionElapsedMs > LATE_JOIN_WINDOW_MS &&
-    !isPlaying &&
-    !isSessionExpired;
+    duration > 0 &&
+    sessionElapsedMs / 1000 >= duration &&
+    !isPlaying;
 
   // Periodically reset stale/abandoned sessions (merged checks)
   useEffect(() => {
@@ -518,7 +502,7 @@ export function TogetherRoomPage() {
           exit: "Exit",
           join: "Join the session",
           sessionInProgress: "In progress",
-          tooLate: "Session already started",
+          tooLate: "Session over",
           done: "Done",
           supportAuthor: "Support Author",
         }
@@ -534,7 +518,7 @@ export function TogetherRoomPage() {
           exit: "Выход",
           join: "Присоединиться",
           sessionInProgress: "Идёт сеанс",
-          tooLate: "Сессия уже началась",
+          tooLate: "Сессия завершена",
           done: "Готово",
           supportAuthor: "Поддержать автора",
         };
@@ -612,7 +596,7 @@ export function TogetherRoomPage() {
               </div>
             )}
             {/* Late join / Too late status - displayed inside circle */}
-            {(isLateJoin || isTooLateToJoin) &&
+            {(isLateJoin || isSessionOver) &&
               !isPlaying &&
               !hasAudioEnded && (
                 <div className="circ-ovl">
@@ -669,7 +653,7 @@ export function TogetherRoomPage() {
             {roomStatus === "countdown" &&
               !isPlaying &&
               !isLateJoin &&
-              !isTooLateToJoin && (
+              !isSessionOver && (
                 <div className="cdown-msg">
                   <div className="voice">
                     {isVoiceEnabled && (
@@ -703,7 +687,7 @@ export function TogetherRoomPage() {
             )}
 
             {/* Too late to join - session started more than 18 seconds ago */}
-            {isTooLateToJoin && (
+            {isSessionOver && (
               <div className="too-late-message">
                 <button className="btn btn--secondary" onClick={handleExit}>
                   {texts.exit}

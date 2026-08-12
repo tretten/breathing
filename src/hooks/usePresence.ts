@@ -3,16 +3,8 @@
 // usePresence - Manage user presence in a room
 // ============================================================================
 
-import { useState, useEffect } from 'react';
-import {
-  ref,
-  onValue,
-  set,
-  update,
-  remove,
-  onDisconnect,
-  get,
-} from 'firebase/database';
+import { useState, useEffect, useRef } from 'react';
+import { ref, onValue, set, update, remove, onDisconnect } from 'firebase/database';
 import { db } from '../firebase/config';
 import { getOrCreateVoiceName } from '../utils/randomNames';
 import { PRESENCE_MAX_AGE_MS, HEARTBEAT_INTERVAL_MS } from '../utils/constants';
@@ -23,132 +15,104 @@ interface UsePresenceOptions {
 }
 
 /**
- * Hook to manage user presence in a Firebase room
- * Handles registration, cleanup of stale entries, and real-time updates
+ * Hook to manage user presence in a Firebase room.
+ *
+ * Presence entries are written atomically (full object) and re-registered on
+ * every reconnect (.info/connected). This prevents ghost entries: previously
+ * a reconnect dropped the entry via onDisconnect and the heartbeat's update()
+ * recreated it as a partial {lastSeen} record - counted but nameless, and the
+ * owner's isReady was lost, blocking the room from ever starting.
  */
 export function usePresence(
   roomPath: string | null,
   clientId: string,
   options: UsePresenceOptions = {}
 ): UsePresenceReturn {
-  // Start with 1 to count ourselves before Firebase confirms (prevents showing 0)
-  const [onlineCount, setOnlineCount] = useState<number>(roomPath ? 1 : 0);
   const [clients, setClients] = useState<Record<string, ClientPresence>>({});
   const { isReady } = options;
+  const joinedRef = useRef(false);
+  const isReadyRef = useRef(isReady);
+  isReadyRef.current = isReady;
 
-  // Register presence (only depends on roomPath and clientId)
   useEffect(() => {
     if (!roomPath || !clientId) {
       return;
     }
 
-    let isMounted = true;
     const myRef = ref(db, `rooms/${roomPath}/online/${clientId}`);
     const onlineRef = ref(db, `rooms/${roomPath}/online`);
+    const connectedRef = ref(db, '.info/connected');
 
-    // Clean up stale entries first, then register ourselves
-    const cleanupAndRegister = async () => {
-      try {
-        // Get current entries
-        const snapshot = await get(onlineRef);
-        if (!isMounted) return;
-
-        const data = snapshot.val() as Record<string, ClientPresence> | null;
-
-        if (data) {
-          const now = Date.now();
-          const staleClientIds = Object.entries(data)
-            .filter(([id, presence]) => {
-              // Don't remove our own entry
-              if (id === clientId) return false;
-              // Remove only if joinedAt is too old (stale entry)
-              return now - presence.joinedAt > PRESENCE_MAX_AGE_MS;
-            })
-            .map(([id]) => id);
-
-          // Remove stale entries
-          for (const staleId of staleClientIds) {
-            await remove(ref(db, `rooms/${roomPath}/online/${staleId}`));
-          }
-        }
-      } catch (e) {
-        console.warn('Failed to cleanup stale presence entries:', e);
-      }
-
-      if (!isMounted) return;
-
-      // Register presence with initial data (including voice name)
-      const presenceData: ClientPresence = {
-        joinedAt: Date.now(),
-        isReady: false,
+    // Register (or re-register after every reconnect). Always a full atomic
+    // write so the entry can never be a nameless partial.
+    const register = () => {
+      set(myRef, {
         voiceName: getOrCreateVoiceName(),
-      };
-
-      set(myRef, presenceData);
+        isReady: isReadyRef.current,
+        lastSeen: Date.now(),
+      }).catch((e) => console.warn('Failed to register presence:', e));
+      onDisconnect(myRef).remove();
+      joinedRef.current = true;
     };
 
-    cleanupAndRegister();
+    const unsubConnected = onValue(connectedRef, (snap) => {
+      if (snap.val() === true) {
+        register();
+      }
+    });
 
-    // Setup disconnect handler
-    onDisconnect(myRef).remove();
-
-    // Listen to online users - filter out stale entries
+    // Listen to online users - the same freshness filter drives the count
+    // and the participant list, so they can never disagree
     const unsubscribe = onValue(onlineRef, (snapshot) => {
       const data = snapshot.val() as Record<string, ClientPresence> | null;
-
-      // Filter out stale entries from display
       const now = Date.now();
       const activeClients: Record<string, ClientPresence> = {};
 
       if (data) {
         for (const [id, presence] of Object.entries(data)) {
+          const isFresh =
+            now - (presence.lastSeen || 0) <= PRESENCE_MAX_AGE_MS;
           // Always include our own entry, filter stale others
-          // Don't filter by voiceName - let the cache in useVoiceChat handle missing names
-          const isNotStale = id === clientId || now - presence.joinedAt <= PRESENCE_MAX_AGE_MS;
-          if (isNotStale) {
+          if (id === clientId || isFresh) {
             activeClients[id] = presence;
           }
         }
       }
 
       setClients(activeClients);
-      // Always count at least ourselves (we're in the process of registering even if not in data yet)
-      const count = Object.keys(activeClients).length;
-      setOnlineCount(count > 0 ? count : 1);
     });
+
+    // Heartbeat keeps lastSeen fresh - only after the entry exists, and it
+    // updates (never creates) so a partial record can't sneak in
+    const heartbeat = setInterval(() => {
+      if (joinedRef.current) {
+        update(myRef, { lastSeen: Date.now() }).catch(() => {});
+      }
+    }, HEARTBEAT_INTERVAL_MS);
 
     // Cleanup on unmount
     return () => {
-      isMounted = false;
+      unsubConnected();
       unsubscribe();
+      clearInterval(heartbeat);
+      joinedRef.current = false;
       remove(myRef);
     };
   }, [roomPath, clientId]);
 
-  // Update isReady status when it changes (separate effect)
+  // Update isReady status when it changes (only after registration)
   useEffect(() => {
-    if (!roomPath || !clientId || typeof isReady !== 'boolean') {
+    if (!joinedRef.current || !roomPath || !clientId) {
       return;
     }
 
-    const myRef = ref(db, `rooms/${roomPath}/online/${clientId}`);
-    update(myRef, { isReady });
+    update(ref(db, `rooms/${roomPath}/online/${clientId}`), { isReady }).catch(
+      () => {}
+    );
   }, [roomPath, clientId, isReady]);
 
-  // Heartbeat - update joinedAt periodically to stay "alive"
-  useEffect(() => {
-    if (!roomPath || !clientId) {
-      return;
-    }
-
-    const myRef = ref(db, `rooms/${roomPath}/online/${clientId}`);
-
-    const heartbeat = setInterval(() => {
-      update(myRef, { joinedAt: Date.now() });
-    }, HEARTBEAT_INTERVAL_MS);
-
-    return () => clearInterval(heartbeat);
-  }, [roomPath, clientId]);
+  // Count at least ourselves (we're in the process of registering)
+  const onlineCount = Math.max(1, Object.keys(clients).length);
 
   return { onlineCount, clients };
 }

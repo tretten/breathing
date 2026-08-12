@@ -87,8 +87,8 @@ export function useTogetherActivity(presetIds: string[]): {
             ).filter(
               (client) =>
                 client.voiceName &&
-                client.joinedAt &&
-                now - client.joinedAt <= PRESENCE_MAX_AGE_MS,
+                client.lastSeen &&
+                now - client.lastSeen <= PRESENCE_MAX_AGE_MS,
             ).length
           : 0;
         const isLive =

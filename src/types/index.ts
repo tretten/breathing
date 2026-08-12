@@ -21,7 +21,7 @@ export interface PresetMetadata {
 }
 
 export interface ClientPresence {
-  joinedAt: number;
+  lastSeen: number;
   isReady?: boolean;
   voiceName?: string;
   isVoiceEnabled?: boolean;

@@ -14,6 +14,7 @@ export function GlobalOnlineIndicator() {
     const clientId = getClientId();
     const myPresenceRef = ref(db, `presence/${clientId}`);
     const presenceRef = ref(db, "presence");
+    const connectedRef = ref(db, ".info/connected");
 
     // Prune ghost entries from crashed tabs / old sessions, then register
     get(presenceRef).then((snapshot) => {
@@ -28,15 +29,20 @@ export function GlobalOnlineIndicator() {
       }
     });
 
-    // Register presence + heartbeat to keep lastSeen fresh
+    // Register presence + heartbeat to keep lastSeen fresh.
+    // Also re-register after every reconnect - onDisconnect removes the entry
+    // when the connection drops, so a fresh registration is needed on the way
+    // back, otherwise the count shows a ghost.
     const writeHeartbeat = () => {
       set(myPresenceRef, { online: true, lastSeen: Date.now() });
     };
-    writeHeartbeat();
+    const unsubConnected = onValue(connectedRef, (snap) => {
+      if (snap.val() === true) {
+        writeHeartbeat();
+        onDisconnect(myPresenceRef).remove();
+      }
+    });
     const heartbeat = setInterval(writeHeartbeat, HEARTBEAT_INTERVAL_MS);
-
-    // Remove presence on disconnect
-    onDisconnect(myPresenceRef).remove();
 
     // Listen to all online users (count only fresh entries)
     const unsubscribe = onValue(presenceRef, (snapshot) => {
@@ -53,6 +59,7 @@ export function GlobalOnlineIndicator() {
     // Cleanup on unmount
     return () => {
       clearInterval(heartbeat);
+      unsubConnected();
       unsubscribe();
       remove(myPresenceRef);
     };
